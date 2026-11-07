@@ -1,0 +1,37 @@
+# CMU14: corporate liaison sidearm belts.
+- type: loadout
+  id: CMULiaisonBeltGeneralPistol
+  equipment:
+    belt: CMUBeltHolsterPistolBlackFilledM77
+
+- type: loadout
+  id: CMULiaisonBeltMatebaCustom
+  effects:
+  - !type:JobRequirementLoadoutEffect
+    requirement:
+      !type:RoleTimeRequirement
+      role: AU14JobCivilianCorporateLiaison
+      time: 36000 # 10 hours
+  equipment:
+    belt: AU14MatebaCustomBeltFilledAmmo
+
+- type: loadout
+  id: CMULiaisonBeltLuxuriousMateba
+  effects:
+  - !type:JobRequirementLoadoutEffect
+    requirement:
+      !type:RoleTimeRequirement
+      role: AU14JobCivilianCorporateLiaison
+      time: 360000 # 100 hours
+  equipment:
+    belt: CMUMatebaBeltLuxuriousFilledWEYADirector
+
+- type: loadoutGroup
+  id: CMULiaisonBelt
+  name: au14-loadout-group-commander-sidearm-belt
+  minLimit: 1
+  maxLimit: 1
+  loadouts:
+  - CMULiaisonBeltGeneralPistol
+  - CMULiaisonBeltMatebaCustom
+  - CMULiaisonBeltLuxuriousMateba

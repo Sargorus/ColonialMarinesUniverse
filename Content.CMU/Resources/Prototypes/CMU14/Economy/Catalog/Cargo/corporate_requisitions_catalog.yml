@@ -38,22 +38,50 @@
         crate: RMCCrateReplacementLights
     - name: WEYSEC Gear
       entries:
+      - cost: 600
+        crate: CMUWYSecurityBarrier
       - cost: 700
         crate: CMUCrateBiosuitWYTSSArmor
+      - cost: 300
+        crate: RMCAttachmentLaserSight
+      - cost: 400
+        crate: RMCAttachmentAngledGrip
+      - cost: 400
+        crate: RMCAttachmentU7UnderbarrelShotgun
+      - cost: 700
+        crate: RMCAttachmentS42xTelescopicMiniscope
     - name: WEYSEC Weapons
       entries:
       - cost: 1500
         crate: CMUCrateP90
+      - cost: 2000
+        crate: CMUCrateM54C2
+      - cost: 1700
+        crate: CMUCrateNSG23
+      - cost: 5500
+        crate: CMUCrateWYSentryOmni
       - cost: 4500
         crate: CMUCrateWYSentry
     - name: WEYSEC Ammo
       entries:
       - cost: 750
         crate: CMUCrateP90Mags
-      - cost: 2250
+      - cost: 1500
         crate: CMUCrateP90APMags
       - cost: 1500
         crate: CMUCrateWYSentryAmmo
+      - cost: 500
+        crate: CMUCrateM54C2Mags
+      - cost: 500
+        crate: CMUCrateM54C2APMags
+      - cost: 500
+        crate: CMUCrateF44AAMags
+      - cost: 500
+        crate: CMUCrateNSG23APMags
+      - cost: 600
+        crate: CMUCrateMagazineM96S
+      - cost: 700
+        crate: CMUCrateMagazineML66A
     - name: Weyland-Yutani Research
       entries:
       # XRF crates are added via code

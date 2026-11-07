@@ -46,6 +46,43 @@
       amount: 2
 
 - type: entity
+  id: CMUCrateM54C2
+  parent: RMCCrateWeapons
+  name: M54C/2 MK2 rifle crate
+  description: A crate containing one M54C/2 MK2 rifle with one AP magazine.
+  components:
+  - type: StorageFill
+    contents:
+    - id: RMCWeaponRifleM54C2
+      amount: 1
+
+- type: entity
+  id: CMUCrateNSG23
+  parent: RMCCrateWeapons
+  name: NSG-23 assault rifle crate
+  description: A crate containing one NSG-23 assault rifle with an installed underbarrel flamethrower and one magazine.
+  components:
+  - type: StorageFill
+    contents:
+    - id: RMCWeaponRifleSSG45NoLock
+      amount: 1
+
+- type: entity
+  id: CMUCrateWYSentryOmni
+  parent: RMCCrateWeapons
+  name: WY 571-D omnidirectional sentry crate
+  description: A crate containing one WY 571-D omnidirectional sentry gun, one ammunition drum, and a sentry laptop.
+  components:
+  - type: StorageFill
+    contents:
+    - id: AU14SentryOmniWeYu
+      amount: 1
+    - id: RMCSentryLaptop
+      amount: 1
+    - id: RMCMagazineSentry
+      amount: 1
+
+- type: entity
   id: CMUCrateP90Mags
   parent: RMCCrateWeapons
   name: FN P90 magazine crate
@@ -68,6 +105,50 @@
       amount: 3
 
 - type: entity
+  id: CMUCrateM54C2Mags
+  parent: RMCCrateAmmo
+  name: M54C/2 MK2 magazine crate (4x FMJ)
+  description: A crate containing four standard M54C/2 MK2 magazines.
+  components:
+  - type: StorageFill
+    contents:
+    - id: CMMagazineRifleM54C
+      amount: 4
+
+- type: entity
+  id: CMUCrateM54C2APMags
+  parent: RMCCrateAmmo
+  name: M54C/2 MK2 AP magazine crate (2x AP)
+  description: A crate containing two M54C/2 MK2 AP magazines.
+  components:
+  - type: StorageFill
+    contents:
+    - id: CMMagazineRifleM54CAP
+      amount: 2
+
+- type: entity
+  id: CMUCrateF44AAMags
+  parent: RMCCrateAmmo
+  name: F44AA magazine crate (2x FMJ)
+  description: A crate containing two standard F44AA magazines.
+  components:
+  - type: StorageFill
+    contents:
+    - id: AU14MagazineRifleF44AA
+      amount: 2
+
+- type: entity
+  id: CMUCrateNSG23APMags
+  parent: RMCCrateAmmo
+  name: NSG-23 AP magazine crate (2x AP)
+  description: A crate containing two NSG-23 AP magazines.
+  components:
+  - type: StorageFill
+    contents:
+    - id: RMCMagazineRifleSSG45AP
+      amount: 2
+
+- type: entity
   id: CMUCrateWYSentry
   parent: RMCCrateWeapons
   name: 512-M mini sentry crate
@@ -75,7 +156,7 @@
   components:
   - type: StorageFill
     contents:
-    - id: RMCSentryMiniWeYa
+    - id: CMUSentryMiniWeYu
       amount: 1
     - id: RMCSentryLaptop
       amount: 1

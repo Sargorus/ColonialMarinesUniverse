@@ -1,0 +1,728 @@
+# CMU14: corporate liaison wardrobe loadouts, generated from ColMarTechWardrobeCorp (tents and storage excluded).
+
+- type: loadout
+  id: CMULiaisonWardrobeCMHandsBrown
+  equipment:
+    gloves: CMHandsBrown
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCHandsBlack
+  equipment:
+    gloves: RMCHandsBlack
+
+- type: loadout
+  id: CMULiaisonWardrobeCMHandsWhiteDress
+  equipment:
+    gloves: CMHandsWhiteDress
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCHandsLeatherBlack
+  equipment:
+    gloves: RMCHandsLeatherBlack
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCShoesLaceup
+  equipment:
+    shoes: RMCShoesLaceup
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCShoesLaceupBrown
+  equipment:
+    shoes: RMCShoesLaceupBrown
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCShoesFancyLeather
+  equipment:
+    shoes: RMCShoesFancyLeather
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCShoesBlack
+  equipment:
+    shoes: RMCShoesBlack
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCBootsCorporate
+  equipment:
+    shoes: RMCBootsCorporate
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJacketCorporateBlack
+  equipment:
+    outerClothing: RMCJacketCorporateBlack
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJacketCorporateKhaki
+  equipment:
+    outerClothing: RMCJacketCorporateKhaki
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJacketCorporateBrown
+  equipment:
+    outerClothing: RMCJacketCorporateBrown
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJacketCorporateBlue
+  equipment:
+    outerClothing: RMCJacketCorporateBlue
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJacketCorporateFormal
+  equipment:
+    outerClothing: RMCJacketCorporateFormal
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCCorporateLogisticsJacket
+  equipment:
+    outerClothing: RMCCorporateLogisticsJacket
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCCorporateDutyJacket
+  equipment:
+    outerClothing: RMCCorporateDutyJacket
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCFancySuitJacketBlack
+  equipment:
+    outerClothing: RMCFancySuitJacketBlack
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCFancySuitJacketBlue
+  equipment:
+    outerClothing: RMCFancySuitJacketBlue
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCFancySuitJacketPurp
+  equipment:
+    outerClothing: RMCFancySuitJacketPurp
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCFancySuitJacketRed
+  equipment:
+    outerClothing: RMCFancySuitJacketRed
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCFancySuitJacketBrown
+  equipment:
+    outerClothing: RMCFancySuitJacketBrown
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCFancySuitJacketLightBrown
+  equipment:
+    outerClothing: RMCFancySuitJacketLightBrown
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCWeYaBrownVest
+  equipment:
+    outerClothing: RMCWeYaBrownVest
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCWeYaBlueVest
+  equipment:
+    outerClothing: RMCWeYaBlueVest
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCWeYaRedVest
+  equipment:
+    outerClothing: RMCWeYaRedVest
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCWeYaWhiteVest
+  equipment:
+    outerClothing: RMCWeYaWhiteVest
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCWeYaFurCoat
+  equipment:
+    outerClothing: RMCWeYaFurCoat
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCCoatBureauTrenchCoatBeige
+  equipment:
+    outerClothing: RMCCoatBureauTrenchCoatBeige
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCCoatBureauTrenchCoatBrown
+  equipment:
+    outerClothing: RMCCoatBureauTrenchCoatBrown
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCCoatBureauTrenchCoatGrey
+  equipment:
+    outerClothing: RMCCoatBureauTrenchCoatGrey
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCCoatBomberGrey
+  equipment:
+    outerClothing: RMCCoatBomberGrey
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCCoatBomberRed
+  equipment:
+    outerClothing: RMCCoatBomberRed
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCCoatBomberKhaki
+  equipment:
+    outerClothing: RMCCoatBomberKhaki
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCCoatBomber
+  equipment:
+    outerClothing: RMCCoatBomber
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCCoatBomberBlack
+  equipment:
+    outerClothing: RMCCoatBomberBlack
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCBrownWEYACoat
+  equipment:
+    outerClothing: RMCBrownWEYACoat
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCWEYARainCoat
+  equipment:
+    outerClothing: RMCWEYARainCoat
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCCoatHoboBrown
+  equipment:
+    outerClothing: RMCCoatHoboBrown
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCCoatHoboDarkBlue
+  equipment:
+    outerClothing: RMCCoatHoboDarkBlue
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCCoatHoboRed
+  equipment:
+    outerClothing: RMCCoatHoboRed
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJacketWindbreaker
+  equipment:
+    outerClothing: RMCJacketWindbreaker
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJacketWindbreakerBrown
+  equipment:
+    outerClothing: RMCJacketWindbreakerBrown
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJacketWindbreakerGrey
+  equipment:
+    outerClothing: RMCJacketWindbreakerGrey
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJacketWindbreakerExpedition
+  equipment:
+    outerClothing: RMCJacketWindbreakerExpedition
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCCoatSnowLiaison
+  equipment:
+    outerClothing: RMCCoatSnowLiaison
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCLabcoat
+  equipment:
+    outerClothing: RMCLabcoat
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCLabcoatBrown
+  equipment:
+    outerClothing: RMCLabcoatBrown
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCVestGrey
+  equipment:
+    outerClothing: RMCVestGrey
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCVestBrown
+  equipment:
+    outerClothing: RMCVestBrown
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCVestTan
+  equipment:
+    outerClothing: RMCVestTan
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCHeadCapWestonYamadaDark
+  equipment:
+    head: RMCHeadCapWestonYamadaDark
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCHeadBeretWeYa
+  equipment:
+    head: RMCHeadBeretWeYa
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCHeadFedoraTan
+  equipment:
+    head: RMCHeadFedoraTan
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCHeadFedoraBrown
+  equipment:
+    head: RMCHeadFedoraBrown
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCHeadFedoraGrey
+  equipment:
+    head: RMCHeadFedoraGrey
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCHeadCowboyHatLight
+  equipment:
+    head: RMCHeadCowboyHatLight
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCHeadCowboyHatDark
+  equipment:
+    head: RMCHeadCowboyHatDark
+
+- type: loadout
+  id: CMULiaisonWardrobeCMJumpsuitLiaisonBlack
+  equipment:
+    jumpsuit: CMJumpsuitLiaisonBlack
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitLiaisonBlackSuitskirt
+  equipment:
+    jumpsuit: RMCJumpsuitLiaisonBlackSuitskirt
+
+- type: loadout
+  id: CMULiaisonWardrobeCMJumpsuitLiaisonBlue
+  equipment:
+    jumpsuit: CMJumpsuitLiaisonBlue
+
+- type: loadout
+  id: CMULiaisonWardrobeCMJumpsuitLiaisonBrown
+  equipment:
+    jumpsuit: CMJumpsuitLiaisonBrown
+
+- type: loadout
+  id: CMULiaisonWardrobeCMJumpsuitLiaisonCorporateFormal
+  equipment:
+    jumpsuit: CMJumpsuitLiaisonCorporateFormal
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitGreySuitPants
+  equipment:
+    jumpsuit: RMCJumpsuitGreySuitPants
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitWornSuit
+  equipment:
+    jumpsuit: RMCJumpsuitWornSuit
+
+- type: loadout
+  id: CMULiaisonWardrobeCMJumpsuitLiaison
+  equipment:
+    jumpsuit: CMJumpsuitLiaison
+
+- type: loadout
+  id: CMULiaisonWardrobeCMJumpsuitLiaisonCharcoal
+  equipment:
+    jumpsuit: CMJumpsuitLiaisonCharcoal
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitLiaisonCharcoalSuitskirt
+  equipment:
+    jumpsuit: RMCJumpsuitLiaisonCharcoalSuitskirt
+
+- type: loadout
+  id: CMULiaisonWardrobeCMJumpsuitLiaisonFormal
+  equipment:
+    jumpsuit: CMJumpsuitLiaisonFormal
+
+- type: loadout
+  id: CMULiaisonWardrobeCMJumpsuitLiaisonBlazer
+  equipment:
+    jumpsuit: CMJumpsuitLiaisonBlazer
+
+- type: loadout
+  id: CMULiaisonWardrobeCMJumpsuitLiaisonSuspenders
+  equipment:
+    jumpsuit: CMJumpsuitLiaisonSuspenders
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitLiaisonSkirt
+  equipment:
+    jumpsuit: RMCJumpsuitLiaisonSkirt
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitWEYATrainee
+  equipment:
+    jumpsuit: RMCJumpsuitWEYATrainee
+
+- type: loadout
+  id: CMULiaisonWardrobeCMJumpsuitLiaisonIvy
+  equipment:
+    jumpsuit: CMJumpsuitLiaisonIvy
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitLiaisonOrange
+  equipment:
+    jumpsuit: RMCJumpsuitLiaisonOrange
+
+- type: loadout
+  id: CMULiaisonWardrobeCMJumpsuitLiaisonField
+  equipment:
+    jumpsuit: CMJumpsuitLiaisonField
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitLiaisonFieldSuitskirt
+  equipment:
+    jumpsuit: RMCJumpsuitLiaisonFieldSuitskirt
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitBlackPantsUniform
+  equipment:
+    jumpsuit: RMCJumpsuitBlackPantsUniform
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitBluePantsUniform
+  equipment:
+    jumpsuit: RMCJumpsuitBluePantsUniform
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitBlackTailored
+  equipment:
+    jumpsuit: RMCJumpsuitBlackTailored
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitBurgundyTailored
+  equipment:
+    jumpsuit: RMCJumpsuitBurgundyTailored
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitCharcoalTailored
+  equipment:
+    jumpsuit: RMCJumpsuitCharcoalTailored
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitNavyTailored
+  equipment:
+    jumpsuit: RMCJumpsuitNavyTailored
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitCheckeredTailored
+  equipment:
+    jumpsuit: RMCJumpsuitCheckeredTailored
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitJetblackExecutiveSuit
+  equipment:
+    jumpsuit: RMCJumpsuitJetblackExecutiveSuit
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitFemJetblackExecutiveSuit
+  equipment:
+    jumpsuit: RMCJumpsuitFemJetblackExecutiveSuit
+
+- type: loadout
+  id: CMULiaisonWardrobeCMJumpsuitLiaisonOutingRed
+  equipment:
+    jumpsuit: CMJumpsuitLiaisonOutingRed
+
+- type: loadout
+  id: CMULiaisonWardrobeCMJumpsuitLiaisonOuting
+  equipment:
+    jumpsuit: CMJumpsuitLiaisonOuting
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitBlueWorkwear
+  equipment:
+    jumpsuit: RMCJumpsuitBlueWorkwear
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitLiaisonGreyWorkwear
+  equipment:
+    jumpsuit: RMCJumpsuitLiaisonGreyWorkwear
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitLiaisonPinkWorkwear
+  equipment:
+    jumpsuit: RMCJumpsuitLiaisonPinkWorkwear
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitLiaisonKhakiWorkwear
+  equipment:
+    jumpsuit: RMCJumpsuitLiaisonKhakiWorkwear
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitLiaisonGreenWorkwear
+  equipment:
+    jumpsuit: RMCJumpsuitLiaisonGreenWorkwear
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitLiaisonCargoShorts
+  equipment:
+    jumpsuit: RMCJumpsuitLiaisonCargoShorts
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitLiaisonLegalUniform
+  equipment:
+    jumpsuit: RMCJumpsuitLiaisonLegalUniform
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCJumpsuitLiaisonDisco
+  equipment:
+    jumpsuit: RMCJumpsuitLiaisonDisco
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCGlassesMarineRpg #Placeholder
+  equipment:
+    eyes: RMCGlassesMarineRpg #Placeholder
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCGlassesMarineRpgOld #Placeholder
+  equipment:
+    eyes: RMCGlassesMarineRpgOld #Placeholder
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCSunglassesBig
+  equipment:
+    eyes: RMCSunglassesBig
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCGlassesAviators
+  equipment:
+    eyes: RMCGlassesAviators
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCGlassesAviatorsSilver
+  equipment:
+    eyes: RMCGlassesAviatorsSilver
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCSunglasses
+  equipment:
+    eyes: RMCSunglasses
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCPrescriptionSunglasses
+  equipment:
+    eyes: RMCPrescriptionSunglasses
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCHipsterGlasses
+  equipment:
+    eyes: RMCHipsterGlasses
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCGlassesMonocle
+  equipment:
+    eyes: RMCGlassesMonocle
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCTieBlack
+  equipment:
+    neck: RMCTieBlack
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCTie
+  equipment:
+    neck: RMCTie
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCTieGold
+  equipment:
+    neck: RMCTieGold
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCTieGreen
+  equipment:
+    neck: RMCTieGreen
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCTiePurple
+  equipment:
+    neck: RMCTiePurple
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCTieRed
+  equipment:
+    neck: RMCTieRed
+
+- type: loadout
+  id: CMULiaisonWardrobeRMCTieHorrible
+  equipment:
+    neck: RMCTieHorrible
+
+- type: loadoutGroup
+  id: CMULiaisonWardrobeGlovesAU14
+  name: au14-loadout-group-gloves
+  minLimit: 0
+  maxLimit: 1
+  loadouts:
+  - CMULiaisonWardrobeCMHandsBrown
+  - CMULiaisonWardrobeRMCHandsBlack
+  - CMULiaisonWardrobeCMHandsWhiteDress
+  - CMULiaisonWardrobeRMCHandsLeatherBlack
+
+- type: loadoutGroup
+  id: CMULiaisonWardrobeShoesAU14
+  name: au14-loadout-group-corporate-footwear
+  minLimit: 1
+  maxLimit: 1
+  loadouts:
+  - ShoesLaceupAU14
+  - ShoesLaceupBrownAU14
+  - ShoesBlackAU14
+  - ShoesFancyLeatherAU14
+  - BootsCorporateAU14
+  - CMULiaisonWardrobeRMCShoesLaceup
+  - CMULiaisonWardrobeRMCShoesLaceupBrown
+  - CMULiaisonWardrobeRMCShoesFancyLeather
+  - CMULiaisonWardrobeRMCShoesBlack
+  - CMULiaisonWardrobeRMCBootsCorporate
+
+- type: loadoutGroup
+  id: CMULiaisonWardrobeCoatsAU14
+  name: au14-loadout-group-corporate-outerwear
+  minLimit: 0
+  maxLimit: 1
+  loadouts:
+  - CivilianJacketOrangePufferJacketAU14
+  - WYFancySuitJacketBlackAU14
+  - WYFancySuitJacketBrownAU14
+  - WYFancySuitJacketLightBrownAU14
+  - WYLiaisonManagerJacketAU14
+  - CMULiaisonWardrobeRMCJacketCorporateBlack
+  - CMULiaisonWardrobeRMCJacketCorporateKhaki
+  - CMULiaisonWardrobeRMCJacketCorporateBrown
+  - CMULiaisonWardrobeRMCJacketCorporateBlue
+  - CMULiaisonWardrobeRMCJacketCorporateFormal
+  - CMULiaisonWardrobeRMCCorporateLogisticsJacket
+  - CMULiaisonWardrobeRMCCorporateDutyJacket
+  - CMULiaisonWardrobeRMCFancySuitJacketBlack
+  - CMULiaisonWardrobeRMCFancySuitJacketBlue
+  - CMULiaisonWardrobeRMCFancySuitJacketPurp
+  - CMULiaisonWardrobeRMCFancySuitJacketRed
+  - CMULiaisonWardrobeRMCFancySuitJacketBrown
+  - CMULiaisonWardrobeRMCFancySuitJacketLightBrown
+  - CMULiaisonWardrobeRMCWeYaBrownVest
+  - CMULiaisonWardrobeRMCWeYaBlueVest
+  - CMULiaisonWardrobeRMCWeYaRedVest
+  - CMULiaisonWardrobeRMCWeYaWhiteVest
+  - CMULiaisonWardrobeRMCWeYaFurCoat
+  - CMULiaisonWardrobeRMCCoatBureauTrenchCoatBeige
+  - CMULiaisonWardrobeRMCCoatBureauTrenchCoatBrown
+  - CMULiaisonWardrobeRMCCoatBureauTrenchCoatGrey
+  - CMULiaisonWardrobeRMCCoatBomberGrey
+  - CMULiaisonWardrobeRMCCoatBomberRed
+  - CMULiaisonWardrobeRMCCoatBomberKhaki
+  - CMULiaisonWardrobeRMCCoatBomber
+  - CMULiaisonWardrobeRMCCoatBomberBlack
+  - CMULiaisonWardrobeRMCBrownWEYACoat
+  - CMULiaisonWardrobeRMCWEYARainCoat
+  - CMULiaisonWardrobeRMCCoatHoboBrown
+  - CMULiaisonWardrobeRMCCoatHoboDarkBlue
+  - CMULiaisonWardrobeRMCCoatHoboRed
+  - CMULiaisonWardrobeRMCJacketWindbreaker
+  - CMULiaisonWardrobeRMCJacketWindbreakerBrown
+  - CMULiaisonWardrobeRMCJacketWindbreakerGrey
+  - CMULiaisonWardrobeRMCJacketWindbreakerExpedition
+  - CMULiaisonWardrobeRMCCoatSnowLiaison
+  - CMULiaisonWardrobeRMCLabcoat
+  - CMULiaisonWardrobeRMCLabcoatBrown
+  - CMULiaisonWardrobeRMCVestGrey
+  - CMULiaisonWardrobeRMCVestBrown
+  - CMULiaisonWardrobeRMCVestTan
+
+- type: loadoutGroup
+  id: CMULiaisonWardrobeHatsAU14
+  name: rmc-loadout-group-headwear
+  minLimit: 0
+  maxLimit: 1
+  loadouts:
+  - WYHeadCapWeylandYutaniDarkAU14
+  - WYLiaisonManagerCapAU14
+  - CMULiaisonWardrobeRMCHeadBeretWeYa
+  - CMULiaisonWardrobeRMCHeadCapWestonYamadaDark
+  - CMULiaisonWardrobeRMCHeadFedoraTan
+  - CMULiaisonWardrobeRMCHeadFedoraBrown
+  - CMULiaisonWardrobeRMCHeadFedoraGrey
+  - CMULiaisonWardrobeRMCHeadCowboyHatLight
+  - CMULiaisonWardrobeRMCHeadCowboyHatDark
+
+- type: loadoutGroup
+  id: CMULiaisonWardrobeSuitsAU14
+  name: au14-loadout-group-corporate-jumpsuit
+  minLimit: 1
+  maxLimit: 1
+  loadouts:
+  - CivilianWorkwearBlueAU14
+  - WYJumpsuitLiaisonBlackAU14
+  - WYJumpsuitLiaisonBlazerAU14
+  - WYJumpsuitLiaisonFormalAU14
+  - WYJumpsuitLiaisonOutingAU14
+  - WYJumpsuitLiaisonOutingRedAU14
+  - WYJumpsuitLiaisonSuspendersAU14
+  - WYLiaisonManagerJumpsuitAU14
+  - CMULiaisonBlackSuitskirt
+  - CMULiaisonCharcoalSuitskirt
+  - CMULiaisonFieldSuitskirt
+  - CMULiaisonSkirt
+  - CMULiaisonWardrobeCMJumpsuitLiaisonBlack
+  - CMULiaisonWardrobeRMCJumpsuitLiaisonBlackSuitskirt
+  - CMULiaisonWardrobeCMJumpsuitLiaisonBlue
+  - CMULiaisonWardrobeCMJumpsuitLiaisonBrown
+  - CMULiaisonWardrobeCMJumpsuitLiaisonCorporateFormal
+  - CMULiaisonWardrobeRMCJumpsuitGreySuitPants
+  - CMULiaisonWardrobeRMCJumpsuitWornSuit
+  - CMULiaisonWardrobeCMJumpsuitLiaison
+  - CMULiaisonWardrobeCMJumpsuitLiaisonCharcoal
+  - CMULiaisonWardrobeRMCJumpsuitLiaisonCharcoalSuitskirt
+  - CMULiaisonWardrobeCMJumpsuitLiaisonFormal
+  - CMULiaisonWardrobeCMJumpsuitLiaisonBlazer
+  - CMULiaisonWardrobeCMJumpsuitLiaisonSuspenders
+  - CMULiaisonWardrobeRMCJumpsuitLiaisonSkirt
+  - CMULiaisonWardrobeRMCJumpsuitWEYATrainee
+  - CMULiaisonWardrobeCMJumpsuitLiaisonIvy
+  - CMULiaisonWardrobeRMCJumpsuitLiaisonOrange
+  - CMULiaisonWardrobeCMJumpsuitLiaisonField
+  - CMULiaisonWardrobeRMCJumpsuitLiaisonFieldSuitskirt
+  - CMULiaisonWardrobeRMCJumpsuitBlackPantsUniform
+  - CMULiaisonWardrobeRMCJumpsuitBluePantsUniform
+  - CMULiaisonWardrobeRMCJumpsuitBlackTailored
+  - CMULiaisonWardrobeRMCJumpsuitBurgundyTailored
+  - CMULiaisonWardrobeRMCJumpsuitCharcoalTailored
+  - CMULiaisonWardrobeRMCJumpsuitNavyTailored
+  - CMULiaisonWardrobeRMCJumpsuitCheckeredTailored
+  - CMULiaisonWardrobeRMCJumpsuitJetblackExecutiveSuit
+  - CMULiaisonWardrobeRMCJumpsuitFemJetblackExecutiveSuit
+  - CMULiaisonWardrobeCMJumpsuitLiaisonOutingRed
+  - CMULiaisonWardrobeCMJumpsuitLiaisonOuting
+  - CMULiaisonWardrobeRMCJumpsuitBlueWorkwear
+  - CMULiaisonWardrobeRMCJumpsuitLiaisonGreyWorkwear
+  - CMULiaisonWardrobeRMCJumpsuitLiaisonPinkWorkwear
+  - CMULiaisonWardrobeRMCJumpsuitLiaisonKhakiWorkwear
+  - CMULiaisonWardrobeRMCJumpsuitLiaisonGreenWorkwear
+  - CMULiaisonWardrobeRMCJumpsuitLiaisonCargoShorts
+  - CMULiaisonWardrobeRMCJumpsuitLiaisonLegalUniform
+  - CMULiaisonWardrobeRMCJumpsuitLiaisonDisco
+
+- type: loadoutGroup
+  id: CMULiaisonWardrobeGlassesAU14
+  name: rmc-loadout-group-eyewear
+  minLimit: 0
+  maxLimit: 1
+  loadouts:
+  - CMULiaisonWardrobeRMCGlassesMarineRpg #Placeholder
+  - CMULiaisonWardrobeRMCGlassesMarineRpgOld #Placeholder
+  - CMULiaisonWardrobeRMCSunglassesBig
+  - CMULiaisonWardrobeRMCGlassesAviators
+  - CMULiaisonWardrobeRMCGlassesAviatorsSilver
+  - CMULiaisonWardrobeRMCSunglasses
+  - CMULiaisonWardrobeRMCPrescriptionSunglasses
+  - CMULiaisonWardrobeRMCHipsterGlasses
+  - CMULiaisonWardrobeRMCGlassesMonocle
+
+# CMU14: ties are uniform accessories, not loadout slot items; they stay available through ColMarTechWardrobeCorp.

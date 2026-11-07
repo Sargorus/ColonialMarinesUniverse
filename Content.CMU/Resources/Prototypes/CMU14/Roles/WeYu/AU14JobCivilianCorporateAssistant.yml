@@ -25,7 +25,7 @@
   - type: AssignSquad
     whitelist:
       tags:
-      - SquadPMC
+      - CMUSquadStaffTag
 
   name: cmu-job-title-corporate-assistant
   playTimeTracker: AU14JobCivilianCorporateAssistant
@@ -45,6 +45,11 @@
       time: 36000 # 10 hours
     AU14RankWYJuniorAssistant: []
   startingGear: AU14GearCivilianCorporateAssistant
+  medals:
+    Bronze: CMUNameBadgeBronze
+    Silver: CMUNameBadgeSilver
+    Gold: CMUNameBadgeGold
+    Platinum: CMUNameBadgePlatinum
   icon: "AU14JobIconCorporateAssistant"
   requireAdminNotify: false
   joinNotifyCrew: false
@@ -56,6 +61,7 @@
   - auwy
   access:
   - AU14AccessCorporateWEYULiaison
+  - CMU14AccessWYSecurityBarrier
   roleWeight: 0.25
 
 - type: startingGear

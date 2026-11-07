@@ -82,3 +82,25 @@
       amount: 2
     - id: RMCBoxShotgunHeavySlugs
       amount: 2
+
+- type: entity
+  parent: RMCCrateAmmo
+  id: CMUCrateMagazineM96S
+  name: M96S magazine crate (1x)
+  description: A crate containing one M96S sniper rifle magazine.
+  components:
+  - type: StorageFill
+    contents:
+    - id: CMMagazineSniperM96S
+      amount: 1
+
+- type: entity
+  parent: RMCCrateAmmo
+  id: CMUCrateMagazineML66A
+  name: ML66A OBD drum magazine crate (1x, 10x30mm)
+  description: A crate containing one ML66A OBD smart gun drum magazine in 10x30mm.
+  components:
+  - type: StorageFill
+    contents:
+    - id: RMCMagazineSmartGun
+      amount: 1

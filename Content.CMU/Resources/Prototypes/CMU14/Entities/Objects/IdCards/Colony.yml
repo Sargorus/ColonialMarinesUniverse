@@ -244,6 +244,49 @@
 
 - type: entity
   parent: AU14IDCardBaseCivilianNoIFF
+  id: AU14IDCardWYSecurityLeader
+  name: WY corporate security chief ID card
+  components:
+  - type: PresetIdCard
+    job: AU14JobWYGuardLeader
+  - type: ItemIFF
+    factions:
+    - FactionWEYU
+
+- type: entity
+  parent: AU14IDCardBaseCivilianNoIFF
+  id: AU14IDCardCorporateHandymanEngineer
+  name: corporate engineer ID card
+  components:
+  - type: IdCard
+    jobTitle: au14-job-title-corporate-engineer
+  - type: Access
+    groups:
+    - Colonist
+    - auengi
+    - auwy
+  - type: ItemIFF
+    factions:
+    - FactionWEYU
+
+- type: entity
+  parent: AU14IDCardBaseCivilianNoIFF
+  id: AU14IDCardCorporateHandymanCook
+  name: corporate cook ID card
+  components:
+  - type: IdCard
+    jobTitle: au14-job-title-corporate-cook
+  - type: Access
+    groups:
+    - Colonist
+    - auengi
+    - auwy
+  - type: ItemIFF
+    factions:
+    - FactionWEYU
+
+- type: entity
+  parent: AU14IDCardBaseCivilianNoIFF
   id: CMU14IDCardColonyProdigyLiaison
   name: prodigy liaison ID card
   components:

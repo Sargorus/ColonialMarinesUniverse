@@ -2,6 +2,8 @@ using Content.Server.Hands.Systems;
 using Content.Server.Players.PlayTimeTracking;
 using Content.Shared._RMC14.CCVar;
 using Content.Shared.CMU14.CCVar; // cmu edit
+using Content.Shared.CMU14.NameBadges; // CMU14
+using Content.Shared.NameModifier.EntitySystems; // CMU14
 using Content.Shared._RMC14.Medal;
 using Content.Shared._RMC14.UniformAccessories;
 using Content.Shared.Coordinates;
@@ -21,6 +23,7 @@ public sealed partial class PlaytimeMedalSystem : EntitySystem
     [Dependency] private InventorySystem _inventory = default!;
     [Dependency] private PlayTimeTrackingManager _playTimeTracking = default!;
     [Dependency] private IPrototypeManager _prototype = default!;
+    [Dependency] private NameModifierSystem _nameModifier = default!; // CMU14: name badges
 
 
     private TimeSpan _bronzeTime;
@@ -107,5 +110,14 @@ public sealed partial class PlaytimeMedalSystem : EntitySystem
         var medalComp = EnsureComp<UniformAccessoryComponent>(medal);
         medalComp.User = GetNetEntity(ev.Mob);
         Dirty(medal, medalComp);
+
+        // CMU14 start: put the wearer's name on the name badge
+        if (TryComp<CMUNameBadgeComponent>(medal, out var nameBadge))
+        {
+            nameBadge.Name = Name(ev.Mob);
+            Dirty(medal, nameBadge);
+            _nameModifier.RefreshNameModifiers(medal);
+        }
+        // CMU14 end
     }
 }

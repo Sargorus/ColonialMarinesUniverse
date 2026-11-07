@@ -32,6 +32,12 @@
   id: AU14AccessCorporateWEYULiaison
   name: au14-job-name-civiliancorporateliaison
 
+# Locks and unlocks the corporate security barrier. Granted only to WY security
+# (officer and leader), the corporate liaison, and the corporate assistant.
+- type: accessLevel
+  id: CMU14AccessWYSecurityBarrier
+  name: cmu-access-wy-security-barrier
+
 - type: accessLevel
   id: CMU14AccessCorporateProdigy
   name: au14-job-name-civiliancorporateliaison

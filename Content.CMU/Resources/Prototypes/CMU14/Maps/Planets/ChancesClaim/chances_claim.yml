@@ -117,8 +117,8 @@
             # Ambassadors
 
             AU14JobCivilianScientist: [6, 6]
-            AU14JobWYGuard: [4, 4]
-
+            AU14JobWYGuardLeader: [1, 1]
+            AU14JobWYGuard: [3, 3]
             # Security/LEO
             AU14JobCivilianColonySecurityLeader : [1, 1]
             AU14JobCivilianColonySecurityOfficer: [7, 7]

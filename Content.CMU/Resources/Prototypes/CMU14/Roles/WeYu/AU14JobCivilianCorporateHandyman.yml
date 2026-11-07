@@ -1,0 +1,92 @@
+- type: job
+  parent: CMJobBase
+  id: AU14JobCivilianCorporateHandyman
+  roundSide: Civilian
+  roundForce: WY
+  roundProfiles:
+  - AU14RoundJobProfileThirdParty
+  roundRole: CivilianCorporateHandyman
+  roundComponents:
+  - type: Skills
+    skills:
+      RMCSkillCqc: 1
+      RMCSkillEndurance: 1
+      RMCSkillFireman: 2
+      RMCSkillVehicles: 1
+      RMCSkillDomestics: 2
+      RMCSkillEngineer: 3
+      RMCSkillConstruction: 3
+      RMCSkillPowerLoader: 2
+      RMCSkillFirearms: 1
+  - type: JobPrefix
+    prefix: au14-job-prefix-corporatehandyman
+  - type: TacticalMapIcon
+    icon:
+      sprite: /Textures/CMU14/Interface/au14colonyjobicons.rsi
+      state: corporate_assistant
+  - type: AssignSquad
+    whitelist:
+      tags:
+      - CMUSquadStaffTag
+
+  name: au14-job-name-corporatehandyman
+  description: au14-job-description-corporatehandyman
+  setPreference: true
+  playTimeTracker: AU14JobCivilianCorporateHandyman
+  requirements:
+  - !type:OverallPlaytimeRequirement
+    time: 7200 # 2 hours
+  ranks:
+    RMCRankCivilian: []
+  startingGear: AU14GearCivilianCorporateHandyman
+  icon: "AU14JobIconCorporateAssistant"
+  requireAdminNotify: false
+  joinNotifyCrew: false
+  supervisors: au14-job-supervisors-wy
+  accessGroups:
+  - Colonist
+  - auengi
+  - auwy
+  access:
+  - AU14AccessShopkeep
+  - AU14AccessCorporateWEYU
+  roleWeight: 0.25
+
+- type: startingGear
+  id: AU14GearCivilianCorporateHandyman
+  equipment:
+    head: RMCHardhatWhite
+    jumpsuit: AU14CivilianWeYuEngineerClothes
+    outerClothing: CMUClothingOuterSuitEngineer
+    shoes: RMCBootsCorporate
+    ears: AU14ColonyWeylandHeadset
+    ears2: RMCM5CameraGear
+  storage:
+    back:
+    - CMStampApproved
+    - ClothingHeadHatWelding
+    - RMCWeldingGoggles
+
+- type: playTimeTracker
+  id: AU14JobCivilianCorporateHandyman
+  isHumanoid: true
+
+- type: roleLoadout
+  id: JobAU14JobCivilianCorporateHandyman
+  points: 7
+  groups:
+  - CorporateHandymanAffiliationAU14
+  - CorporateHandymanJumpsuitAU14
+  - EngiSatchelAU14
+  - CorporateHandymanJacketAU14
+  - EngiGlovesAU14
+  - EngiBeltAU14
+  - EngiPouchAU14
+  - EngiPouchRightAU14
+  - PaperworkRMC
+  - RecreationalRMC
+  - CannedDrinksAU14
+  - SmokablesRMC
+  - EyewearRMC
+  - MasksRMC
+  - CorporateHandymanHeadAU14

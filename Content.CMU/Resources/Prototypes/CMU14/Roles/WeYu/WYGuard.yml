@@ -38,7 +38,7 @@
   - type: AssignSquad
     whitelist:
       tags:
-      - SquadPMC
+      - CMUSquadSecurityTag
 
   name: au14-job-name-wyguard
   description: au14-job-description-wyguard
@@ -79,11 +79,83 @@
     - CMUClaustrophobic
     - CMUFearOfBlood
   joinNotifyCrew: false
-  supervisors: au14-job-supervisors-wy
+  supervisors: au14-job-supervisors-wysecurityleader
   spawnMenuRoleName: au14-spawn-role-name-wy-corporate-goon
   accessGroups:
   - auwy
   - AUPrisonStaff
+  access:
+  - CMU14AccessWYSecurityBarrier
+  roleWeight: 0.25
+
+- type: job
+  parent: AU14JobWYGuardBase
+  id: AU14JobWYGuardLeader
+  roundSide: Civilian
+  roundForce: WY
+  roundProfiles:
+  - AU14RoundJobProfileThirdParty
+  roundRole: WYGuardLeader
+  roundComponents:
+  - type: Skills
+    skills:
+      RMCSkillOverwatch: 2
+      RMCSkillFirearms: 3
+      RMCSkillCqc: 2
+      RMCSkillEndurance: 2
+      RMCSkillFireman: 2
+      RMCSkillEngineer: 2
+      RMCSkillIntel: 2
+      RMCSkillVehicles: 1
+      RMCSkillPolice: 3
+      RMCSkillConstruction: 2
+      RMCSkillLeadership: 2
+  - type: JobPrefix
+    prefix: au14-job-prefix-wyguardleader
+  - type: TacticalMapIcon
+    icon:
+      sprite: /Textures/_RMC14/Interface/cm_job_icons.rsi
+      state: weya_goon_lead
+  - type: AssignSquad
+    whitelist:
+      tags:
+      - CMUSquadSecurityTag
+  - type: MarineOrders
+
+  name: au14-job-name-wyguardleader
+  description: au14-job-description-wyguardleader
+  setPreference: true
+  playTimeTracker: AU14JobWYGuardLeader
+  ranks:
+    AU14RankWYSecurityOfficerDirector: []
+  startingGear: AU14GearWYGuardLeader
+  icon: "RMCJobIconPMCGoonLead"
+  requireAdminNotify: false
+  requirements:
+  - !type:OverallPlaytimeRequirement
+    time: 36000 # 10 hours
+  - !type:RoleTimeRequirement
+    role: AU14JobWYGuard
+    time: 18000 # 5 hours as a security officer
+  - !type:AgeRequirement
+    requiredAge: 21
+  - !type:TraitsRequirement
+    inverted: true
+    traits:
+    - Epilepsy
+    - CMUHeartCondition
+    - CMUHemophilia
+    - CMUHardOfHearing
+    - CMUClaustrophobic
+    - CMUFearOfBlood
+  joinNotifyCrew: false
+  supervisors: au14-job-supervisors-wy
+  spawnMenuRoleName: au14-spawn-role-name-wy-security-leader
+  accessGroups:
+  - auwy
+  - AUPrisonStaff
+  access:
+  - CMU14AccessWYSecurityBarrier
   roleWeight: 0.25
 
 - type: startingGear
@@ -94,11 +166,35 @@
     jumpsuit: AU14WYSecurityUniformRig
     shoes: RMCBootsPMCFilled
     head: AU14CivBallCapBlack
+    eyes: CMGlassesSecurity
+    gloves: CMHandsBlackInsulated
     belt: RMCBeltSecurityWeYaFilled
     back: RMCSatchelLightpackBlack
     ears: AU14ColonyWeylandHeadset
     ears2: RMCM5CameraGear
     suitstorage: RMCM77BeltPMCFilled
+  storage:
+    back:
+    - RMCMREWeYa
+    - CMCanteen
+    - CMU14TearGasGrenade
+    - RMCGrenadeFlashBang
+
+- type: startingGear
+  id: AU14GearWYGuardLeader
+  equipment:
+    id: AU14IDCardWYSecurityLeader
+    outerClothing: CMUArmorM4PMCCorporateLead
+    jumpsuit: AU14WYSecurityUniformRig
+    shoes: RMCBootsPMCFilled
+    head: ArmorHelmetPMCCorporateLead
+    eyes: CMGlassesSecurity
+    gloves: CMHandsBlackInsulated
+    belt: RMCBeltSecurityWeYaFilled
+    back: RMCSatchelLightpackBlack
+    ears: AU14ColonyWeylandHeadset
+    ears2: RMCM5CameraGear
+    suitstorage: AU14WeaponRifleF44AALock
   storage:
     back:
     - RMCMREWeYa
@@ -113,6 +209,9 @@
   components:
   - type: SpawnPoint
     job_id: AU14JobWYGuard
+  - type: CMUSpawnPointExtraJobs
+    jobs:
+    - AU14JobWYGuardLeader
   - type: Sprite
     state: syn_spawn
 
@@ -120,8 +219,25 @@
   id: AU14JobWYGuard
   isHumanoid: true
 
+- type: playTimeTracker
+  id: AU14JobWYGuardLeader
+  isHumanoid: true
+
 - type: roleLoadout
   id: JobAU14JobWYGuard
+  points: 7
+  groups:
+  - PaperworkRMC
+  - WYGuardJumpsuitAU14
+  - WYGuardLeftPouchAU14
+  - WYGuardRightPouchAU14
+  - WYGuardHeadwearAU14
+  - RecreationalRMC
+  - CannedDrinksAU14
+  - SmokablesRMC
+
+- type: roleLoadout
+  id: JobAU14JobWYGuardLeader
   points: 7
   groups:
   - PaperworkRMC

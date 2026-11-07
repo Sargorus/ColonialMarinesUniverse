@@ -560,10 +560,10 @@ public sealed partial class SquadSystem : EntitySystem
         grant.AccessLevels = team.Comp.AccessLevels;
 
         if (_prototypes.TryIndex(job, out var jobProto))
-            grant.RoleName = $"{Name(team)} {jobProto.LocalizedName}";
+            grant.RoleName = CMUFormatSquadTitle(team, jobProto.LocalizedName); // CMU14: Job (Squad) for marked squads
         else if (_mind.TryGetMind(marine, out var mindId, out _)
             && _job.MindTryGetJobName(mindId, out var name))
-            MarineSetTitle(marine, $"{Name(team)} {name}");
+            MarineSetTitle(marine, CMUFormatSquadTitle(team, name)); // CMU14: Job (Squad) for marked squads
 
         Dirty(marine, grant);
 

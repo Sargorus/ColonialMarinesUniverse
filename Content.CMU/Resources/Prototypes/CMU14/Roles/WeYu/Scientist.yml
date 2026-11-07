@@ -35,7 +35,7 @@
   - type: AssignSquad
     whitelist:
       tags:
-      - SquadPMC
+      - CMUSquadStaffTag
 
   name: au14-job-name-civilianscientist
   description: au14-job-description-civilianscientist
@@ -84,6 +84,9 @@
   components:
   - type: SpawnPoint
     job_id: AU14JobCivilianScientist
+  - type: CMUSpawnPointExtraJobs
+    jobs:
+    - AU14JobCivilianCorporateHandyman
   - type: Sprite
     state: syn_spawn
 

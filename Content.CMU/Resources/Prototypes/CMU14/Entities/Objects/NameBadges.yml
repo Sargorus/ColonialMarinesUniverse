@@ -1,0 +1,31 @@
+- type: entity
+  parent: RMCMedalBronzeNametag
+  id: CMUNameBadgeBronze
+  name: name badge
+  description: A bronze name badge. The wearer's name is engraved on it.
+  components:
+  - type: CMUNameBadge
+
+- type: entity
+  parent: RMCMedalSilverNametag
+  id: CMUNameBadgeSilver
+  name: silver name badge
+  description: A silver name badge. The wearer's name is engraved on it.
+  components:
+  - type: CMUNameBadge
+
+- type: entity
+  parent: RMCMedalGoldNametag
+  id: CMUNameBadgeGold
+  name: gold name badge
+  description: A gold name badge. The wearer's name is engraved on it.
+  components:
+  - type: CMUNameBadge
+
+- type: entity
+  parent: RMCMedalPlatinumNametag
+  id: CMUNameBadgePlatinum
+  name: gold and black name badge
+  description: A gold-black name badge. The wearer's name is engraved on it.
+  components:
+  - type: CMUNameBadge
