@@ -84,7 +84,7 @@ public static class CMUQueueNetworkGenerator
                 network,
                 $"processor{index + 1}",
                 "cmu-queue-node-processor",
-                processors > 1 ? $"{(char) ('A' + index)}" : string.Empty);
+                processors > 1 ? $"{(char)('A' + index)}" : string.Empty);
         }
 
         AddNode(network, "packaging", "cmu-queue-node-packaging");
@@ -402,7 +402,7 @@ public static class CMUQueueNetworkGenerator
         var costPerRate = node.UpgradeCost / (maxRate - node.ServiceRate);
         return Math.Max(
             1,
-            (int) Math.Ceiling((target - node.ServiceRate) * costPerRate - 0.0001));
+            (int)Math.Ceiling((target - node.ServiceRate) * costPerRate - 0.0001));
     }
 
     private static CMUQueueNetworkDefinition BuildFallback(int seed)
@@ -531,7 +531,7 @@ public static class CMUQueueNetworkGenerator
 
     private static int RoundTo50(double value)
     {
-        return (int) (Math.Ceiling(value / 50) * 50);
+        return (int)(Math.Ceiling(value / 50) * 50);
     }
 
     private static void Shuffle<T>(IList<T> list, SystemRandom random)

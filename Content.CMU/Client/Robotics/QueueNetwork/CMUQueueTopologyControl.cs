@@ -12,6 +12,7 @@ using Robust.Client.UserInterface;
 using Robust.Client.UserInterface.Controls;
 using Robust.Shared.Input;
 using Robust.Shared.IoC;
+using Robust.Shared.Localization;
 using Robust.Shared.Maths;
 
 namespace Content.Client.CMU14.Robotics.QueueNetwork;
@@ -23,10 +24,16 @@ namespace Content.Client.CMU14.Robotics.QueueNetwork;
 /// </summary>
 public sealed class CMUQueueTopologyView
 {
+    /// <summary>Per-node offsets in schematic pixels, keyed by node id.</summary>
     public Dictionary<string, Vector2> Offsets { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>Schematic pan in control pixels.</summary>
     public Vector2 Pan;
+
+    /// <summary>Zoom factor applied around the control origin.</summary>
     public float Zoom = 1f;
 
+    /// <summary>Restores the auto-layout positions, pan and zoom.</summary>
     public void Reset()
     {
         Offsets.Clear();
@@ -46,6 +53,7 @@ public sealed class CMUQueueTopologyControl : Control
     private const float MaxZoom = 2f;
 
     private readonly Font _font;
+    private readonly ILocalizationManager _loc = IoCManager.Resolve<ILocalizationManager>();
     private IReadOnlyList<CMUQueueNodeInfo> _nodes = Array.Empty<CMUQueueNodeInfo>();
     private IReadOnlyList<CMUQueueRouteInfo> _routes = Array.Empty<CMUQueueRouteInfo>();
     private IReadOnlyList<CMUQueueBypassInfo> _bypasses = Array.Empty<CMUQueueBypassInfo>();
@@ -57,8 +65,13 @@ public sealed class CMUQueueTopologyControl : Control
     private Vector2 _panStartScreen;
     private Vector2 _panStart;
 
+    /// <summary>
+    /// Client-side view state shared by rebuilt topology controls. It keeps
+    /// manual node positions, pan and zoom for the current contract.
+    /// </summary>
     public CMUQueueTopologyView View { get; set; } = new();
 
+    /// <summary>Localized message shown when the network has no nodes.</summary>
     public string EmptyText = string.Empty;
 
     public CMUQueueTopologyControl()
@@ -536,13 +549,13 @@ public sealed class CMUQueueTopologyControl : Control
         return center + delta * MathF.Min(scaleX, scaleY);
     }
 
-    private static string ShortName(CMUQueueNodeInfo node)
+    private string ShortName(CMUQueueNodeInfo node)
     {
         var key = $"{node.Name}-short";
-        if (Loc.TryGetString(key, out var shortName))
+        if (_loc.TryGetString(key, out var shortName))
             return string.IsNullOrEmpty(node.Suffix) ? shortName : $"{shortName} {node.Suffix}";
 
-        var name = Loc.TryGetString(node.Name, out var fullName) ? fullName : node.Id;
+        var name = _loc.TryGetString(node.Name, out var fullName) ? fullName : node.Id;
         return string.IsNullOrEmpty(node.Suffix) ? name : $"{name} {node.Suffix}";
     }
 }

@@ -9,6 +9,8 @@ using Robust.Client.Graphics;
 using Robust.Client.UserInterface;
 using Robust.Client.UserInterface.Controls;
 using Robust.Client.UserInterface.CustomControls;
+using Robust.Shared.IoC;
+using Robust.Shared.Localization;
 using Robust.Shared.Utility;
 
 namespace Content.Client.CMU14.Robotics.QueueNetwork;
@@ -35,6 +37,7 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
     private readonly Label _budgetValue;
     private readonly Label _timeValue;
     private readonly Label _rewardValue;
+    private readonly ILocalizationManager _loc = IoCManager.Resolve<ILocalizationManager>();
 
     private CMUQueueNetworkConsoleState? _state;
     private string? _selectedNodeId;
@@ -128,7 +131,7 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
                 "cmu-queue-console-time-value",
                 ("left", state.TimeLeft),
                 ("total", state.InitialTime));
-            _rewardValue.Text = CrtConsoleKit.Money(state.Reward);
+            _rewardValue.Text = CrtConsoleKit.Money(state.Reward + state.Bonus);
         }
 
         if (state.Nodes.Count > 0
@@ -207,7 +210,12 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
         {
             var completed = _kit.Section(Loc.GetString("cmu-queue-console-completed"), out var completedColumn);
             completedColumn.AddChild(CrtConsoleKit.Wrapping(
-                Loc.GetString("cmu-queue-console-completed-hint", ("reward", state.Reward)),
+                Loc.GetString(
+                    state.Bonus > 0
+                        ? "cmu-queue-console-completed-hint-bonus"
+                        : "cmu-queue-console-completed-hint",
+                    ("reward", state.Reward + state.Bonus),
+                    ("bonus", state.Bonus)),
                 CrtTerminalPalette.Accent));
             _body.AddChild(completed);
         }
@@ -351,7 +359,7 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
                 ? node.UpgradeCost
                 : Math.Max(
                     1,
-                    (int) Math.Ceiling((target - node.ServiceRate) * node.CostPerMu - 0.0001));
+                    (int)Math.Ceiling((target - node.ServiceRate) * node.CostPerMu - 0.0001));
             var affordable = cost <= state.Budget;
             SetRichText(
                 costPreview,
@@ -538,7 +546,7 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
         {
             var queue = lastPoint != null && index < lastPoint.Queues.Count
                 ? lastPoint.Queues[index]
-                : (float) state.Nodes[index].Queue;
+                : (float)state.Nodes[index].Queue;
             legend.AddChild(_kit.Chip(
                 Loc.GetString(
                     "cmu-queue-console-legend-entry",
@@ -661,24 +669,24 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
         window.OpenCentered();
     }
 
-    private static string NodeName(CMUQueueNodeInfo node)
+    private string NodeName(CMUQueueNodeInfo node)
     {
         var name = LocOrKey(node.Name, node.Id);
         return string.IsNullOrEmpty(node.Suffix) ? name : $"{name} {node.Suffix}";
     }
 
-    private static string NodeName(CMUQueueNetworkConsoleState state, string nodeId)
+    private string NodeName(CMUQueueNetworkConsoleState state, string nodeId)
     {
         var node = state.Nodes.FirstOrDefault(candidate => candidate.Id == nodeId);
         return node == null ? nodeId : NodeName(node);
     }
 
-    private static string LocOrKey(string key, string fallback)
+    private string LocOrKey(string key, string fallback)
     {
         if (string.IsNullOrEmpty(key))
             return fallback;
 
-        return Loc.TryGetString(key, out var value) ? value : fallback;
+        return _loc.TryGetString(key, out var value) ? value : fallback;
     }
 
     private static void SetRichText(RichTextLabel label, string text, Color color)

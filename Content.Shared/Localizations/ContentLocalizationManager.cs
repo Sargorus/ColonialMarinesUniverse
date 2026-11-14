@@ -1,20 +1,23 @@
-using System;
+using System; // CMU14: StringComparison
 using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Content.Shared._RMC14.Localizations;
-using Robust.Shared;
-using Robust.Shared.Configuration;
+using Robust.Shared; // CMU14: LocCultureName
+using Robust.Shared.Configuration; // CMU14: IConfigurationManager
 using Robust.Shared.Utility;
 
 namespace Content.Shared.Localizations
 {
     public sealed partial class ContentLocalizationManager
     {
-        [Dependency] private ILocalizationManager _loc = default!;
+        // CMU14: read the configured locale instead of hardcoding en-US.
+        // CMU14: original hardcoded culture retained for downmerge:
+        // private const string Culture = "en-US";
         [Dependency] private IConfigurationManager _cfg = default!;
+        [Dependency] private ILocalizationManager _loc = default!;
 
-        private CultureInfo _culture = new("en-US");
+        private CultureInfo _culture = new("en-US"); // CMU14: set from loc.culture_name
 
         /// <summary>
         /// Custom format strings used for parsing and displaying minutes:seconds timespans.
@@ -29,9 +32,11 @@ namespace Content.Shared.Localizations
 
         public void Initialize()
         {
+            // CMU14 Localization Begin: honour loc.culture_name.
             _culture = new CultureInfo(_cfg.GetCVar(CVars.LocCultureName));
 
             _loc.LoadCulture(_culture);
+            AddFunctions(_culture);
 
             // The configured locale may not cover every string in this fork.
             // Keep English as a fallback so the rest of the game stays readable.
@@ -42,19 +47,9 @@ namespace Content.Shared.Localizations
                     _loc.LoadCulture(fallback);
 
                 _loc.SetFallbackCulture(fallback);
+                AddFunctions(fallback);
             }
-
-            _loc.AddFunction(_culture, "PRESSURE", FormatPressure);
-            _loc.AddFunction(_culture, "POWERWATTS", FormatPowerWatts);
-            _loc.AddFunction(_culture, "POWERJOULES", FormatPowerJoules);
-            // NOTE: ENERGYWATTHOURS() still takes a value in joules, but formats as watt-hours.
-            _loc.AddFunction(_culture, "ENERGYWATTHOURS", FormatEnergyWattHours);
-            _loc.AddFunction(_culture, "UNITS", FormatUnits);
-            _loc.AddFunction(_culture, "TOSTRING", args => FormatToString(_culture, args));
-            _loc.AddFunction(_culture, "LOC", FormatLoc);
-            _loc.AddFunction(_culture, "NATURALFIXED", FormatNaturalFixed);
-            _loc.AddFunction(_culture, "NATURALPERCENT", FormatNaturalPercent);
-            _loc.AddFunction(_culture, "PLAYTIME", FormatPlaytime);
+            // CMU14 End
 
             // RMC14
             IoCManager.Resolve<RMCLocalizationManager>().Initialize(_culture);
@@ -68,6 +63,23 @@ namespace Content.Shared.Localizations
 
             _loc.AddFunction(cultureEn, "MAKEPLURAL", FormatMakePlural);
             _loc.AddFunction(cultureEn, "MANY", FormatMany);
+        }
+
+        // CMU14 method: register content functions for every loaded culture,
+        // including the English fallback used by partial translations.
+        private void AddFunctions(CultureInfo culture)
+        {
+            _loc.AddFunction(culture, "PRESSURE", FormatPressure);
+            _loc.AddFunction(culture, "POWERWATTS", FormatPowerWatts);
+            _loc.AddFunction(culture, "POWERJOULES", FormatPowerJoules);
+            // NOTE: ENERGYWATTHOURS() still takes a value in joules, but formats as watt-hours.
+            _loc.AddFunction(culture, "ENERGYWATTHOURS", FormatEnergyWattHours);
+            _loc.AddFunction(culture, "UNITS", FormatUnits);
+            _loc.AddFunction(culture, "TOSTRING", args => FormatToString(culture, args));
+            _loc.AddFunction(culture, "LOC", FormatLoc);
+            _loc.AddFunction(culture, "NATURALFIXED", args => FormatNaturalFixed(culture, args));
+            _loc.AddFunction(culture, "NATURALPERCENT", args => FormatNaturalPercent(culture, args));
+            _loc.AddFunction(culture, "PLAYTIME", FormatPlaytime);
         }
 
         private ILocValue FormatMany(LocArgs args)
@@ -84,22 +96,25 @@ namespace Content.Shared.Localizations
             }
         }
 
-        private ILocValue FormatNaturalPercent(LocArgs args)
+        private ILocValue FormatNaturalPercent(CultureInfo culture, LocArgs args) // CMU14: culture parameter
         {
             var number = ((LocValueNumber) args.Args[0]).Value * 100;
             var maxDecimals = (int)Math.Floor(((LocValueNumber) args.Args[1]).Value);
-            var formatter = (NumberFormatInfo)NumberFormatInfo.GetInstance(_culture).Clone();
+            var formatter = (NumberFormatInfo)NumberFormatInfo.GetInstance(culture).Clone(); // CMU14: selected culture
             formatter.NumberDecimalDigits = maxDecimals;
-            return new LocValueString(string.Format(formatter, "{0:N}", number).TrimEnd('0').TrimEnd(char.Parse(formatter.NumberDecimalSeparator)) + "%");
+            var formatted = string.Format(formatter, "{0:N}", number);
+            var trimmed = formatted.TrimEnd('0').TrimEnd(char.Parse(formatter.NumberDecimalSeparator));
+            return new LocValueString(trimmed + "%");
         }
 
-        private ILocValue FormatNaturalFixed(LocArgs args)
+        private ILocValue FormatNaturalFixed(CultureInfo culture, LocArgs args) // CMU14: culture parameter
         {
             var number = ((LocValueNumber) args.Args[0]).Value;
             var maxDecimals = (int)Math.Floor(((LocValueNumber) args.Args[1]).Value);
-            var formatter = (NumberFormatInfo)NumberFormatInfo.GetInstance(_culture).Clone();
+            var formatter = (NumberFormatInfo)NumberFormatInfo.GetInstance(culture).Clone(); // CMU14: selected culture
             formatter.NumberDecimalDigits = maxDecimals;
-            return new LocValueString(string.Format(formatter, "{0:N}", number).TrimEnd('0').TrimEnd(char.Parse(formatter.NumberDecimalSeparator)));
+            var formatted = string.Format(formatter, "{0:N}", number);
+            return new LocValueString(formatted.TrimEnd('0').TrimEnd(char.Parse(formatter.NumberDecimalSeparator)));
         }
 
         private static readonly Regex PluralEsRule = new("^.*(s|sh|ch|x|z)$");

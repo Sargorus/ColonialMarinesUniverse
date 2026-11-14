@@ -10,6 +10,7 @@ using Robust.Client.ResourceManagement;
 using Robust.Client.UserInterface;
 using Robust.Client.UserInterface.Controls;
 using Robust.Shared.IoC;
+using Robust.Shared.Localization;
 using Robust.Shared.Maths;
 
 namespace Content.Client.CMU14.Robotics.QueueNetwork;
@@ -32,6 +33,7 @@ public sealed class CMUQueueHistoryControl : Control
     };
 
     private readonly Font _font;
+    private readonly ILocalizationManager _loc = IoCManager.Resolve<ILocalizationManager>();
     private IReadOnlyList<CMUQueueNodeInfo> _nodes = Array.Empty<CMUQueueNodeInfo>();
     private IReadOnlyList<CMUQueueHistoryInfo> _history = Array.Empty<CMUQueueHistoryInfo>();
     private int _elapsed;
@@ -233,9 +235,9 @@ public sealed class CMUQueueHistoryControl : Control
             color);
     }
 
-    private static string NodeName(CMUQueueNodeInfo node)
+    private string NodeName(CMUQueueNodeInfo node)
     {
-        var name = Loc.TryGetString(node.Name, out var fullName) ? fullName : node.Id;
+        var name = _loc.TryGetString(node.Name, out var fullName) ? fullName : node.Id;
         return string.IsNullOrEmpty(node.Suffix) ? name : $"{name} {node.Suffix}";
     }
 

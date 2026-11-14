@@ -130,9 +130,10 @@ public sealed class CMUQueueNetworkConsoleTest : GameTest
             {
                 Assert.That(comp.Completed, Is.True);
                 Assert.That(comp.Active, Is.False);
+                Assert.That(comp.Bonus, Is.EqualTo(CMUQueueNetworkMath.CalculateLeftoverBonus(comp.Budget)));
                 Assert.That(
                     SComp<CorporateConsoleComponent>(corporate).CorporateBudget,
-                    Is.EqualTo(budgetBefore + comp.Reward).Within(0.001));
+                    Is.EqualTo(budgetBefore + comp.Reward + comp.Bonus).Within(0.001));
             });
         });
     }
@@ -486,6 +487,7 @@ public sealed class CMUQueueNetworkConsoleTest : GameTest
                     15,
                     1200,
                     0,
+                    0,
                     1,
                     3,
                     3,
@@ -571,10 +573,16 @@ public sealed class CMUQueueNetworkConsoleTest : GameTest
             try
             {
                 loc.SetCulture(new CultureInfo("ru-RU"));
+                loc.SetFallbackCulture(new CultureInfo("en-US"));
                 Assert.That(loc.TryGetString("cmu-queue-console-title", out var title), Is.True);
                 Assert.That(title, Is.Not.EqualTo("cmu-queue-console-title"));
                 Assert.That(loc.TryGetString("cmu-queue-formulas-negative-p2", out var body), Is.True);
                 Assert.That(body, Is.Not.EqualTo("cmu-queue-formulas-negative-p2"));
+
+                // CMU14: the English fallback must have TOSTRING registered too.
+                Assert.That(
+                    loc.GetString("ui-options-value-percent", ("value", 0.5f)),
+                    Does.Contain("%"));
             }
             finally
             {

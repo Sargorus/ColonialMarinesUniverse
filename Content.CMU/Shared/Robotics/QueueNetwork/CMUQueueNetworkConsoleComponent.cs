@@ -44,6 +44,10 @@ public sealed partial class CMUQueueNetworkConsoleComponent : Component
     [ViewVariables]
     public int Reward;
 
+    /// <summary>Extra payout for the unused maintenance budget, set on completion.</summary>
+    [ViewVariables]
+    public int Bonus;
+
     /// <summary>Factory clock in minutes, advanced by analyses and projections.</summary>
     [ViewVariables]
     public int Elapsed;

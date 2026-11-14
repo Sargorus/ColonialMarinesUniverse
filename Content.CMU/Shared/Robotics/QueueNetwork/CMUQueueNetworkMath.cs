@@ -278,11 +278,24 @@ public static class CMUQueueNetworkMath
             }
 
             result.Add(new CMUQueueProjectionPoint(
-                step / (float) stepsPerMinute,
+                step / (float)stepsPerMinute,
                 new Dictionary<string, double>(queues, StringComparer.Ordinal)));
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Converts the unused part of a maintenance budget into a completion
+    /// bonus: half of the remainder, rounded down to a multiple of 50.
+    /// </summary>
+    public static int CalculateLeftoverBonus(int remainingBudget)
+    {
+        if (remainingBudget <= 0)
+            return 0;
+
+        var half = remainingBudget / 2.0;
+        return (int)(Math.Floor(half / 50.0) * 50);
     }
 
     private static bool SolveLinearSystem(double[,] matrix, int count, out string error)

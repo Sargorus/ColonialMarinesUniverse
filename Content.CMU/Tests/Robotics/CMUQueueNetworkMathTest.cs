@@ -82,6 +82,16 @@ public sealed class CMUQueueNetworkMathTest
     }
 
     [Test]
+    public void LeftoverBudgetBonusRoundsHalfDownToFifty()
+    {
+        Assert.That(CMUQueueNetworkMath.CalculateLeftoverBonus(278), Is.EqualTo(100));
+        Assert.That(CMUQueueNetworkMath.CalculateLeftoverBonus(198), Is.EqualTo(50));
+        Assert.That(CMUQueueNetworkMath.CalculateLeftoverBonus(139), Is.EqualTo(50));
+        Assert.That(CMUQueueNetworkMath.CalculateLeftoverBonus(99), Is.EqualTo(0));
+        Assert.That(CMUQueueNetworkMath.CalculateLeftoverBonus(0), Is.EqualTo(0));
+    }
+
+    [Test]
     public void OverloadedNodeHasNegativeSteadyStateValues()
     {
         var metrics = CMUQueueNetworkMath.ComputeMetrics(9, 7);
@@ -241,7 +251,7 @@ public sealed class CMUQueueNetworkMathTest
                 var costPerRate = node.UpgradeCost / (maxRate - node.ServiceRate);
                 minimumCost += Math.Max(
                     1,
-                    (int) Math.Ceiling((target - node.ServiceRate) * costPerRate - 0.0001));
+                    (int)Math.Ceiling((target - node.ServiceRate) * costPerRate - 0.0001));
             }
 
             Assert.That(

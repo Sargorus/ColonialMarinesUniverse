@@ -69,6 +69,7 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         comp.TimeLeft = network.DiagnosticMinutes;
         comp.InitialTime = network.DiagnosticMinutes;
         comp.Reward = network.Reward;
+        comp.Bonus = 0;
         comp.Elapsed = 0;
         comp.Status = Loc.GetString(
             "cmu-queue-status-started",
@@ -216,7 +217,7 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         var costPerRate = node.UpgradeCost / (maxRate - baseRate);
         var cost = Math.Abs(target - maxRate) < 0.001
             ? node.UpgradeCost
-            : (int) Math.Ceiling((target - runtime.ServiceRate) * costPerRate - 0.0001);
+            : (int)Math.Ceiling((target - runtime.ServiceRate) * costPerRate - 0.0001);
         cost = Math.Max(1, cost);
 
         if (comp.Budget < cost)
@@ -364,7 +365,7 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
             var current = comp.BypassFractions.GetValueOrDefault(bypass.Id);
             var steps = bypass.StepFraction <= 0
                 ? 0
-                : (int) Math.Round(current / bypass.StepFraction);
+                : (int)Math.Round(current / bypass.StepFraction);
             refund += steps * bypass.CostPerStep;
             comp.BypassFractions[bypass.Id] = 0;
         }
@@ -489,13 +490,17 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
 
         if (unstable.Count == 0)
         {
-            _corporateConsole.AddToCorporateBudget(comp.Reward);
+            var bonus = CMUQueueNetworkMath.CalculateLeftoverBonus(comp.Budget);
+            var payout = comp.Reward + bonus;
+            _corporateConsole.AddToCorporateBudget(payout);
+            comp.Bonus = bonus;
             comp.Completed = true;
-                comp.Active = false;
+            comp.Active = false;
             comp.CompletedContracts++;
             comp.Status = Loc.GetString(
-                "cmu-queue-status-complete",
-                ("reward", comp.Reward));
+                bonus > 0 ? "cmu-queue-status-complete-bonus" : "cmu-queue-status-complete",
+                ("reward", payout),
+                ("bonus", bonus));
             comp.StatusKind = CMUQueueStatusKind.Good;
         }
         else
@@ -754,6 +759,7 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
                 comp.TimeLeft,
                 comp.InitialTime,
                 comp.Reward,
+                comp.Bonus,
                 comp.Elapsed,
                 network?.AnalysisCost ?? 1,
                 network?.ProjectionCost ?? 3,

@@ -197,6 +197,7 @@ public sealed class CMUQueueNetworkConsoleState : BoundUserInterfaceState
     public int TimeLeft { get; }
     public int InitialTime { get; }
     public int Reward { get; }
+    public int Bonus { get; }
     public int Elapsed { get; }
     public int AnalysisCost { get; }
     public int ProjectionCost { get; }
@@ -218,6 +219,7 @@ public sealed class CMUQueueNetworkConsoleState : BoundUserInterfaceState
         int timeLeft,
         int initialTime,
         int reward,
+        int bonus,
         int elapsed,
         int analysisCost,
         int projectionCost,
@@ -238,6 +240,7 @@ public sealed class CMUQueueNetworkConsoleState : BoundUserInterfaceState
         TimeLeft = timeLeft;
         InitialTime = initialTime;
         Reward = reward;
+        Bonus = bonus;
         Elapsed = elapsed;
         AnalysisCost = analysisCost;
         ProjectionCost = projectionCost;
