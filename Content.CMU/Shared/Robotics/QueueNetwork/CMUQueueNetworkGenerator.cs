@@ -94,6 +94,12 @@ public static class CMUQueueNetworkGenerator
         AddRoute(network, processors == 1 ? "processor1" : $"processor{processors}", "packaging", 1);
         AddRoute(network, "packaging", "sink", 1);
 
+        for (var index = 0; index < network.Nodes.Count; index++)
+        {
+            network.Nodes[index].Column = index;
+            network.Nodes[index].Row = 0;
+        }
+
         return network;
     }
 
@@ -119,6 +125,12 @@ public static class CMUQueueNetworkGenerator
         AddRoute(network, "qc", "packaging", 1);
         AddRoute(network, "packaging", "sink", 1);
 
+        SetPosition(network, "intake", 0, 1);
+        SetPosition(network, "processor", 1, 0);
+        SetPosition(network, "assembler", 2, 0);
+        SetPosition(network, "qc", 3, 0);
+        SetPosition(network, "packaging", 4, 1);
+
         return network;
     }
 
@@ -143,6 +155,12 @@ public static class CMUQueueNetworkGenerator
         AddRoute(network, "processorB", "merge", 1);
         AddRoute(network, "merge", "packaging", 1);
         AddRoute(network, "packaging", "sink", 1);
+
+        SetPosition(network, "intake", 0, 1);
+        SetPosition(network, "processorA", 1, 0);
+        SetPosition(network, "processorB", 1, 2);
+        SetPosition(network, "merge", 2, 1);
+        SetPosition(network, "packaging", 3, 1);
 
         AddBypass(network, "intake", "processorB");
 
@@ -172,6 +190,13 @@ public static class CMUQueueNetworkGenerator
         AddRoute(network, "lineA2", "merge", 1);
         AddRoute(network, "lineB2", "merge", 1);
         AddRoute(network, "merge", "sink", 1);
+
+        SetPosition(network, "intake", 0, 1);
+        SetPosition(network, "lineA1", 1, 0);
+        SetPosition(network, "lineA2", 2, 0);
+        SetPosition(network, "lineB1", 1, 2);
+        SetPosition(network, "lineB2", 2, 2);
+        SetPosition(network, "merge", 3, 1);
 
         AddBypass(network, "intake", "lineB1");
 
@@ -227,14 +252,14 @@ public static class CMUQueueNetworkGenerator
         // player has a plausible wrong suspect to rule out.
         EnsureRedHerring(network, rates, bottleneckIds, random);
 
-        var solutionCost = network.Nodes
+        var minimumCost = network.Nodes
             .Where(node => bottleneckIds.Contains(node.Id))
-            .Sum(node => node.UpgradeCost);
+            .Sum(node => GetMinimumStableCost(node, rates[node.Id]));
 
         network.Budget = RoundTo50(
-            Math.Max(400, solutionCost * (1.25 + random.NextDouble() * 0.35)));
+            Math.Max(300, minimumCost * (1.1 + random.NextDouble() * 0.25)));
         network.Reward = RoundTo50(
-            Math.Max(800, 600 + solutionCost + random.Next(0, 400)));
+            Math.Max(700, 500 + minimumCost + random.Next(0, 300)));
         network.DiagnosticMinutes = 15;
         network.AnalysisCost = 1;
         network.ProjectionCost = 3;
@@ -243,7 +268,7 @@ public static class CMUQueueNetworkGenerator
         if (stableNodes == 0)
             return false;
 
-        if (network.Budget < solutionCost + 100)
+        if (network.Budget < minimumCost + 50)
             return false;
 
         foreach (var node in network.Nodes)
@@ -254,9 +279,8 @@ public static class CMUQueueNetworkGenerator
             if (isBottleneck && metrics.Stable)
                 return false;
 
-            var upgraded = CMUQueueNetworkMath.ComputeMetrics(
-                lambda,
-                node.ServiceRate * node.UpgradeMultiplier);
+            var maxRate = node.ServiceRate * Math.Pow(node.UpgradeMultiplier, node.MaxUpgrades);
+            var upgraded = CMUQueueNetworkMath.ComputeMetrics(lambda, maxRate);
             if (isBottleneck && !upgraded.Stable)
                 return false;
         }
@@ -297,6 +321,19 @@ public static class CMUQueueNetworkGenerator
             Math.Round(rates[candidate.Id] / (0.8 + random.NextDouble() * 0.1), 2));
     }
 
+    private static int GetMinimumStableCost(CMUQueueNodeDefinition node, double lambda)
+    {
+        var maxRate = node.ServiceRate * Math.Pow(node.UpgradeMultiplier, node.MaxUpgrades);
+        if (maxRate <= node.ServiceRate + 0.001)
+            return node.UpgradeCost;
+
+        var target = Math.Min(maxRate, lambda * 1.02);
+        var costPerRate = node.UpgradeCost / (maxRate - node.ServiceRate);
+        return Math.Max(
+            1,
+            (int) Math.Ceiling((target - node.ServiceRate) * costPerRate - 0.0001));
+    }
+
     private static CMUQueueNetworkDefinition BuildFallback(int seed)
     {
         var network = NewNetwork(
@@ -310,6 +347,10 @@ public static class CMUQueueNetworkGenerator
         AddRoute(network, "intake", "processor", 1);
         AddRoute(network, "processor", "packaging", 1);
         AddRoute(network, "packaging", "sink", 1);
+
+        SetPosition(network, "intake", 0, 0);
+        SetPosition(network, "processor", 1, 0);
+        SetPosition(network, "packaging", 2, 0);
 
         network.Seed = seed;
         network.Topology = CMUQueueTopologyKind.Line;
@@ -349,6 +390,20 @@ public static class CMUQueueNetworkGenerator
             Name = name,
             Suffix = suffix,
         });
+    }
+
+    private static void SetPosition(
+        CMUQueueNetworkDefinition network,
+        string id,
+        int column,
+        int row)
+    {
+        var node = network.Nodes.FirstOrDefault(candidate => candidate.Id == id);
+        if (node == null)
+            return;
+
+        node.Column = column;
+        node.Row = row;
     }
 
     private static void AddSource(CMUQueueNetworkDefinition network, string node, double rate)

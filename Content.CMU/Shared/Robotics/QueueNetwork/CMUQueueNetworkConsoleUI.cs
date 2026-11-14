@@ -24,12 +24,15 @@ public sealed class CMUQueueNodeInfo
     public string Name { get; }
     public string Suffix { get; }
     public double ServiceRate { get; }
+    public double BaseServiceRate { get; }
+    public double MaxServiceRate { get; }
     public double ExternalRate { get; }
     public double Queue { get; }
-    public int Upgrades { get; }
-    public int MaxUpgrades { get; }
+    public int Invested { get; }
+    public double CostPerMu { get; }
     public int UpgradeCost { get; }
-    public double UpgradeMultiplier { get; }
+    public int Column { get; }
+    public int Row { get; }
     public bool Analyzed { get; }
     public double Lambda { get; }
     public double Rho { get; }
@@ -44,12 +47,15 @@ public sealed class CMUQueueNodeInfo
         string name,
         string suffix,
         double serviceRate,
+        double baseServiceRate,
+        double maxServiceRate,
         double externalRate,
         double queue,
-        int upgrades,
-        int maxUpgrades,
+        int invested,
+        double costPerMu,
         int upgradeCost,
-        double upgradeMultiplier,
+        int column,
+        int row,
         bool analyzed,
         double lambda,
         double rho,
@@ -63,12 +69,15 @@ public sealed class CMUQueueNodeInfo
         Name = name;
         Suffix = suffix;
         ServiceRate = serviceRate;
+        BaseServiceRate = baseServiceRate;
+        MaxServiceRate = maxServiceRate;
         ExternalRate = externalRate;
         Queue = queue;
-        Upgrades = upgrades;
-        MaxUpgrades = maxUpgrades;
+        Invested = invested;
+        CostPerMu = costPerMu;
         UpgradeCost = upgradeCost;
-        UpgradeMultiplier = upgradeMultiplier;
+        Column = column;
+        Row = row;
         Analyzed = analyzed;
         Lambda = lambda;
         Rho = rho;
@@ -134,10 +143,10 @@ public sealed class CMUQueueBypassInfo
 [Serializable, NetSerializable]
 public sealed class CMUQueueHistoryInfo
 {
-    public int Minute { get; }
+    public float Minute { get; }
     public List<float> Queues { get; }
 
-    public CMUQueueHistoryInfo(int minute, List<float> queues)
+    public CMUQueueHistoryInfo(float minute, List<float> queues)
     {
         Minute = minute;
         Queues = queues;
@@ -214,9 +223,11 @@ public sealed class CMUQueueAnalyzeNodeMessage(string nodeId) : BoundUserInterfa
 }
 
 [Serializable, NetSerializable]
-public sealed class CMUQueueUpgradeNodeMessage(string nodeId) : BoundUserInterfaceMessage
+public sealed class CMUQueueSetServiceRateMessage(string nodeId, double targetServiceRate)
+    : BoundUserInterfaceMessage
 {
     public string NodeId { get; } = nodeId;
+    public double TargetServiceRate { get; } = targetServiceRate;
 }
 
 [Serializable, NetSerializable]

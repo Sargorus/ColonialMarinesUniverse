@@ -266,22 +266,19 @@ public static class CMUQueueNetworkMath
         stepsPerMinute = Math.Max(1, stepsPerMinute);
         var dt = 1.0 / stepsPerMinute;
 
-        for (var minute = 1; minute <= minutes; minute++)
+        for (var step = 1; step <= minutes * stepsPerMinute; step++)
         {
-            for (var step = 0; step < stepsPerMinute; step++)
+            foreach (var node in network.Nodes)
             {
-                foreach (var node in network.Nodes)
-                {
-                    var lambda = arrivalRates.TryGetValue(node.Id, out var arrival) ? arrival : 0;
-                    var mu = serviceRates.TryGetValue(node.Id, out var service) ? service : 0;
-                    var queue = queues[node.Id];
-                    queue += (lambda - mu) * dt;
-                    queues[node.Id] = Math.Max(0, queue);
-                }
+                var lambda = arrivalRates.TryGetValue(node.Id, out var arrival) ? arrival : 0;
+                var mu = serviceRates.TryGetValue(node.Id, out var service) ? service : 0;
+                var queue = queues[node.Id];
+                queue += (lambda - mu) * dt;
+                queues[node.Id] = Math.Max(0, queue);
             }
 
             result.Add(new CMUQueueProjectionPoint(
-                minute,
+                step / (float) stepsPerMinute,
                 new Dictionary<string, double>(queues, StringComparer.Ordinal)));
         }
 
@@ -354,5 +351,5 @@ public readonly record struct CMUQueueMetrics(
     bool Stable);
 
 public sealed record CMUQueueProjectionPoint(
-    int Minute,
+    float Minute,
     IReadOnlyDictionary<string, double> Queues);

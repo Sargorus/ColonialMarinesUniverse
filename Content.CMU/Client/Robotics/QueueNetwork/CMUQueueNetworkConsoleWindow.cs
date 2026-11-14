@@ -20,7 +20,7 @@ namespace Content.Client.CMU14.Robotics.QueueNetwork;
 public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
 {
     public event Action<string>? OnAnalyze;
-    public event Action<string>? OnUpgrade;
+    public event Action<string, double>? OnSetServiceRate;
     public event Action<string>? OnReroute;
     public event Action? OnProject;
     public event Action? OnSubmit;
@@ -209,6 +209,7 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
             _body.AddChild(completed);
         }
 
+        _body.AddChild(BuildTopology(state));
         _body.AddChild(BuildProjection(state));
         _body.AddChild(BuildNodeList(state));
 
@@ -268,9 +269,17 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
 
         var grid = NewFieldGrid();
         AddField(grid, Loc.GetString("cmu-queue-console-service"), FormatRate(node.ServiceRate));
+        AddField(
+            grid,
+            Loc.GetString("cmu-queue-console-rate-range"),
+            Loc.GetString(
+                "cmu-queue-console-rate-range-value",
+                ("base", FormatRate(node.BaseServiceRate)),
+                ("max", FormatRate(node.MaxServiceRate))));
+        AddField(grid, Loc.GetString("cmu-queue-console-invested"), CrtConsoleKit.Money(node.Invested));
+        AddField(grid, Loc.GetString("cmu-queue-console-full-upgrade"), CrtConsoleKit.Money(node.UpgradeCost));
         AddField(grid, Loc.GetString("cmu-queue-console-external"), FormatRate(node.ExternalRate));
         AddField(grid, Loc.GetString("cmu-queue-console-queue"), FormatNumber(node.Queue));
-        AddField(grid, Loc.GetString("cmu-queue-console-upgrades"), $"{node.Upgrades}/{node.MaxUpgrades}");
         column.AddChild(grid);
 
         if (node.Analyzed)
@@ -302,9 +311,11 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
         }
         else
         {
-            column.AddChild(CrtConsoleKit.Wrapping(
+            var noData = CrtConsoleKit.Wrapping(
                 Loc.GetString("cmu-queue-console-no-data"),
-                CrtTerminalPalette.TextDim));
+                CrtTerminalPalette.TextDim);
+            noData.Margin = new Thickness(0, 6, 0, 0);
+            column.AddChild(noData);
 
             var analyze = _kit.Button(
                 Loc.GetString(
@@ -316,20 +327,71 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
             column.AddChild(analyze);
         }
 
-        var newRate = node.ServiceRate * node.UpgradeMultiplier;
-        var upgradeText = node.Upgrades >= node.MaxUpgrades
-            ? Loc.GetString("cmu-queue-console-max-upgrades")
-            : Loc.GetString(
-                "cmu-queue-console-upgrade",
-                ("rate", FormatRate(newRate)),
-                ("cost", CrtConsoleKit.Money(node.UpgradeCost)));
+        var rateRow = CrtConsoleKit.Row(6);
+        var rateEdit = new LineEdit
+        {
+            Text = node.ServiceRate.ToString("0.##", CultureInfo.CurrentCulture),
+            HorizontalExpand = true,
+            MinSize = new Vector2(100, 0),
+        };
+        var costPreview = CrtConsoleKit.Wrapping(string.Empty, CrtTerminalPalette.TextDim);
+        var apply = _kit.Button(
+            Loc.GetString("cmu-queue-console-set-rate"),
+            CmuButtonStyles.Variant.Affirm);
+        var max = _kit.Button(
+            Loc.GetString("cmu-queue-console-set-rate-max"),
+            CmuButtonStyles.Variant.Neutral);
 
-        var upgrade = _kit.Button(upgradeText, CmuButtonStyles.Variant.Affirm);
-        upgrade.Disabled = !state.Active
-                           || node.Upgrades >= node.MaxUpgrades
-                           || state.Budget < node.UpgradeCost;
-        upgrade.OnPressed += _ => OnUpgrade?.Invoke(node.Id);
-        column.AddChild(upgrade);
+        void UpdatePreview()
+        {
+            if (!TryParseRate(rateEdit.Text, out var target)
+                || target <= node.ServiceRate + 0.001)
+            {
+                SetRichText(
+                    costPreview,
+                    Loc.GetString("cmu-queue-console-set-rate-invalid"),
+                    CrtTerminalPalette.TextDim);
+                apply.Disabled = true;
+                return;
+            }
+
+            target = Math.Min(target, node.MaxServiceRate);
+            var cost = target >= node.MaxServiceRate - 0.001
+                ? node.UpgradeCost
+                : Math.Max(
+                    1,
+                    (int) Math.Ceiling((target - node.ServiceRate) * node.CostPerMu - 0.0001));
+            var affordable = cost <= state.Budget;
+            SetRichText(
+                costPreview,
+                Loc.GetString(
+                    "cmu-queue-console-set-rate-cost",
+                    ("cost", CrtConsoleKit.Money(cost))),
+                affordable ? CrtTerminalPalette.TextDim : CrtTerminalPalette.Alert);
+            apply.Disabled = !state.Active || !affordable;
+        }
+
+        rateEdit.OnTextChanged += _ => UpdatePreview();
+        apply.OnPressed += _ =>
+        {
+            if (!TryParseRate(rateEdit.Text, out var target))
+                return;
+
+            OnSetServiceRate?.Invoke(node.Id, Math.Min(target, node.MaxServiceRate));
+        };
+        max.OnPressed += _ =>
+        {
+            rateEdit.Text = node.MaxServiceRate.ToString("0.##", CultureInfo.CurrentCulture);
+            UpdatePreview();
+        };
+
+        rateRow.AddChild(rateEdit);
+        rateRow.AddChild(apply);
+        rateRow.AddChild(max);
+        column.AddChild(new Control { MinHeight = 4 });
+        column.AddChild(rateRow);
+        column.AddChild(costPreview);
+        UpdatePreview();
 
         return section;
     }
@@ -404,6 +466,21 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
         return section;
     }
 
+    private PanelContainer BuildTopology(CMUQueueNetworkConsoleState state)
+    {
+        var section = _kit.Section(Loc.GetString("cmu-queue-console-schematic"), out var column);
+        var topology = new CMUQueueTopologyControl
+        {
+            EmptyText = Loc.GetString("cmu-queue-console-schematic-empty"),
+        };
+        topology.SetData(state.Nodes, state.Routes, state.Bypasses);
+        column.AddChild(topology);
+        column.AddChild(CrtConsoleKit.Wrapping(
+            Loc.GetString("cmu-queue-console-schematic-hint"),
+            CrtTerminalPalette.TextDim));
+        return section;
+    }
+
     private PanelContainer BuildProjection(CMUQueueNetworkConsoleState state)
     {
         var section = _kit.Section(Loc.GetString("cmu-queue-console-projection"), out var column);
@@ -411,10 +488,15 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
         var graph = new CMUQueueHistoryControl
         {
             EmptyText = Loc.GetString("cmu-queue-console-no-projection"),
+            MinHeight = 220,
         };
         graph.SetData(state.Nodes, state.History, state.Elapsed);
+        column.AddChild(CrtConsoleKit.Wrapping(
+            Loc.GetString("cmu-queue-console-projection-caption"),
+            CrtTerminalPalette.TextDim));
         column.AddChild(graph);
 
+        var lastPoint = state.History.LastOrDefault();
         var legend = new GridContainer
         {
             Columns = Math.Max(1, Math.Min(2, state.Nodes.Count)),
@@ -422,12 +504,21 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
         };
         for (var index = 0; index < state.Nodes.Count; index++)
         {
+            var queue = lastPoint != null && index < lastPoint.Queues.Count
+                ? lastPoint.Queues[index]
+                : (float) state.Nodes[index].Queue;
             legend.AddChild(_kit.Chip(
-                NodeName(state.Nodes[index]),
+                Loc.GetString(
+                    "cmu-queue-console-legend-entry",
+                    ("name", NodeName(state.Nodes[index])),
+                    ("queue", FormatShort(queue))),
                 CMUQueueHistoryControl.ColorFor(index)));
         }
 
         column.AddChild(legend);
+        column.AddChild(CrtConsoleKit.Wrapping(
+            Loc.GetString("cmu-queue-console-projection-hint"),
+            CrtTerminalPalette.TextDim));
 
         var project = _kit.Button(
             Loc.GetString(
@@ -528,6 +619,21 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
             return fallback;
 
         return Loc.TryGetString(key, out var value) ? value : fallback;
+    }
+
+    private static void SetRichText(RichTextLabel label, string text, Color color)
+    {
+        var message = new FormattedMessage();
+        message.PushColor(color);
+        message.AddText(text);
+        message.Pop();
+        label.SetMessage(message);
+    }
+
+    private static bool TryParseRate(string text, out double rate)
+    {
+        return double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out rate)
+               || double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out rate);
     }
 
     private static string FormatNumber(double value)

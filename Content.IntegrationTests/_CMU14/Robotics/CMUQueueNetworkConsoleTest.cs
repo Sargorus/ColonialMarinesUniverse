@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Content.Client.CMU14.Robotics.QueueNetwork;
 using Content.IntegrationTests.Fixtures;
@@ -95,7 +97,7 @@ public sealed class CMUQueueNetworkConsoleTest : GameTest
         });
 
         foreach (var nodeId in unstableIds)
-            await Send(consoleNet, new CMUQueueUpgradeNodeMessage(nodeId));
+            await SetStableRate(console, consoleNet, nodeId);
 
         await Server.WaitAssertion(() =>
         {
@@ -183,7 +185,7 @@ public sealed class CMUQueueNetworkConsoleTest : GameTest
         Assert.That(unstableIds, Has.Count.EqualTo(2));
 
         foreach (var nodeId in unstableIds)
-            await Send(consoleNet, new CMUQueueUpgradeNodeMessage(nodeId));
+            await SetStableRate(console, consoleNet, nodeId);
 
         await Send(consoleNet, new CMUQueueSubmitMessage());
         await Server.WaitAssertion(() =>
@@ -342,9 +344,20 @@ public sealed class CMUQueueNetworkConsoleTest : GameTest
 
         await Client.WaitPost(() =>
         {
-            var window = new CMUQueueFormulasWindow();
-            window.OpenCentered();
-            window.Close();
+            var loc = Client.ResolveDependency<ILocalizationManager>();
+            var original = CultureInfo.CurrentCulture;
+
+            try
+            {
+                loc.SetCulture(new CultureInfo("ru-RU"));
+                var window = new CMUQueueFormulasWindow();
+                window.OpenCentered();
+                window.Close();
+            }
+            finally
+            {
+                loc.SetCulture(original);
+            }
         });
     }
 
@@ -393,13 +406,14 @@ public sealed class CMUQueueNetworkConsoleTest : GameTest
             bypassId = comp.Network.Bypasses[0].Id;
         });
 
-        await Send(consoleNet, new CMUQueueUpgradeNodeMessage(nodeId));
+        await Send(consoleNet, new CMUQueueSetServiceRateMessage(nodeId, baseRate + 0.5));
         await Send(consoleNet, new CMUQueueRerouteMessage(bypassId));
         await Server.WaitAssertion(() =>
         {
             var comp = SComp<CMUQueueNetworkConsoleComponent>(console);
             Assert.That(comp.Budget, Is.LessThan(2000));
-            Assert.That(comp.Nodes[nodeId].Upgrades, Is.EqualTo(1));
+            Assert.That(comp.Nodes[nodeId].Invested, Is.GreaterThan(0));
+            Assert.That(comp.Nodes[nodeId].ServiceRate, Is.GreaterThan(baseRate));
             Assert.That(comp.BypassFractions[bypassId], Is.GreaterThan(0));
         });
 
@@ -410,7 +424,7 @@ public sealed class CMUQueueNetworkConsoleTest : GameTest
             Assert.Multiple(() =>
             {
                 Assert.That(comp.Budget, Is.EqualTo(2000));
-                Assert.That(comp.Nodes[nodeId].Upgrades, Is.EqualTo(0));
+                Assert.That(comp.Nodes[nodeId].Invested, Is.EqualTo(0));
                 Assert.That(comp.Nodes[nodeId].ServiceRate, Is.EqualTo(baseRate).Within(0.001));
                 Assert.That(comp.BypassFractions[bypassId], Is.EqualTo(0).Within(0.001));
             });
@@ -422,55 +436,150 @@ public sealed class CMUQueueNetworkConsoleTest : GameTest
     {
         await Client.WaitPost(() =>
         {
-            var state = new CMUQueueNetworkConsoleState(
-                true,
-                false,
-                "status",
-                CMUQueueStatusKind.Neutral,
-                "cmu-queue-network-branch-name",
-                "cmu-queue-network-branch-desc",
-                800,
-                15,
-                15,
-                1200,
-                0,
-                1,
-                3,
-                3,
-                new List<CMUQueueNodeInfo>
-                {
-                    new(
-                        "long",
-                        "cmu-queue-console-idle-desc",
-                        "LONG-SUFFIX",
-                        12,
-                        10,
-                        0,
-                        0,
-                        1,
-                        250,
-                        1.5,
-                        false,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        false),
-                },
-                new List<CMUQueueRouteInfo>
-                {
-                    new("long", "sink", 1),
-                },
-                new List<CMUQueueBypassInfo>(),
-                new List<CMUQueueHistoryInfo>());
+            var loc = Client.ResolveDependency<ILocalizationManager>();
+            var original = CultureInfo.CurrentCulture;
 
-            var window = new CMUQueueNetworkConsoleWindow();
-            window.UpdateState(state);
-            window.OpenCentered();
-            window.Close();
+            try
+            {
+                loc.SetCulture(new CultureInfo("ru-RU"));
+                var history = new List<CMUQueueHistoryInfo>();
+                for (var step = 0; step <= 12; step++)
+                {
+                    var minute = step * 0.25f;
+                    var queue = Math.Min(6f, step * 0.5f);
+                    history.Add(new CMUQueueHistoryInfo(minute, new List<float> { queue, 0f }));
+                }
+
+                var state = new CMUQueueNetworkConsoleState(
+                    true,
+                    false,
+                    "status",
+                    CMUQueueStatusKind.Neutral,
+                    "cmu-queue-network-branch-name",
+                    "cmu-queue-network-branch-desc",
+                    800,
+                    15,
+                    15,
+                    1200,
+                    0,
+                    1,
+                    3,
+                    3,
+                    new List<CMUQueueNodeInfo>
+                    {
+                        new(
+                            "long",
+                            "cmu-queue-node-intake",
+                            "LONG-SUFFIX",
+                            12,
+                            10,
+                            20,
+                            10,
+                            6,
+                            250,
+                            12.5,
+                            250,
+                            0,
+                            1,
+                            true,
+                            9,
+                            0.75,
+                            3,
+                            2.25,
+                            0.33,
+                            0.25,
+                            true),
+                        new(
+                            "second",
+                            "cmu-queue-node-processor",
+                            "A",
+                            8,
+                            8,
+                            12,
+                            0,
+                            0,
+                            0,
+                            12.5,
+                            250,
+                            1,
+                            0,
+                            false,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            false),
+                    },
+                    new List<CMUQueueRouteInfo>
+                    {
+                        new("long", "second", 1),
+                        new("second", "sink", 1),
+                    },
+                    new List<CMUQueueBypassInfo>
+                    {
+                        new("long-second", "long", "second", 0.1, 0.3, 0.1, 100, true, false),
+                    },
+                    history);
+
+                var window = new CMUQueueNetworkConsoleWindow();
+                window.UpdateState(state);
+                window.OpenCentered();
+                window.Close();
+            }
+            finally
+            {
+                loc.SetCulture(original);
+            }
         });
+    }
+
+    [Test]
+    public async Task RussianKeysAreLocalized()
+    {
+        await Server.WaitAssertion(() =>
+        {
+            var loc = Server.ResolveDependency<ILocalizationManager>();
+            var original = CultureInfo.CurrentCulture;
+
+            try
+            {
+                loc.SetCulture(new CultureInfo("ru-RU"));
+                Assert.That(loc.TryGetString("cmu-queue-console-title", out var title), Is.True);
+                Assert.That(title, Is.Not.EqualTo("cmu-queue-console-title"));
+                Assert.That(loc.TryGetString("cmu-queue-formulas-negative-p2", out var body), Is.True);
+                Assert.That(body, Is.Not.EqualTo("cmu-queue-formulas-negative-p2"));
+            }
+            finally
+            {
+                loc.SetCulture(original);
+            }
+        });
+    }
+
+    private async Task SetStableRate(EntityUid console, NetEntity consoleNet, string nodeId)
+    {
+        var target = 0.0;
+        await Server.WaitAssertion(() =>
+        {
+            var comp = SComp<CMUQueueNetworkConsoleComponent>(console);
+            var network = comp.Network!;
+            Assert.That(
+                CMUQueueNetworkMath.TrySolveArrivalRates(
+                    network,
+                    comp.BypassFractions,
+                    out var rates,
+                    out var error),
+                Is.True,
+                error);
+
+            var node = network.Nodes.First(candidate => candidate.Id == nodeId);
+            var maxRate = node.ServiceRate * Math.Pow(node.UpgradeMultiplier, node.MaxUpgrades);
+            target = Math.Min(maxRate, rates[nodeId] * 1.02);
+        });
+
+        await Send(consoleNet, new CMUQueueSetServiceRateMessage(nodeId, target));
     }
 
     private async Task Send(NetEntity console, BoundUserInterfaceMessage message)

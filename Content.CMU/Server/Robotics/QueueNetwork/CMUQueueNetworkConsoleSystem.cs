@@ -31,7 +31,7 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         Subs.BuiEvents<CMUQueueNetworkConsoleComponent>(CMUQueueNetworkConsoleUiKey.Key, subs =>
         {
             subs.Event<CMUQueueAnalyzeNodeMessage>(OnAnalyzeNode);
-            subs.Event<CMUQueueUpgradeNodeMessage>(OnUpgradeNode);
+            subs.Event<CMUQueueSetServiceRateMessage>(OnSetServiceRate);
             subs.Event<CMUQueueRerouteMessage>(OnReroute);
             subs.Event<CMUQueueProjectMessage>(OnProject);
             subs.Event<CMUQueueSubmitMessage>(OnSubmit);
@@ -163,7 +163,7 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         UpdateUi(ent);
     }
 
-    private void OnUpgradeNode(Entity<CMUQueueNetworkConsoleComponent> ent, ref CMUQueueUpgradeNodeMessage args)
+    private void OnSetServiceRate(Entity<CMUQueueNetworkConsoleComponent> ent, ref CMUQueueSetServiceRateMessage args)
     {
         var comp = ent.Comp;
         if (!TryGetActive(ent, out var network))
@@ -182,16 +182,43 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
             return;
         }
 
-        if (runtime.Upgrades >= node.MaxUpgrades)
+        var baseRate = node.ServiceRate;
+        var maxRate = baseRate * Math.Pow(node.UpgradeMultiplier, node.MaxUpgrades);
+        if (!double.IsFinite(maxRate) || maxRate <= baseRate + 0.001)
         {
-            comp.Status = Loc.GetString(
-                "cmu-queue-status-max-upgrades",
-                ("node", NodeName(network, nodeId)));
+            comp.Status = Loc.GetString("cmu-queue-status-error", ("error", "invalid service-rate range"));
+            comp.StatusKind = CMUQueueStatusKind.Bad;
             UpdateUi(ent);
             return;
         }
 
-        if (comp.Budget < node.UpgradeCost)
+        var target = Math.Round(args.TargetServiceRate, 2);
+        if (!double.IsFinite(target))
+        {
+            comp.Status = Loc.GetString("cmu-queue-status-rate-invalid");
+            comp.StatusKind = CMUQueueStatusKind.Bad;
+            UpdateUi(ent);
+            return;
+        }
+
+        target = Math.Clamp(target, runtime.ServiceRate, maxRate);
+        if (target <= runtime.ServiceRate + 0.001)
+        {
+            comp.Status = Loc.GetString(
+                "cmu-queue-status-rate-too-low",
+                ("node", NodeName(network, nodeId)));
+            comp.StatusKind = CMUQueueStatusKind.Neutral;
+            UpdateUi(ent);
+            return;
+        }
+
+        var costPerRate = node.UpgradeCost / (maxRate - baseRate);
+        var cost = Math.Abs(target - maxRate) < 0.001
+            ? node.UpgradeCost
+            : (int) Math.Ceiling((target - runtime.ServiceRate) * costPerRate - 0.0001);
+        cost = Math.Max(1, cost);
+
+        if (comp.Budget < cost)
         {
             comp.Status = Loc.GetString("cmu-queue-status-no-budget");
             comp.StatusKind = CMUQueueStatusKind.Bad;
@@ -199,15 +226,16 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
             return;
         }
 
-        comp.Budget -= node.UpgradeCost;
-        runtime.Upgrades++;
-        runtime.ServiceRate *= node.UpgradeMultiplier;
+        comp.Budget -= cost;
+        runtime.Invested += cost;
+        runtime.ServiceRate = target;
         RecomputeAnalyses(comp, network);
 
         comp.Status = Loc.GetString(
-            "cmu-queue-status-upgraded",
+            "cmu-queue-status-rate-set",
             ("node", NodeName(network, nodeId)),
-            ("rate", runtime.ServiceRate.ToString("0.##", CultureInfo.CurrentCulture)));
+            ("rate", runtime.ServiceRate.ToString("0.##", CultureInfo.CurrentCulture)),
+            ("cost", cost));
         comp.StatusKind = CMUQueueStatusKind.Good;
         UpdateUi(ent);
     }
@@ -281,9 +309,9 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
             if (!comp.Nodes.TryGetValue(node.Id, out var runtime))
                 continue;
 
-            refund += node.UpgradeCost * runtime.Upgrades;
+            refund += runtime.Invested;
             runtime.ServiceRate = node.ServiceRate;
-            runtime.Upgrades = 0;
+            runtime.Invested = 0;
         }
 
         foreach (var bypass in network.Bypasses)
@@ -493,10 +521,10 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
 
     private static void AddHistoryPoint(
         CMUQueueNetworkConsoleComponent comp,
-        int minute,
+        float minute,
         IReadOnlyDictionary<string, double> queues)
     {
-        var existing = comp.History.FirstOrDefault(point => point.Minute == minute);
+        var existing = comp.History.FirstOrDefault(point => Math.Abs(point.Minute - minute) < 0.001f);
         if (existing != null)
         {
             existing.Queues = new Dictionary<string, double>(queues, StringComparer.Ordinal);
@@ -550,17 +578,26 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
                 comp.Analyses.TryGetValue(node.Id, out var analysis);
                 var metrics = analysis?.Metrics ?? default;
 
+                var baseRate = node.ServiceRate;
+                var maxRate = baseRate * Math.Pow(node.UpgradeMultiplier, node.MaxUpgrades);
+                var costPerMu = maxRate > baseRate
+                    ? node.UpgradeCost / (maxRate - baseRate)
+                    : 0;
+
                 nodes.Add(new CMUQueueNodeInfo(
                     node.Id,
                     node.Name,
                     node.Suffix,
-                    runtime?.ServiceRate ?? node.ServiceRate,
+                    runtime?.ServiceRate ?? baseRate,
+                    baseRate,
+                    maxRate,
                     effectiveSources.GetValueOrDefault(node.Id),
                     runtime?.Queue ?? 0,
-                    runtime?.Upgrades ?? 0,
-                    node.MaxUpgrades,
+                    runtime?.Invested ?? 0,
+                    costPerMu,
                     node.UpgradeCost,
-                    node.UpgradeMultiplier,
+                    node.Column,
+                    node.Row,
                     analysis != null,
                     analysis?.Lambda ?? 0,
                     metrics.Rho,

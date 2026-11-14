@@ -187,20 +187,24 @@ public sealed class CMUQueueNetworkMathTest
 
             Assert.That(unstable, Is.Not.Empty, $"seed {seed} produced no bottleneck");
 
-            var solutionCost = 0;
+            var minimumCost = 0;
             foreach (var node in unstable)
             {
-                var upgraded = CMUQueueNetworkMath.ComputeMetrics(
-                    rates[node.Id],
-                    node.ServiceRate * node.UpgradeMultiplier);
+                var maxRate = node.ServiceRate * Math.Pow(node.UpgradeMultiplier, node.MaxUpgrades);
+                var upgraded = CMUQueueNetworkMath.ComputeMetrics(rates[node.Id], maxRate);
                 Assert.That(upgraded.Stable, Is.True, $"seed {seed}: {node.Id} needs more than one upgrade");
-                solutionCost += node.UpgradeCost;
+
+                var target = Math.Min(maxRate, rates[node.Id] * 1.02);
+                var costPerRate = node.UpgradeCost / (maxRate - node.ServiceRate);
+                minimumCost += Math.Max(
+                    1,
+                    (int) Math.Ceiling((target - node.ServiceRate) * costPerRate - 0.0001));
             }
 
             Assert.That(
                 network.Budget,
-                Is.GreaterThanOrEqualTo(solutionCost),
-                $"seed {seed}: budget does not cover the bottleneck upgrades");
+                Is.GreaterThanOrEqualTo(minimumCost),
+                $"seed {seed}: budget does not cover the minimum stable upgrade");
 
             Assert.That(network.Reward, Is.GreaterThan(0), $"seed {seed}");
 

@@ -1,5 +1,6 @@
 using System.Numerics;
 using Content.Client.CMU14.Interface;
+using Robust.Client.Graphics;
 using Robust.Client.UserInterface;
 using Robust.Client.UserInterface.Controls;
 using Robust.Client.UserInterface.CustomControls;
@@ -8,8 +9,8 @@ namespace Content.Client.CMU14.Robotics.QueueNetwork;
 
 /// <summary>
 /// Always-available reference sheet for the M/M/1 formulas used by the
-/// diagnostic terminal. Keeping it a separate window means the player can
-/// leave it open while working on the network.
+/// diagnostic terminal. Each formula is shown as a large, centred card so it
+/// reads as a formula instead of a line of body text.
 /// </summary>
 public sealed class CMUQueueFormulasWindow : DefaultWindow
 {
@@ -34,15 +35,19 @@ public sealed class CMUQueueFormulasWindow : DefaultWindow
         scroll.AddChild(body);
         kit.Root.AddChild(scroll);
 
+        body.AddChild(CrtConsoleKit.Wrapping(
+            Loc.GetString("cmu-queue-formulas-intro"),
+            CrtTerminalPalette.TextDim));
+
         var formulas = kit.Section(Loc.GetString("cmu-queue-formulas-mm1"), out var formulaColumn);
-        formulaColumn.AddChild(kit.Field(Loc.GetString("cmu-queue-formulas-lambda"), Loc.GetString("cmu-queue-formulas-lambda-desc")));
-        formulaColumn.AddChild(kit.Field(Loc.GetString("cmu-queue-formulas-mu"), Loc.GetString("cmu-queue-formulas-mu-desc")));
-        formulaColumn.AddChild(kit.Field(Loc.GetString("cmu-queue-formulas-rho"), Loc.GetString("cmu-queue-formulas-rho-desc")));
-        formulaColumn.AddChild(kit.Field(Loc.GetString("cmu-queue-formulas-stable"), Loc.GetString("cmu-queue-formulas-stable-desc")));
-        formulaColumn.AddChild(kit.Field(Loc.GetString("cmu-queue-formulas-l"), Loc.GetString("cmu-queue-formulas-l-desc")));
-        formulaColumn.AddChild(kit.Field(Loc.GetString("cmu-queue-formulas-lq"), Loc.GetString("cmu-queue-formulas-lq-desc")));
-        formulaColumn.AddChild(kit.Field(Loc.GetString("cmu-queue-formulas-w"), Loc.GetString("cmu-queue-formulas-w-desc")));
-        formulaColumn.AddChild(kit.Field(Loc.GetString("cmu-queue-formulas-wq"), Loc.GetString("cmu-queue-formulas-wq-desc")));
+        AddFormula(kit, formulaColumn, "cmu-queue-formulas-lambda", "cmu-queue-formulas-lambda-desc", false);
+        AddFormula(kit, formulaColumn, "cmu-queue-formulas-mu", "cmu-queue-formulas-mu-desc", false);
+        AddFormula(kit, formulaColumn, "cmu-queue-formulas-rho", "cmu-queue-formulas-rho-desc");
+        AddFormula(kit, formulaColumn, "cmu-queue-formulas-stable", "cmu-queue-formulas-stable-desc");
+        AddFormula(kit, formulaColumn, "cmu-queue-formulas-l", "cmu-queue-formulas-l-desc");
+        AddFormula(kit, formulaColumn, "cmu-queue-formulas-lq", "cmu-queue-formulas-lq-desc");
+        AddFormula(kit, formulaColumn, "cmu-queue-formulas-w", "cmu-queue-formulas-w-desc");
+        AddFormula(kit, formulaColumn, "cmu-queue-formulas-wq", "cmu-queue-formulas-wq-desc");
         body.AddChild(formulas);
 
         var negative = kit.Section(Loc.GetString("cmu-queue-formulas-negative"), out var negativeColumn);
@@ -58,12 +63,11 @@ public sealed class CMUQueueFormulasWindow : DefaultWindow
         body.AddChild(negative);
 
         var network = kit.Section(Loc.GetString("cmu-queue-formulas-network"), out var networkColumn);
-        networkColumn.AddChild(CrtConsoleKit.Wrapping(
-            Loc.GetString("cmu-queue-formulas-network-equation"),
-            CrtTerminalPalette.TextBright));
-        networkColumn.AddChild(CrtConsoleKit.Wrapping(
-            Loc.GetString("cmu-queue-formulas-network-desc"),
-            CrtTerminalPalette.TextDim));
+        AddFormula(
+            kit,
+            networkColumn,
+            "cmu-queue-formulas-network-equation",
+            "cmu-queue-formulas-network-desc");
         body.AddChild(network);
 
         var example = kit.Section(Loc.GetString("cmu-queue-formulas-example"), out var exampleColumn);
@@ -79,5 +83,40 @@ public sealed class CMUQueueFormulasWindow : DefaultWindow
         body.AddChild(fix);
 
         Contents.AddChild(kit.Tube);
+    }
+
+    private static void AddFormula(
+        CrtConsoleKit kit,
+        BoxContainer parent,
+        string formulaKey,
+        string descriptionKey,
+        bool large = true)
+    {
+        var panel = new PanelContainer
+        {
+            HorizontalExpand = true,
+            PanelOverride = new StyleBoxFlat
+            {
+                BackgroundColor = CrtTerminalPalette.Surface2,
+                ContentMarginLeftOverride = 10,
+                ContentMarginRightOverride = 10,
+                ContentMarginTopOverride = 6,
+                ContentMarginBottomOverride = 6,
+            },
+        };
+
+        var column = CrtConsoleKit.Column(2);
+        var formula = CrtConsoleKit.Text(
+            Loc.GetString(formulaKey),
+            large ? kit.Huge : kit.Title,
+            CrtTerminalPalette.Accent);
+        formula.Align = Label.AlignMode.Center;
+        formula.HorizontalExpand = true;
+        column.AddChild(formula);
+        column.AddChild(CrtConsoleKit.Wrapping(
+            Loc.GetString(descriptionKey),
+            CrtTerminalPalette.TextDim));
+        panel.AddChild(column);
+        parent.AddChild(panel);
     }
 }

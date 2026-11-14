@@ -80,7 +80,7 @@ public sealed partial class CMUQueueNetworkConsoleComponent : Component
 public sealed class CMUQueueNodeRuntime
 {
     public double ServiceRate;
-    public int Upgrades;
+    public int Invested;
     public double Queue;
 }
 
@@ -92,6 +92,6 @@ public sealed class CMUQueueAnalysis
 
 public sealed class CMUQueueHistoryPoint
 {
-    public int Minute;
+    public float Minute;
     public Dictionary<string, double> Queues = new();
 }

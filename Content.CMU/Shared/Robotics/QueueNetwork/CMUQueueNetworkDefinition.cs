@@ -48,6 +48,12 @@ public sealed class CMUQueueNodeDefinition
     public int UpgradeCost = 250;
     public int MaxUpgrades = 1;
     public double InitialQueue;
+
+    /// <summary>Column in the network schematic.</summary>
+    public int Column;
+
+    /// <summary>Row in the network schematic.</summary>
+    public int Row;
 }
 
 public sealed class CMUQueueSourceDefinition

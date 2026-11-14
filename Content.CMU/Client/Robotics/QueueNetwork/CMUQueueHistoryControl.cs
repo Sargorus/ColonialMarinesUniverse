@@ -9,6 +9,7 @@ using Robust.Client.ResourceManagement;
 using Robust.Client.UserInterface;
 using Robust.Client.UserInterface.Controls;
 using Robust.Shared.IoC;
+using Robust.Shared.Maths;
 
 namespace Content.Client.CMU14.Robotics.QueueNetwork;
 
@@ -87,9 +88,9 @@ public sealed class CMUQueueHistoryControl : Control
             return;
         }
 
-        var maxTime = Math.Max(1, _elapsed);
+        var maxTime = MathF.Max(1, _elapsed);
         foreach (var point in _history)
-            maxTime = Math.Max(maxTime, point.Minute);
+            maxTime = MathF.Max(maxTime, point.Minute);
 
         var maxQueue = 1.0;
         foreach (var point in _history)
@@ -100,9 +101,9 @@ public sealed class CMUQueueHistoryControl : Control
 
         maxQueue = NiceCeil(maxQueue * 1.1);
 
-        for (var line = 0; line <= 4; line++)
+        for (var line = 0; line <= 2; line++)
         {
-            var fraction = line / 4f;
+            var fraction = line / 2f;
             var y = bottom - (bottom - top) * fraction;
             handle.DrawLine(new Vector2(left, y), new Vector2(right, y), CrtTerminalPalette.Surface2);
 
@@ -112,7 +113,7 @@ public sealed class CMUQueueHistoryControl : Control
 
         DrawTimeLabel(handle, left, bottom, "0");
         DrawTimeLabel(handle, (left + right) / 2, bottom, $"{maxTime / 2f:0.#}");
-        DrawTimeLabel(handle, right, bottom, maxTime.ToString());
+        DrawTimeLabel(handle, right, bottom, maxTime.ToString("0.#"));
 
         for (var nodeIndex = 0; nodeIndex < _nodes.Count; nodeIndex++)
         {
@@ -122,13 +123,16 @@ public sealed class CMUQueueHistoryControl : Control
             foreach (var point in _history)
             {
                 var queue = nodeIndex < point.Queues.Count ? point.Queues[nodeIndex] : 0;
-                var x = left + (right - left) * (point.Minute / (float)maxTime);
+                var x = left + (right - left) * (point.Minute / maxTime);
                 var y = bottom - (bottom - top) * (float)(queue / maxQueue);
                 var current = new Vector2(x, y);
 
                 if (previous != null)
                     handle.DrawLine(previous.Value, current, color);
 
+                handle.DrawRect(
+                    new UIBox2(current.X - 2, current.Y - 2, current.X + 2, current.Y + 2),
+                    color);
                 previous = current;
             }
         }
