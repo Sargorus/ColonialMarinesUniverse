@@ -338,3 +338,6 @@ settings.local.json
 # personal agent configs
 AGENTS.md
 CLAUDE.md
+
+# CMU14: local-only server switches (Russian test locale, dev tokens).
+/runserver.local.bat
