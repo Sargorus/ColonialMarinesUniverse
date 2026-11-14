@@ -16,8 +16,8 @@ public sealed class CMUQueueFormulasWindow : DefaultWindow
     public CMUQueueFormulasWindow()
     {
         Title = Loc.GetString("cmu-queue-formulas-title");
-        MinSize = new Vector2(520, 560);
-        SetSize = new Vector2(620, 700);
+        MinSize = new Vector2(500, 520);
+        SetSize = new Vector2(600, 660);
 
         var kit = new CrtConsoleKit();
         kit.Root.AddChild(kit.Header(

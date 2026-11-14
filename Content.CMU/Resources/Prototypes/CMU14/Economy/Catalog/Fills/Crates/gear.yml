@@ -188,8 +188,6 @@
 - type: entity
   parent: RMCCrateConstruction
   id: CMUCrateRoboticsOrderConsole
-  name: robotics order console crate
-  description: A sealed crate containing one Weyland-Yutani robotics order console. Pry it open with a crowbar.
   components:
   - type: CrateOpenable
     spawn:
@@ -198,8 +196,6 @@
 - type: entity
   parent: RMCCrateConstruction
   id: CMUCrateProductionDiagnosticConsole
-  name: production diagnostic terminal crate
-  description: A sealed crate containing one Weyland-Yutani production diagnostic terminal. Pry it open with a crowbar.
   components:
   - type: CrateOpenable
     spawn:

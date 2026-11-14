@@ -22,6 +22,7 @@ public sealed class CMUQueueNodeInfo
 {
     public string Id { get; }
     public string Name { get; }
+    public string Suffix { get; }
     public double ServiceRate { get; }
     public double ExternalRate { get; }
     public double Queue { get; }
@@ -29,8 +30,6 @@ public sealed class CMUQueueNodeInfo
     public int MaxUpgrades { get; }
     public int UpgradeCost { get; }
     public double UpgradeMultiplier { get; }
-    public int Column { get; }
-    public int Row { get; }
     public bool Analyzed { get; }
     public double Lambda { get; }
     public double Rho { get; }
@@ -43,6 +42,7 @@ public sealed class CMUQueueNodeInfo
     public CMUQueueNodeInfo(
         string id,
         string name,
+        string suffix,
         double serviceRate,
         double externalRate,
         double queue,
@@ -50,8 +50,6 @@ public sealed class CMUQueueNodeInfo
         int maxUpgrades,
         int upgradeCost,
         double upgradeMultiplier,
-        int column,
-        int row,
         bool analyzed,
         double lambda,
         double rho,
@@ -63,6 +61,7 @@ public sealed class CMUQueueNodeInfo
     {
         Id = id;
         Name = name;
+        Suffix = suffix;
         ServiceRate = serviceRate;
         ExternalRate = externalRate;
         Queue = queue;
@@ -70,8 +69,6 @@ public sealed class CMUQueueNodeInfo
         MaxUpgrades = maxUpgrades;
         UpgradeCost = upgradeCost;
         UpgradeMultiplier = upgradeMultiplier;
-        Column = column;
-        Row = row;
         Analyzed = analyzed;
         Lambda = lambda;
         Rho = rho;
@@ -99,6 +96,42 @@ public sealed class CMUQueueRouteInfo
 }
 
 [Serializable, NetSerializable]
+public sealed class CMUQueueBypassInfo
+{
+    public string Id { get; }
+    public string From { get; }
+    public string To { get; }
+    public double CurrentPercent { get; }
+    public double MaxPercent { get; }
+    public double StepPercent { get; }
+    public int NextCost { get; }
+    public bool CanAfford { get; }
+    public bool Maxed { get; }
+
+    public CMUQueueBypassInfo(
+        string id,
+        string from,
+        string to,
+        double currentPercent,
+        double maxPercent,
+        double stepPercent,
+        int nextCost,
+        bool canAfford,
+        bool maxed)
+    {
+        Id = id;
+        From = from;
+        To = to;
+        CurrentPercent = currentPercent;
+        MaxPercent = maxPercent;
+        StepPercent = stepPercent;
+        NextCost = nextCost;
+        CanAfford = canAfford;
+        Maxed = maxed;
+    }
+}
+
+[Serializable, NetSerializable]
 public sealed class CMUQueueHistoryInfo
 {
     public int Minute { get; }
@@ -116,7 +149,6 @@ public sealed class CMUQueueNetworkConsoleState : BoundUserInterfaceState
 {
     public bool Active { get; }
     public bool Completed { get; }
-    public bool Failed { get; }
     public string Status { get; }
     public CMUQueueStatusKind StatusKind { get; }
     public string NetworkName { get; }
@@ -131,12 +163,12 @@ public sealed class CMUQueueNetworkConsoleState : BoundUserInterfaceState
     public int ProjectionMinutes { get; }
     public List<CMUQueueNodeInfo> Nodes { get; }
     public List<CMUQueueRouteInfo> Routes { get; }
+    public List<CMUQueueBypassInfo> Bypasses { get; }
     public List<CMUQueueHistoryInfo> History { get; }
 
     public CMUQueueNetworkConsoleState(
         bool active,
         bool completed,
-        bool failed,
         string status,
         CMUQueueStatusKind statusKind,
         string networkName,
@@ -151,11 +183,11 @@ public sealed class CMUQueueNetworkConsoleState : BoundUserInterfaceState
         int projectionMinutes,
         List<CMUQueueNodeInfo> nodes,
         List<CMUQueueRouteInfo> routes,
+        List<CMUQueueBypassInfo> bypasses,
         List<CMUQueueHistoryInfo> history)
     {
         Active = active;
         Completed = completed;
-        Failed = failed;
         Status = status;
         StatusKind = statusKind;
         NetworkName = networkName;
@@ -170,6 +202,7 @@ public sealed class CMUQueueNetworkConsoleState : BoundUserInterfaceState
         ProjectionMinutes = projectionMinutes;
         Nodes = nodes;
         Routes = routes;
+        Bypasses = bypasses;
         History = history;
     }
 }
@@ -187,6 +220,12 @@ public sealed class CMUQueueUpgradeNodeMessage(string nodeId) : BoundUserInterfa
 }
 
 [Serializable, NetSerializable]
+public sealed class CMUQueueRerouteMessage(string bypassId) : BoundUserInterfaceMessage
+{
+    public string BypassId { get; } = bypassId;
+}
+
+[Serializable, NetSerializable]
 public sealed class CMUQueueProjectMessage : BoundUserInterfaceMessage;
 
 [Serializable, NetSerializable]
@@ -196,4 +235,4 @@ public sealed class CMUQueueSubmitMessage : BoundUserInterfaceMessage;
 public sealed class CMUQueueNewContractMessage : BoundUserInterfaceMessage;
 
 [Serializable, NetSerializable]
-public sealed class CMUQueueResetUpgradesMessage : BoundUserInterfaceMessage;
+public sealed class CMUQueueResetInterventionsMessage : BoundUserInterfaceMessage;

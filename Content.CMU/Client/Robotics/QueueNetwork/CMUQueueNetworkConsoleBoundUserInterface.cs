@@ -18,10 +18,11 @@ public sealed class CMUQueueNetworkConsoleBoundUserInterface : BoundUserInterfac
         _window = this.CreateWindow<CMUQueueNetworkConsoleWindow>();
         _window.OnAnalyze += nodeId => SendMessage(new CMUQueueAnalyzeNodeMessage(nodeId));
         _window.OnUpgrade += nodeId => SendMessage(new CMUQueueUpgradeNodeMessage(nodeId));
+        _window.OnReroute += bypassId => SendMessage(new CMUQueueRerouteMessage(bypassId));
         _window.OnProject += () => SendMessage(new CMUQueueProjectMessage());
         _window.OnSubmit += () => SendMessage(new CMUQueueSubmitMessage());
         _window.OnNewContract += () => SendMessage(new CMUQueueNewContractMessage());
-        _window.OnResetUpgrades += () => SendMessage(new CMUQueueResetUpgradesMessage());
+        _window.OnResetInterventions += () => SendMessage(new CMUQueueResetInterventionsMessage());
     }
 
     protected override void UpdateState(BoundUserInterfaceState state)

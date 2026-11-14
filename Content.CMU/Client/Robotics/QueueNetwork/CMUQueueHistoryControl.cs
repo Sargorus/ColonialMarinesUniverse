@@ -34,6 +34,9 @@ public sealed class CMUQueueHistoryControl : Control
     private IReadOnlyList<CMUQueueHistoryInfo> _history = Array.Empty<CMUQueueHistoryInfo>();
     private int _elapsed;
 
+    /// <summary>Localized message shown before the first projection.</summary>
+    public string EmptyText = string.Empty;
+
     public CMUQueueHistoryControl()
     {
         var cache = IoCManager.Resolve<IResourceCache>();
@@ -79,7 +82,7 @@ public sealed class CMUQueueHistoryControl : Control
             handle.DrawString(
                 _font,
                 new Vector2(left + 8, top + 8),
-                "No projection data. Run a projection to chart the queues.",
+                EmptyText,
                 CrtTerminalPalette.TextDim);
             return;
         }

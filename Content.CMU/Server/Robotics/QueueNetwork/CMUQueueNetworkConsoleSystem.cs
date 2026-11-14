@@ -6,20 +6,18 @@ using Content.Server.CMU14.ColonyEconomy;
 using Content.Shared.CMU14.Robotics.QueueNetwork;
 using Robust.Server.GameObjects;
 using Robust.Shared.GameObjects;
-using Robust.Shared.Prototypes;
 using Robust.Shared.Random;
 
 namespace Content.Server.CMU14.Robotics.QueueNetwork;
 
 /// <summary>
-/// Runs production diagnostic contracts on the queueing-network terminal.
-/// The server owns the network state, the maintenance budget and the
-/// diagnostic clock; the client only renders the state and sends intents.
+/// Runs generated production diagnostic contracts. The server owns the
+/// network state, the maintenance budget and the diagnostic clock; the client
+/// only renders state and sends intents.
 /// </summary>
 public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
 {
     [Dependency] private CorporateConsoleSystem _corporateConsole = default!;
-    [Dependency] private IPrototypeManager _prototypes = default!;
     [Dependency] private IRobustRandom _random = default!;
     [Dependency] private UserInterfaceSystem _ui = default!;
 
@@ -34,10 +32,11 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         {
             subs.Event<CMUQueueAnalyzeNodeMessage>(OnAnalyzeNode);
             subs.Event<CMUQueueUpgradeNodeMessage>(OnUpgradeNode);
+            subs.Event<CMUQueueRerouteMessage>(OnReroute);
             subs.Event<CMUQueueProjectMessage>(OnProject);
             subs.Event<CMUQueueSubmitMessage>(OnSubmit);
             subs.Event<CMUQueueNewContractMessage>(OnNewContract);
-            subs.Event<CMUQueueResetUpgradesMessage>(OnResetUpgrades);
+            subs.Event<CMUQueueResetInterventionsMessage>(OnResetInterventions);
         });
     }
 
@@ -55,39 +54,32 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
     private void OnNewContract(Entity<CMUQueueNetworkConsoleComponent> ent, ref CMUQueueNewContractMessage args)
     {
         var comp = ent.Comp;
-        if (comp.Scenarios.Count == 0)
-        {
-            comp.Status = Loc.GetString("cmu-queue-status-no-scenarios");
-            comp.StatusKind = CMUQueueStatusKind.Bad;
-            UpdateUi(ent);
-            return;
-        }
+        var tutorial = comp.CompletedContracts == 0 && comp.ForcedTopology == null;
+        var forced = comp.ForcedTopology ?? (tutorial ? CMUQueueTopologyKind.Line : null);
+        var seed = comp.ForcedSeed ?? _random.Next();
+        var network = CMUQueueNetworkGenerator.Generate(forced, seed, tutorial);
 
-        var scenarioId = comp.CompletedContracts == 0 && comp.Scenarios.Any(id => id.Id == "CMUQueueNetworkTutorial")
-            ? new ProtoId<CMUQueueNetworkPrototype>("CMUQueueNetworkTutorial")
-            : comp.Scenarios[_random.Next(comp.Scenarios.Count)];
-        var proto = _prototypes.Index(scenarioId);
-
-        comp.ActiveScenario = scenarioId;
+        comp.Network = network;
+        comp.LastSeed = network.Seed;
         comp.Active = true;
         comp.Completed = false;
-        comp.Failed = false;
-        comp.Budget = proto.Budget;
-        comp.InitialBudget = proto.Budget;
-        comp.TimeLeft = proto.DiagnosticMinutes;
-        comp.InitialTime = proto.DiagnosticMinutes;
-        comp.Reward = proto.Reward;
+        comp.Budget = network.Budget;
+        comp.InitialBudget = network.Budget;
+        comp.TimeLeft = network.DiagnosticMinutes;
+        comp.InitialTime = network.DiagnosticMinutes;
+        comp.Reward = network.Reward;
         comp.Elapsed = 0;
         comp.Status = Loc.GetString(
             "cmu-queue-status-started",
-            ("network", LocOrId(proto.Name, proto.ID)));
+            ("network", LocOrId(network.Name, Loc.GetString("cmu-queue-network-unknown"))));
         comp.StatusKind = CMUQueueStatusKind.Neutral;
 
         comp.Nodes.Clear();
         comp.Analyses.Clear();
+        comp.BypassFractions.Clear();
         comp.History.Clear();
 
-        foreach (var node in proto.Nodes)
+        foreach (var node in network.Nodes)
         {
             comp.Nodes[node.Id] = new CMUQueueNodeRuntime
             {
@@ -96,14 +88,17 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
             };
         }
 
-        AddHistoryPoint(comp, 0, CurrentQueues(comp, proto));
+        foreach (var bypass in network.Bypasses)
+            comp.BypassFractions[bypass.Id] = 0;
+
+        AddHistoryPoint(comp, 0, CurrentQueues(comp, network));
         UpdateUi(ent);
     }
 
     private void OnAnalyzeNode(Entity<CMUQueueNetworkConsoleComponent> ent, ref CMUQueueAnalyzeNodeMessage args)
     {
         var comp = ent.Comp;
-        if (!TryGetActive(ent, out var proto))
+        if (!TryGetActive(ent, out var network))
         {
             comp.Status = Loc.GetString("cmu-queue-status-no-contract");
             UpdateUi(ent);
@@ -111,7 +106,7 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         }
 
         var nodeId = args.NodeId;
-        var node = proto.Nodes.FirstOrDefault(n => n.Id == nodeId);
+        var node = network.Nodes.FirstOrDefault(candidate => candidate.Id == nodeId);
         if (node == null || !comp.Nodes.TryGetValue(nodeId, out var runtime))
         {
             comp.Status = Loc.GetString("cmu-queue-status-unknown-node");
@@ -123,12 +118,12 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         {
             comp.Status = Loc.GetString(
                 "cmu-queue-status-already-analyzed",
-                ("node", NodeName(proto, nodeId)));
+                ("node", NodeName(network, nodeId)));
             UpdateUi(ent);
             return;
         }
 
-        if (comp.TimeLeft < proto.AnalysisCost)
+        if (comp.TimeLeft < network.AnalysisCost)
         {
             comp.Status = Loc.GetString("cmu-queue-status-no-time");
             comp.StatusKind = CMUQueueStatusKind.Bad;
@@ -136,7 +131,11 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
             return;
         }
 
-        if (!CMUQueueNetworkMath.TrySolveArrivalRates(proto, out var rates, out var error))
+        if (!CMUQueueNetworkMath.TrySolveArrivalRates(
+                network,
+                comp.BypassFractions,
+                out var rates,
+                out var error))
         {
             comp.Status = Loc.GetString("cmu-queue-status-error", ("error", error));
             comp.StatusKind = CMUQueueStatusKind.Bad;
@@ -152,14 +151,14 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
             Metrics = metrics,
         };
 
-        comp.TimeLeft -= proto.AnalysisCost;
-        comp.Elapsed += proto.AnalysisCost;
-        AddHistoryPoint(comp, comp.Elapsed, CurrentQueues(comp, proto));
+        comp.TimeLeft -= network.AnalysisCost;
+        comp.Elapsed += network.AnalysisCost;
+        AddHistoryPoint(comp, comp.Elapsed, CurrentQueues(comp, network));
 
         comp.Status = Loc.GetString(
             "cmu-queue-status-analyzed",
-            ("node", NodeName(proto, nodeId)),
-            ("rho", metrics.Rho.ToString("0.00", CultureInfo.InvariantCulture)));
+            ("node", NodeName(network, nodeId)),
+            ("rho", metrics.Rho.ToString("0.00", CultureInfo.CurrentCulture)));
         comp.StatusKind = metrics.Stable ? CMUQueueStatusKind.Good : CMUQueueStatusKind.Bad;
         UpdateUi(ent);
     }
@@ -167,7 +166,7 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
     private void OnUpgradeNode(Entity<CMUQueueNetworkConsoleComponent> ent, ref CMUQueueUpgradeNodeMessage args)
     {
         var comp = ent.Comp;
-        if (!TryGetActive(ent, out var proto))
+        if (!TryGetActive(ent, out var network))
         {
             comp.Status = Loc.GetString("cmu-queue-status-no-contract");
             UpdateUi(ent);
@@ -175,7 +174,7 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         }
 
         var nodeId = args.NodeId;
-        var node = proto.Nodes.FirstOrDefault(n => n.Id == nodeId);
+        var node = network.Nodes.FirstOrDefault(candidate => candidate.Id == nodeId);
         if (node == null || !comp.Nodes.TryGetValue(nodeId, out var runtime))
         {
             comp.Status = Loc.GetString("cmu-queue-status-unknown-node");
@@ -187,7 +186,7 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         {
             comp.Status = Loc.GetString(
                 "cmu-queue-status-max-upgrades",
-                ("node", NodeName(proto, nodeId)));
+                ("node", NodeName(network, nodeId)));
             UpdateUi(ent);
             return;
         }
@@ -203,20 +202,73 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         comp.Budget -= node.UpgradeCost;
         runtime.Upgrades++;
         runtime.ServiceRate *= node.UpgradeMultiplier;
-        RecomputeAnalyses(comp);
+        RecomputeAnalyses(comp, network);
 
         comp.Status = Loc.GetString(
             "cmu-queue-status-upgraded",
-            ("node", NodeName(proto, nodeId)),
-            ("rate", runtime.ServiceRate.ToString("0.##", CultureInfo.InvariantCulture)));
+            ("node", NodeName(network, nodeId)),
+            ("rate", runtime.ServiceRate.ToString("0.##", CultureInfo.CurrentCulture)));
         comp.StatusKind = CMUQueueStatusKind.Good;
         UpdateUi(ent);
     }
 
-    private void OnResetUpgrades(Entity<CMUQueueNetworkConsoleComponent> ent, ref CMUQueueResetUpgradesMessage args)
+    private void OnReroute(Entity<CMUQueueNetworkConsoleComponent> ent, ref CMUQueueRerouteMessage args)
     {
         var comp = ent.Comp;
-        if (!TryGetActive(ent, out var proto))
+        if (!TryGetActive(ent, out var network))
+        {
+            comp.Status = Loc.GetString("cmu-queue-status-no-contract");
+            UpdateUi(ent);
+            return;
+        }
+
+        var bypassId = args.BypassId;
+        var bypass = network.Bypasses.FirstOrDefault(candidate => candidate.Id == bypassId);
+        if (bypass == null)
+        {
+            comp.Status = Loc.GetString("cmu-queue-status-unknown-bypass");
+            UpdateUi(ent);
+            return;
+        }
+
+        var current = comp.BypassFractions.GetValueOrDefault(bypass.Id);
+        if (current + bypass.StepFraction > bypass.MaxFraction + 0.001)
+        {
+            comp.Status = Loc.GetString(
+                "cmu-queue-status-reroute-max",
+                ("from", NodeName(network, bypass.From)),
+                ("to", NodeName(network, bypass.To)));
+            UpdateUi(ent);
+            return;
+        }
+
+        if (comp.Budget < bypass.CostPerStep)
+        {
+            comp.Status = Loc.GetString("cmu-queue-status-no-budget");
+            comp.StatusKind = CMUQueueStatusKind.Bad;
+            UpdateUi(ent);
+            return;
+        }
+
+        comp.Budget -= bypass.CostPerStep;
+        comp.BypassFractions[bypass.Id] = current + bypass.StepFraction;
+        RecomputeAnalyses(comp, network);
+
+        comp.Status = Loc.GetString(
+            "cmu-queue-status-rerouted",
+            ("from", NodeName(network, bypass.From)),
+            ("to", NodeName(network, bypass.To)),
+            ("percent", ((current + bypass.StepFraction) * 100).ToString("0", CultureInfo.CurrentCulture)));
+        comp.StatusKind = CMUQueueStatusKind.Neutral;
+        UpdateUi(ent);
+    }
+
+    private void OnResetInterventions(
+        Entity<CMUQueueNetworkConsoleComponent> ent,
+        ref CMUQueueResetInterventionsMessage args)
+    {
+        var comp = ent.Comp;
+        if (!TryGetActive(ent, out var network))
         {
             comp.Status = Loc.GetString("cmu-queue-status-no-contract");
             UpdateUi(ent);
@@ -224,7 +276,7 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         }
 
         var refund = 0;
-        foreach (var node in proto.Nodes)
+        foreach (var node in network.Nodes)
         {
             if (!comp.Nodes.TryGetValue(node.Id, out var runtime))
                 continue;
@@ -234,25 +286,36 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
             runtime.Upgrades = 0;
         }
 
+        foreach (var bypass in network.Bypasses)
+        {
+            var current = comp.BypassFractions.GetValueOrDefault(bypass.Id);
+            var steps = bypass.StepFraction <= 0
+                ? 0
+                : (int) Math.Round(current / bypass.StepFraction);
+            refund += steps * bypass.CostPerStep;
+            comp.BypassFractions[bypass.Id] = 0;
+        }
+
         comp.Budget = Math.Min(comp.InitialBudget, comp.Budget + refund);
-        RecomputeAnalyses(comp);
+        RecomputeAnalyses(comp, network);
         comp.Status = refund > 0
             ? Loc.GetString("cmu-queue-status-reset", ("refund", refund))
             : Loc.GetString("cmu-queue-status-reset-none");
+        comp.StatusKind = CMUQueueStatusKind.Neutral;
         UpdateUi(ent);
     }
 
     private void OnProject(Entity<CMUQueueNetworkConsoleComponent> ent, ref CMUQueueProjectMessage args)
     {
         var comp = ent.Comp;
-        if (!TryGetActive(ent, out var proto))
+        if (!TryGetActive(ent, out var network))
         {
             comp.Status = Loc.GetString("cmu-queue-status-no-contract");
             UpdateUi(ent);
             return;
         }
 
-        if (comp.TimeLeft < proto.ProjectionCost)
+        if (comp.TimeLeft < network.ProjectionCost)
         {
             comp.Status = Loc.GetString("cmu-queue-status-no-time");
             comp.StatusKind = CMUQueueStatusKind.Bad;
@@ -260,7 +323,11 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
             return;
         }
 
-        if (!CMUQueueNetworkMath.TrySolveArrivalRates(proto, out var rates, out var error))
+        if (!CMUQueueNetworkMath.TrySolveArrivalRates(
+                network,
+                comp.BypassFractions,
+                out var rates,
+                out var error))
         {
             comp.Status = Loc.GetString("cmu-queue-status-error", ("error", error));
             comp.StatusKind = CMUQueueStatusKind.Bad;
@@ -270,7 +337,7 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
 
         var serviceRates = new Dictionary<string, double>(StringComparer.Ordinal);
         var startQueues = new Dictionary<string, double>(StringComparer.Ordinal);
-        foreach (var node in proto.Nodes)
+        foreach (var node in network.Nodes)
         {
             if (!comp.Nodes.TryGetValue(node.Id, out var runtime))
                 continue;
@@ -281,11 +348,11 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
 
         var baseMinute = comp.Elapsed;
         var points = CMUQueueNetworkMath.Project(
-            proto,
+            network,
             serviceRates,
             rates,
             startQueues,
-            proto.ProjectionMinutes);
+            network.ProjectionMinutes);
 
         foreach (var point in points)
         {
@@ -296,7 +363,7 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         }
 
         var final = points[^1];
-        foreach (var node in proto.Nodes)
+        foreach (var node in network.Nodes)
         {
             if (comp.Nodes.TryGetValue(node.Id, out var runtime) &&
                 final.Queues.TryGetValue(node.Id, out var queue))
@@ -305,25 +372,30 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
             }
         }
 
-        comp.Elapsed += proto.ProjectionMinutes;
-        comp.TimeLeft -= proto.ProjectionCost;
+        comp.Elapsed += network.ProjectionMinutes;
+        comp.TimeLeft -= network.ProjectionCost;
         comp.Status = Loc.GetString(
             "cmu-queue-status-projected",
-            ("minutes", proto.ProjectionMinutes));
+            ("minutes", network.ProjectionMinutes));
+        comp.StatusKind = CMUQueueStatusKind.Neutral;
         UpdateUi(ent);
     }
 
     private void OnSubmit(Entity<CMUQueueNetworkConsoleComponent> ent, ref CMUQueueSubmitMessage args)
     {
         var comp = ent.Comp;
-        if (!TryGetActive(ent, out var proto))
+        if (!TryGetActive(ent, out var network))
         {
             comp.Status = Loc.GetString("cmu-queue-status-no-contract");
             UpdateUi(ent);
             return;
         }
 
-        if (!CMUQueueNetworkMath.TrySolveArrivalRates(proto, out var rates, out var error))
+        if (!CMUQueueNetworkMath.TrySolveArrivalRates(
+                network,
+                comp.BypassFractions,
+                out var rates,
+                out var error))
         {
             comp.Status = Loc.GetString("cmu-queue-status-error", ("error", error));
             comp.StatusKind = CMUQueueStatusKind.Bad;
@@ -332,22 +404,21 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         }
 
         var unstable = new List<string>();
-        foreach (var node in proto.Nodes)
+        foreach (var node in network.Nodes)
         {
             if (!comp.Nodes.TryGetValue(node.Id, out var runtime))
                 continue;
 
             var metrics = CMUQueueNetworkMath.ComputeMetrics(rates[node.Id], runtime.ServiceRate);
             if (!metrics.Stable)
-                unstable.Add(NodeName(proto, node.Id));
+                unstable.Add(NodeName(network, node.Id));
         }
 
         if (unstable.Count == 0)
         {
             _corporateConsole.AddToCorporateBudget(comp.Reward);
             comp.Completed = true;
-            comp.Failed = false;
-            comp.Active = false;
+                comp.Active = false;
             comp.CompletedContracts++;
             comp.Status = Loc.GetString(
                 "cmu-queue-status-complete",
@@ -367,33 +438,50 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
 
     private bool TryGetActive(
         Entity<CMUQueueNetworkConsoleComponent> ent,
-        out CMUQueueNetworkPrototype proto)
+        out CMUQueueNetworkDefinition network)
     {
-        proto = default!;
-        if (!ent.Comp.Active || ent.Comp.ActiveScenario is not { } scenarioId)
+        if (!ent.Comp.Active || ent.Comp.Network == null)
+        {
+            network = default!;
             return false;
+        }
 
-        proto = _prototypes.Index(scenarioId);
+        network = ent.Comp.Network;
         return true;
     }
 
-    private static void RecomputeAnalyses(CMUQueueNetworkConsoleComponent comp)
+    private void RecomputeAnalyses(
+        CMUQueueNetworkConsoleComponent comp,
+        CMUQueueNetworkDefinition network)
     {
+        if (!CMUQueueNetworkMath.TrySolveArrivalRates(
+                network,
+                comp.BypassFractions,
+                out var rates,
+                out _))
+        {
+            return;
+        }
+
         foreach (var (nodeId, analysis) in comp.Analyses)
         {
-            if (!comp.Nodes.TryGetValue(nodeId, out var runtime))
+            if (!comp.Nodes.TryGetValue(nodeId, out var runtime) ||
+                !rates.TryGetValue(nodeId, out var lambda))
+            {
                 continue;
+            }
 
-            analysis.Metrics = CMUQueueNetworkMath.ComputeMetrics(analysis.Lambda, runtime.ServiceRate);
+            analysis.Lambda = lambda;
+            analysis.Metrics = CMUQueueNetworkMath.ComputeMetrics(lambda, runtime.ServiceRate);
         }
     }
 
     private static Dictionary<string, double> CurrentQueues(
         CMUQueueNetworkConsoleComponent comp,
-        CMUQueueNetworkPrototype proto)
+        CMUQueueNetworkDefinition network)
     {
         var queues = new Dictionary<string, double>(StringComparer.Ordinal);
-        foreach (var node in proto.Nodes)
+        foreach (var node in network.Nodes)
         {
             queues[node.Id] = comp.Nodes.TryGetValue(node.Id, out var runtime)
                 ? runtime.Queue
@@ -423,50 +511,56 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         comp.History.Sort((left, right) => left.Minute.CompareTo(right.Minute));
     }
 
-    private string NodeName(CMUQueueNetworkPrototype proto, string nodeId)
+    private string NodeName(CMUQueueNetworkDefinition network, string nodeId)
     {
-        var node = proto.Nodes.FirstOrDefault(candidate => candidate.Id == nodeId);
+        var node = network.Nodes.FirstOrDefault(candidate => candidate.Id == nodeId);
         if (node == null)
             return nodeId;
 
-        return LocOrId(node.Name, node.Id);
+        var name = LocOrId(node.Name, node.Id);
+        return string.IsNullOrEmpty(node.Suffix) ? name : $"{name} {node.Suffix}";
     }
 
     private string LocOrId(string key, string fallback)
     {
-        return string.IsNullOrEmpty(key) ? fallback : Loc.GetString(key);
+        if (string.IsNullOrEmpty(key))
+            return fallback;
+
+        return Loc.TryGetString(key, out var value) ? value : fallback;
     }
 
     private void UpdateUi(Entity<CMUQueueNetworkConsoleComponent> ent)
     {
-        CMUQueueNetworkPrototype? proto = null;
-        if (ent.Comp.ActiveScenario is { } scenarioId)
-            proto = _prototypes.Index(scenarioId);
-
+        var comp = ent.Comp;
+        var network = comp.Network;
         var nodes = new List<CMUQueueNodeInfo>();
         var routes = new List<CMUQueueRouteInfo>();
+        var bypasses = new List<CMUQueueBypassInfo>();
         var history = new List<CMUQueueHistoryInfo>();
 
-        if (proto != null)
+        if (network != null)
         {
-            foreach (var node in proto.Nodes)
+            var effectiveSources = CMUQueueNetworkMath.GetEffectiveSourceRates(
+                network,
+                comp.BypassFractions);
+
+            foreach (var node in network.Nodes)
             {
-                ent.Comp.Nodes.TryGetValue(node.Id, out var runtime);
-                ent.Comp.Analyses.TryGetValue(node.Id, out var analysis);
+                comp.Nodes.TryGetValue(node.Id, out var runtime);
+                comp.Analyses.TryGetValue(node.Id, out var analysis);
                 var metrics = analysis?.Metrics ?? default;
 
                 nodes.Add(new CMUQueueNodeInfo(
                     node.Id,
                     node.Name,
+                    node.Suffix,
                     runtime?.ServiceRate ?? node.ServiceRate,
-                    proto.Sources.Where(source => source.Node == node.Id).Sum(source => source.Rate),
+                    effectiveSources.GetValueOrDefault(node.Id),
                     runtime?.Queue ?? 0,
                     runtime?.Upgrades ?? 0,
                     node.MaxUpgrades,
                     node.UpgradeCost,
                     node.UpgradeMultiplier,
-                    node.Column,
-                    node.Row,
                     analysis != null,
                     analysis?.Lambda ?? 0,
                     metrics.Rho,
@@ -477,13 +571,29 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
                     metrics.Stable));
             }
 
-            foreach (var route in proto.Routes)
+            foreach (var route in network.Routes)
                 routes.Add(new CMUQueueRouteInfo(route.From, route.To, route.Probability));
 
-            foreach (var point in ent.Comp.History)
+            foreach (var bypass in network.Bypasses)
             {
-                var queues = new List<float>(proto.Nodes.Count);
-                foreach (var node in proto.Nodes)
+                var current = comp.BypassFractions.GetValueOrDefault(bypass.Id);
+                var maxed = current + bypass.StepFraction > bypass.MaxFraction + 0.001;
+                bypasses.Add(new CMUQueueBypassInfo(
+                    bypass.Id,
+                    bypass.From,
+                    bypass.To,
+                    current,
+                    bypass.MaxFraction,
+                    bypass.StepFraction,
+                    bypass.CostPerStep,
+                    !maxed && comp.Budget >= bypass.CostPerStep,
+                    maxed));
+            }
+
+            foreach (var point in comp.History)
+            {
+                var queues = new List<float>(network.Nodes.Count);
+                foreach (var node in network.Nodes)
                 {
                     queues.Add((float)(point.Queues.TryGetValue(node.Id, out var queue)
                         ? queue
@@ -498,23 +608,23 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
             ent.Owner,
             CMUQueueNetworkConsoleUiKey.Key,
             new CMUQueueNetworkConsoleState(
-                ent.Comp.Active,
-                ent.Comp.Completed,
-                ent.Comp.Failed,
-                ent.Comp.Status,
-                ent.Comp.StatusKind,
-                proto?.Name ?? string.Empty,
-                proto?.Description ?? string.Empty,
-                ent.Comp.Budget,
-                ent.Comp.TimeLeft,
-                ent.Comp.InitialTime,
-                ent.Comp.Reward,
-                ent.Comp.Elapsed,
-                proto?.AnalysisCost ?? 1,
-                proto?.ProjectionCost ?? 3,
-                proto?.ProjectionMinutes ?? 3,
+                comp.Active,
+                comp.Completed,
+                comp.Status,
+                comp.StatusKind,
+                network?.Name ?? string.Empty,
+                network?.Description ?? string.Empty,
+                comp.Budget,
+                comp.TimeLeft,
+                comp.InitialTime,
+                comp.Reward,
+                comp.Elapsed,
+                network?.AnalysisCost ?? 1,
+                network?.ProjectionCost ?? 3,
+                network?.ProjectionMinutes ?? 3,
                 nodes,
                 routes,
+                bypasses,
                 history));
     }
 }

@@ -24,7 +24,87 @@ public static class CMUQueueNetworkMath
     /// Routes whose destination is not a node are treated as the sink.
     /// </summary>
     public static bool TrySolveArrivalRates(
-        CMUQueueNetworkPrototype network,
+        CMUQueueNetworkDefinition network,
+        out Dictionary<string, double> rates,
+        out string error)
+    {
+        return TrySolveArrivalRates(network, null, out rates, out error);
+    }
+
+    /// <summary>
+    /// Solves the flow-balance equations after applying the active intake
+    /// diversions. A bypass moves a fraction of the external flow entering its
+    /// source node directly to its target node.
+    /// </summary>
+    public static bool TrySolveArrivalRates(
+        CMUQueueNetworkDefinition network,
+        IReadOnlyDictionary<string, double>? bypassFractions,
+        out Dictionary<string, double> rates,
+        out string error)
+    {
+        if (!TryBuildEffectiveSources(network, bypassFractions, out var sources, out error))
+        {
+            rates = new Dictionary<string, double>(StringComparer.Ordinal);
+            return false;
+        }
+
+        return TrySolveArrivalRatesCore(network, sources, out rates, out error);
+    }
+
+    /// <summary>
+    /// Returns the external arrival rate at each node after active bypasses.
+    /// </summary>
+    public static Dictionary<string, double> GetEffectiveSourceRates(
+        CMUQueueNetworkDefinition network,
+        IReadOnlyDictionary<string, double>? bypassFractions)
+    {
+        return TryBuildEffectiveSources(network, bypassFractions, out var sources, out _)
+            ? sources
+            : new Dictionary<string, double>(StringComparer.Ordinal);
+    }
+
+    private static bool TryBuildEffectiveSources(
+        CMUQueueNetworkDefinition network,
+        IReadOnlyDictionary<string, double>? bypassFractions,
+        out Dictionary<string, double> sources,
+        out string error)
+    {
+        sources = new Dictionary<string, double>(StringComparer.Ordinal);
+        error = string.Empty;
+
+        foreach (var source in network.Sources)
+        {
+            if (source.Rate < 0)
+            {
+                error = $"Queue network source at '{source.Node}' has a negative rate.";
+                return false;
+            }
+
+            sources[source.Node] = sources.GetValueOrDefault(source.Node) + source.Rate;
+        }
+
+        if (bypassFractions == null)
+            return true;
+
+        foreach (var bypass in network.Bypasses)
+        {
+            if (!bypassFractions.TryGetValue(bypass.Id, out var fraction) || fraction <= 0)
+                continue;
+
+            if (!sources.TryGetValue(bypass.From, out var fromRate) || fromRate <= 0)
+                continue;
+
+            var moved = fromRate * Math.Clamp(fraction, 0, bypass.MaxFraction);
+            sources[bypass.From] = fromRate - moved;
+            sources[bypass.To] = sources.GetValueOrDefault(bypass.To) + moved;
+        }
+
+        return true;
+    }
+
+    private static bool TrySolveArrivalRatesCore(
+        CMUQueueNetworkDefinition network,
+        IReadOnlyDictionary<string, double> sources,
         out Dictionary<string, double> rates,
         out string error)
     {
@@ -57,22 +137,23 @@ public static class CMUQueueNetworkMath
             return false;
         }
 
+        foreach (var (nodeId, _) in sources)
+        {
+            if (!index.ContainsKey(nodeId))
+            {
+                error = $"Queue network source references unknown node '{nodeId}'.";
+                return false;
+            }
+        }
+
         var count = ids.Count;
         var matrix = new double[count, count + 1];
 
         for (var i = 0; i < count; i++)
             matrix[i, i] = 1;
 
-        foreach (var source in network.Sources)
-        {
-            if (!index.TryGetValue(source.Node, out var nodeIndex))
-            {
-                error = $"Queue network source references unknown node '{source.Node}'.";
-                return false;
-            }
-
-            matrix[nodeIndex, count] += source.Rate;
-        }
+        foreach (var (nodeId, rate) in sources)
+            matrix[index[nodeId], count] += rate;
 
         foreach (var route in network.Routes)
         {
@@ -159,7 +240,7 @@ public static class CMUQueueNetworkMath
     /// readable and makes the effect of an upgrade unambiguous.
     /// </summary>
     public static List<CMUQueueProjectionPoint> Project(
-        CMUQueueNetworkPrototype network,
+        CMUQueueNetworkDefinition network,
         IReadOnlyDictionary<string, double> serviceRates,
         IReadOnlyDictionary<string, double> arrivalRates,
         IReadOnlyDictionary<string, double> startQueues,

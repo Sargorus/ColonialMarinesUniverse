@@ -1,30 +1,30 @@
 using System.Collections.Generic;
-using Robust.Shared.Prototypes;
 using Robust.Shared.ViewVariables;
 
 namespace Content.Shared.CMU14.Robotics.QueueNetwork;
 
 /// <summary>
-/// A production diagnostic terminal that offers queueing-network contracts.
-/// The player analyzes nodes, finds the ones without a steady state, upgrades
-/// service rates within a maintenance budget, and submits the line once all
-/// queues are stable.
+/// A production diagnostic terminal that generates queueing-network
+/// contracts. The player analyzes nodes, finds the ones without a steady
+/// state, upgrades service rates or diverts intake, and submits the line once
+/// every queue is stable.
 /// </summary>
 [RegisterComponent]
 public sealed partial class CMUQueueNetworkConsoleComponent : Component
 {
-    /// <summary>Scenarios this terminal can offer.</summary>
-    [DataField]
-    public List<ProtoId<CMUQueueNetworkPrototype>> Scenarios = new();
-
+    /// <summary>The generated network for the active contract.</summary>
     [ViewVariables]
-    public ProtoId<CMUQueueNetworkPrototype>? ActiveScenario;
+    public CMUQueueNetworkDefinition? Network;
 
     [ViewVariables]
     public Dictionary<string, CMUQueueNodeRuntime> Nodes = new();
 
     [ViewVariables]
     public Dictionary<string, CMUQueueAnalysis> Analyses = new();
+
+    /// <summary>Active diversion fraction per bypass id.</summary>
+    [ViewVariables]
+    public Dictionary<string, double> BypassFractions = new();
 
     [ViewVariables]
     public List<CMUQueueHistoryPoint> History = new();
@@ -60,12 +60,21 @@ public sealed partial class CMUQueueNetworkConsoleComponent : Component
     [ViewVariables]
     public bool Completed;
 
-    [ViewVariables]
-    public bool Failed;
-
     /// <summary>Contracts completed on this terminal, used to offer the tutorial first.</summary>
     [ViewVariables]
     public int CompletedContracts;
+
+    /// <summary>Seed of the last generated network, kept for diagnostics.</summary>
+    [ViewVariables]
+    public int LastSeed;
+
+    /// <summary>Test and admin override for the topology.</summary>
+    [ViewVariables]
+    public CMUQueueTopologyKind? ForcedTopology;
+
+    /// <summary>Test and admin override for the generator seed.</summary>
+    [ViewVariables]
+    public int? ForcedSeed;
 }
 
 public sealed class CMUQueueNodeRuntime

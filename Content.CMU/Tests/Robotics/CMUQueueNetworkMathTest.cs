@@ -125,70 +125,145 @@ public sealed class CMUQueueNetworkMathTest
     }
 
     [Test]
-    public void TutorialUpgradeFitsBudgetAndRestoresStability()
-    {
-        var processor = CMUQueueNetworkMath.ComputeMetrics(9, 7);
-        var upgraded = CMUQueueNetworkMath.ComputeMetrics(9, 7 * 1.5);
-
-        Assert.That(processor.Stable, Is.False);
-        Assert.That(upgraded.Stable, Is.True);
-        Assert.That(250, Is.LessThanOrEqualTo(400));
-    }
-
-    [Test]
-    public void ReworkUpgradesFitBudgetAndRestoreStability()
-    {
-        var processor = CMUQueueNetworkMath.ComputeMetrics(10 / 0.9, 8 * 1.5);
-        var assembler = CMUQueueNetworkMath.ComputeMetrics(10 / 0.9, 9 * 1.5);
-
-        Assert.That(processor.Stable, Is.True);
-        Assert.That(assembler.Stable, Is.True);
-        Assert.That(250 + 250, Is.LessThanOrEqualTo(800));
-    }
-
-    [Test]
-    public void ClosedLoopWithoutSinkIsRejected()
+    public void BypassMovesExternalFlowToTarget()
     {
         var network = MakeNetwork(
-            Node("a", 10),
-            Node("b", 10));
-        network.Sources.Add(Source("a", 1));
-        network.Routes.Add(Route("a", "b", 1));
-        network.Routes.Add(Route("b", "a", 1));
+            Node("intake", 12),
+            Node("processor", 10),
+            Node("alternate", 10));
+        network.Sources.Add(Source("intake", 10));
+        network.Routes.Add(Route("intake", "processor", 1));
+        network.Routes.Add(Route("processor", "sink", 1));
+        network.Routes.Add(Route("alternate", "sink", 1));
+        network.Bypasses.Add(new CMUQueueBypassDefinition
+        {
+            Id = "intake-alternate",
+            From = "intake",
+            To = "alternate",
+            MaxFraction = 0.5,
+            StepFraction = 0.1,
+            CostPerStep = 100,
+        });
 
-        Assert.That(CMUQueueNetworkMath.TrySolveArrivalRates(network, out _, out var error), Is.False);
-        Assert.That(error, Is.Not.Empty);
+        var fractions = new Dictionary<string, double>
+        {
+            ["intake-alternate"] = 0.5,
+        };
+
+        Assert.That(
+            CMUQueueNetworkMath.TrySolveArrivalRates(network, fractions, out var rates, out var error),
+            Is.True,
+            error);
+
+        Assert.That(rates["intake"], Is.EqualTo(5).Within(0.001));
+        Assert.That(rates["processor"], Is.EqualTo(5).Within(0.001));
+        Assert.That(rates["alternate"], Is.EqualTo(5).Within(0.001));
     }
 
-    private static CMUQueueNetworkPrototype MakeNetwork(params CMUQueueNodePrototype[] nodes)
+    [Test]
+    public void GeneratorProducesSolvableContracts()
     {
-        return new CMUQueueNetworkPrototype
+        var topologies = new HashSet<CMUQueueTopologyKind>();
+        var bypasses = 0;
+
+        for (var seed = 0; seed < 200; seed++)
+        {
+            var network = CMUQueueNetworkGenerator.Generate(seed: seed);
+            topologies.Add(network.Topology);
+            if (network.Bypasses.Count > 0)
+                bypasses++;
+
+            Assert.That(network.Nodes.Count, Is.GreaterThanOrEqualTo(3), $"seed {seed}");
+            Assert.That(network.Sources, Is.Not.Empty, $"seed {seed}");
+
+            Assert.That(
+                CMUQueueNetworkMath.TrySolveArrivalRates(network, out var rates, out var error),
+                Is.True,
+                $"seed {seed}: {error}");
+
+            var unstable = network.Nodes
+                .Where(node => !CMUQueueNetworkMath.ComputeMetrics(rates[node.Id], node.ServiceRate).Stable)
+                .ToList();
+
+            Assert.That(unstable, Is.Not.Empty, $"seed {seed} produced no bottleneck");
+
+            var solutionCost = 0;
+            foreach (var node in unstable)
+            {
+                var upgraded = CMUQueueNetworkMath.ComputeMetrics(
+                    rates[node.Id],
+                    node.ServiceRate * node.UpgradeMultiplier);
+                Assert.That(upgraded.Stable, Is.True, $"seed {seed}: {node.Id} needs more than one upgrade");
+                solutionCost += node.UpgradeCost;
+            }
+
+            Assert.That(
+                network.Budget,
+                Is.GreaterThanOrEqualTo(solutionCost),
+                $"seed {seed}: budget does not cover the bottleneck upgrades");
+
+            Assert.That(network.Reward, Is.GreaterThan(0), $"seed {seed}");
+
+            foreach (var bypass in network.Bypasses)
+            {
+                Assert.That(network.Sources.Any(source => source.Node == bypass.From), Is.True,
+                    $"seed {seed}: bypass starts at a node without external intake");
+                Assert.That(network.Nodes.Any(node => node.Id == bypass.To), Is.True,
+                    $"seed {seed}: bypass target does not exist");
+            }
+        }
+
+        Assert.That(topologies, Is.EquivalentTo(Enum.GetValues<CMUQueueTopologyKind>()));
+        Assert.That(bypasses, Is.GreaterThan(0));
+    }
+
+    [Test]
+    public void TutorialGeneratorHasExactlyOneBottleneck()
+    {
+        var network = CMUQueueNetworkGenerator.Generate(seed: 123, tutorial: true);
+
+        Assert.That(
+            CMUQueueNetworkMath.TrySolveArrivalRates(network, out var rates, out var error),
+            Is.True,
+            error);
+
+        var unstable = network.Nodes
+            .Where(node => !CMUQueueNetworkMath.ComputeMetrics(rates[node.Id], node.ServiceRate).Stable)
+            .ToList();
+
+        Assert.That(unstable, Has.Count.EqualTo(1));
+        Assert.That(network.Bypasses, Is.Empty);
+    }
+
+    private static CMUQueueNetworkDefinition MakeNetwork(params CMUQueueNodeDefinition[] nodes)
+    {
+        return new CMUQueueNetworkDefinition
         {
             Nodes = nodes.ToList(),
         };
     }
 
-    private static CMUQueueNodePrototype Node(string id, double serviceRate)
+    private static CMUQueueNodeDefinition Node(string id, double serviceRate)
     {
-        return new CMUQueueNodePrototype
+        return new CMUQueueNodeDefinition
         {
             Id = id,
             ServiceRate = serviceRate,
         };
     }
 
-    private static CMUQueueSourcePrototype Source(string node, double rate)
+    private static CMUQueueSourceDefinition Source(string node, double rate)
     {
-        return new CMUQueueSourcePrototype
+        return new CMUQueueSourceDefinition
         {
             Node = node,
             Rate = rate,
         };
     }
 
-    private static CMUQueueRoutePrototype Route(string from, string to, double probability)
+    private static CMUQueueRouteDefinition Route(string from, string to, double probability)
     {
-        return new CMUQueueRoutePrototype
+        return new CMUQueueRouteDefinition
         {
             From = from,
             To = to,
