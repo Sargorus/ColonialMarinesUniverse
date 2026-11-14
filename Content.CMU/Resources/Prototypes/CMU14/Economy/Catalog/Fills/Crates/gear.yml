@@ -200,6 +200,8 @@
   - type: CrateOpenable
     spawn:
     - id: CMUProductionDiagnosticConsole
+    - id: Crowbar
+    - id: Wrench
 
 - type: entity
   parent: RMCCrateScience

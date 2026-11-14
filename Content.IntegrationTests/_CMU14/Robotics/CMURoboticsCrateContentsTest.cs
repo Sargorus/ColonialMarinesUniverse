@@ -30,4 +30,27 @@ public sealed class CMURoboticsCrateContentsTest : GameTest
                 "Opening the crate must produce only the fabricator, not a wood plank or random loot.");
         });
     }
+
+    [Test]
+    public async Task DiagnosticConsoleCrateContainsTerminalAndTools()
+    {
+        var map = await Pair.CreateTestMap();
+
+        await Server.WaitAssertion(() =>
+        {
+            var crate = SEntMan.SpawnEntity("CMUCrateProductionDiagnosticConsole", map.GridCoords);
+            var openable = SComp<CrateOpenableComponent>(crate);
+            var prototypes = openable.Spawn
+                .Select(entry => entry.PrototypeId?.Id)
+                .Where(id => id != null)
+                .ToList();
+
+            Assert.That(prototypes, Is.EquivalentTo(new[]
+            {
+                "CMUProductionDiagnosticConsole",
+                "Crowbar",
+                "Wrench",
+            }));
+        });
+    }
 }
