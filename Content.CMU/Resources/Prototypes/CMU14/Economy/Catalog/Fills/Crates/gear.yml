@@ -196,6 +196,16 @@
     - id: CMURoboticsOrderConsole
 
 - type: entity
+  parent: RMCCrateConstruction
+  id: CMUCrateProductionDiagnosticConsole
+  name: production diagnostic terminal crate
+  description: A sealed crate containing one Weyland-Yutani production diagnostic terminal. Pry it open with a crowbar.
+  components:
+  - type: CrateOpenable
+    spawn:
+    - id: CMUProductionDiagnosticConsole
+
+- type: entity
   parent: RMCCrateScience
   id: CMUCrateRadsuit
   name: radiation suit crate

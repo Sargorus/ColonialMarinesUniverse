@@ -1,0 +1,127 @@
+# M/M/1 queueing-network contracts for the production diagnostic terminal.
+# A node is stable only while its flow-balance arrival rate is below its
+# service rate. The tutorial scenario has one obvious bottleneck; the rework
+# scenario puts two nodes over capacity through a feedback loop.
+
+- type: cmuQueueNetwork
+  id: CMUQueueNetworkTutorial
+  name: cmu-queue-network-tutorial-name
+  description: cmu-queue-network-tutorial-desc
+  budget: 400
+  reward: 800
+  diagnosticMinutes: 15
+  analysisCost: 1
+  projectionCost: 3
+  projectionMinutes: 3
+  nodes:
+  - id: intake
+    name: cmu-queue-node-intake
+    serviceRate: 12
+    upgradeMultiplier: 1.5
+    upgradeCost: 150
+    maxUpgrades: 1
+    column: 0
+    row: 0
+  - id: processor
+    name: cmu-queue-node-processor
+    serviceRate: 7
+    upgradeMultiplier: 1.5
+    upgradeCost: 250
+    maxUpgrades: 1
+    column: 1
+    row: 0
+  - id: packaging
+    name: cmu-queue-node-packaging
+    serviceRate: 10
+    upgradeMultiplier: 1.5
+    upgradeCost: 150
+    maxUpgrades: 1
+    column: 2
+    row: 0
+  sources:
+  - node: intake
+    rate: 9
+  routes:
+  - from: intake
+    to: processor
+    probability: 1
+  - from: processor
+    to: packaging
+    probability: 1
+  - from: packaging
+    to: sink
+    probability: 1
+
+- type: cmuQueueNetwork
+  id: CMUQueueNetworkRework
+  name: cmu-queue-network-rework-name
+  description: cmu-queue-network-rework-desc
+  budget: 800
+  reward: 1400
+  diagnosticMinutes: 15
+  analysisCost: 1
+  projectionCost: 3
+  projectionMinutes: 3
+  nodes:
+  - id: intake
+    name: cmu-queue-node-intake
+    serviceRate: 15
+    upgradeMultiplier: 1.5
+    upgradeCost: 150
+    maxUpgrades: 1
+    column: 0
+    row: 1
+  - id: processor
+    name: cmu-queue-node-processor
+    serviceRate: 8
+    upgradeMultiplier: 1.5
+    upgradeCost: 250
+    maxUpgrades: 1
+    column: 1
+    row: 0
+  - id: assembler
+    name: cmu-queue-node-assembler
+    serviceRate: 9
+    upgradeMultiplier: 1.5
+    upgradeCost: 250
+    maxUpgrades: 1
+    column: 2
+    row: 0
+  - id: qc
+    name: cmu-queue-node-qc
+    serviceRate: 12
+    upgradeMultiplier: 1.5
+    upgradeCost: 200
+    maxUpgrades: 1
+    column: 3
+    row: 0
+  - id: packaging
+    name: cmu-queue-node-packaging
+    serviceRate: 12
+    upgradeMultiplier: 1.5
+    upgradeCost: 200
+    maxUpgrades: 1
+    column: 4
+    row: 1
+  sources:
+  - node: intake
+    rate: 10
+  routes:
+  - from: intake
+    to: processor
+    probability: 1
+  - from: processor
+    to: assembler
+    probability: 1
+  - from: assembler
+    to: qc
+    probability: 0.9
+  - from: assembler
+    to: processor
+    probability: 0.1
+  - from: qc
+    to: packaging
+    probability: 1
+  - from: packaging
+    to: sink
+    probability: 1

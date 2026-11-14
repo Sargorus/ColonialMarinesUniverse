@@ -1,0 +1,34 @@
+- type: entity
+  parent: RMCCommunicationsConsoleBase
+  id: CMUProductionDiagnosticConsole
+  name: production diagnostic terminal
+  description: A Weyland-Yutani queueing-network terminal for diagnosing overloaded production lines. Analyze nodes, find the ones without a steady state, upgrade their service rates, and submit the line once every queue is stable. Contracts pay into the colony budget.
+  components:
+  - type: Transform
+    anchored: false
+    noRot: false
+  - type: Anchorable
+    flags: [Anchorable, Unanchorable]
+  - type: Rotatable
+  - type: RemoveComponents
+    components:
+    - type: WallMount
+  - type: Sprite
+    sprite: _RMC14/Structures/Machines/computer.rsi
+    state: terminal1_old
+  - type: InteractionOutline
+  - type: CMUQueueNetworkConsole
+    scenarios:
+    - CMUQueueNetworkTutorial
+    - CMUQueueNetworkRework
+  - type: ActivatableUI
+    key: enum.CMUQueueNetworkConsoleUiKey.Key
+  - type: ActivatableUIRequiresAccess
+  - type: AccessReader
+    access: [["AU14AccessCorporateWEYU"]]
+  - type: UserInterface
+    interfaces:
+      enum.CMUQueueNetworkConsoleUiKey.Key:
+        type: CMUQueueNetworkConsoleBoundUserInterface
+  - type: StaticPrice
+    price: 800

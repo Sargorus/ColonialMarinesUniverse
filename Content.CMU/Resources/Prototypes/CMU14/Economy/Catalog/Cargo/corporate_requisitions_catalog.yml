@@ -63,6 +63,8 @@
         crate: CMUCrateRoboticsFabricator
       - cost: 1500
         crate: CMUCrateRoboticsOrderConsole
+      - cost: 1500
+        crate: CMUCrateProductionDiagnosticConsole
       - cost: 100
         crate: CMUCrateSyntheticTransport
       - cost: 2500
