@@ -68,6 +68,7 @@ public sealed class CMUQueueTopologyControl : Control
         MinHeight = 300;
         HorizontalExpand = true;
         MouseFilter = MouseFilterMode.Stop;
+        RectClipContent = true;
     }
 
     public void SetData(
@@ -219,7 +220,9 @@ public sealed class CMUQueueTopologyControl : Control
             DrawLabel(
                 handle,
                 (start + end) / 2 + perpendicular * 9,
-                node.ExternalRate.ToString("0.#"),
+                Loc.GetString(
+                    "cmu-queue-topology-external",
+                    ("rate", node.ExternalRate.ToString("0.#"))),
                 CrtTerminalPalette.Accent);
         }
 
@@ -233,7 +236,18 @@ public sealed class CMUQueueTopologyControl : Control
 
             var start = new Vector2((from.Left + from.Right) / 2, from.Top);
             var end = new Vector2((to.Left + to.Right) / 2, to.Top);
-            var bend = Math.Min(start.Y, end.Y) - 18;
+            var fromCenter = Center(from);
+            var toCenter = Center(to);
+            var targetBelow = toCenter.Y > fromCenter.Y + (from.Bottom - from.Top) / 2;
+            if (targetBelow)
+            {
+                start = new Vector2(fromCenter.X, from.Bottom);
+                end = new Vector2(toCenter.X, to.Bottom);
+            }
+
+            var bend = targetBelow
+                ? Math.Max(start.Y, end.Y) + 18
+                : Math.Min(start.Y, end.Y) - 18;
             DrawDashed(handle, start, new Vector2(start.X, bend), CrtTerminalPalette.Caution);
             DrawDashed(handle, new Vector2(start.X, bend), new Vector2(end.X, bend), CrtTerminalPalette.Caution);
             DrawArrow(handle, new Vector2(end.X, bend), end, CrtTerminalPalette.Caution);
@@ -243,7 +257,11 @@ public sealed class CMUQueueTopologyControl : Control
                     "cmu-queue-topology-bypass-active",
                     ("percent", (bypass.CurrentPercent * 100).ToString("0")))
                 : Loc.GetString("cmu-queue-topology-bypass");
-            DrawLabel(handle, new Vector2((start.X + end.X) / 2, bend - 11), label, CrtTerminalPalette.Caution);
+            DrawLabel(
+                handle,
+                new Vector2((start.X + end.X) / 2, targetBelow ? bend + 11 : bend - 11),
+                label,
+                CrtTerminalPalette.Caution);
         }
 
         foreach (var route in _routes)
@@ -271,9 +289,16 @@ public sealed class CMUQueueTopologyControl : Control
 
             if (to.Left <= from.Left)
             {
-                var start = new Vector2((from.Left + from.Right) / 2, from.Top);
-                var end = new Vector2((to.Left + to.Right) / 2, to.Top);
-                var bend = Math.Min(start.Y, end.Y) - 14;
+                var fromCenter = Center(from);
+                var toCenter = Center(to);
+                var targetBelow = toCenter.Y > fromCenter.Y;
+                var startY = targetBelow ? from.Bottom : from.Top;
+                var endY = targetBelow ? to.Bottom : to.Top;
+                var start = new Vector2(fromCenter.X, startY);
+                var end = new Vector2(toCenter.X, endY);
+                var bend = targetBelow
+                    ? Math.Max(startY, endY) + 14
+                    : Math.Min(startY, endY) - 14;
                 handle.DrawLine(start, new Vector2(start.X, bend), CrtTerminalPalette.Line);
                 handle.DrawLine(new Vector2(start.X, bend), new Vector2(end.X, bend), CrtTerminalPalette.Line);
                 DrawArrow(handle, new Vector2(end.X, bend), end, CrtTerminalPalette.Line);
@@ -282,7 +307,7 @@ public sealed class CMUQueueTopologyControl : Control
                 {
                     DrawLabel(
                         handle,
-                        new Vector2((start.X + end.X) / 2, bend - 9),
+                        new Vector2((start.X + end.X) / 2, targetBelow ? bend + 9 : bend - 9),
                         Loc.GetString(
                             "cmu-queue-topology-percent",
                             ("percent", (route.Probability * 100).ToString("0"))),
@@ -319,14 +344,17 @@ public sealed class CMUQueueTopologyControl : Control
             DrawBox(handle, rect, CrtTerminalPalette.Surface2, border);
             DrawCentered(handle, rect, ShortName(node), CrtTerminalPalette.TextBright);
 
-            var queue = Loc.GetString(
-                "cmu-queue-topology-queue",
-                ("queue", node.Queue.ToString("0.#")));
-            handle.DrawString(
-                _font,
-                new Vector2(rect.Left + 4, rect.Bottom - 12),
-                queue,
-                CrtTerminalPalette.TextDim);
+            if (node.Queue > 0.05)
+            {
+                var queue = Loc.GetString(
+                    "cmu-queue-topology-queue",
+                    ("queue", node.Queue.ToString("0.#")));
+                handle.DrawString(
+                    _font,
+                    new Vector2(rect.Left + 4, rect.Bottom - 12),
+                    queue,
+                    CrtTerminalPalette.TextDim);
+            }
         }
     }
 

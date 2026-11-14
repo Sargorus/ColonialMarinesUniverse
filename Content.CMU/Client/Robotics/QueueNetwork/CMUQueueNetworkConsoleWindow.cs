@@ -236,13 +236,19 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
 
         foreach (var node in state.Nodes)
         {
-            var button = _kit.Button(
-                Loc.GetString(
+            var selected = node.Id == _selectedNodeId ? "> " : string.Empty;
+            var label = node.Queue > 0.05
+                ? Loc.GetString(
                     "cmu-queue-console-node-label",
-                    ("selected", node.Id == _selectedNodeId ? "> " : string.Empty),
+                    ("selected", selected),
                     ("name", NodeName(node)),
-                    ("queue", FormatShort(node.Queue))),
-                CmuButtonStyles.Variant.Neutral);
+                    ("queue", FormatShort(node.Queue)))
+                : Loc.GetString(
+                    "cmu-queue-console-node-label-no-queue",
+                    ("selected", selected),
+                    ("name", NodeName(node)));
+
+            var button = _kit.Button(label, CmuButtonStyles.Variant.Neutral);
             button.ToolTip = Loc.GetString("cmu-queue-console-node-tooltip");
             button.HorizontalExpand = true;
             var nodeId = node.Id;
