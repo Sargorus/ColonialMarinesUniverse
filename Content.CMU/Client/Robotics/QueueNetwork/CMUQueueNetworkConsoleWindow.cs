@@ -128,11 +128,9 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
             _rewardValue.Text = CrtConsoleKit.Money(state.Reward);
         }
 
-        if (state.Nodes.Count > 0 &&
-            (_selectedNodeId == null || state.Nodes.All(node => node.Id != _selectedNodeId)))
-        {
+        if (state.Nodes.Count > 0
+            && (_selectedNodeId == null || state.Nodes.All(node => node.Id != _selectedNodeId)))
             _selectedNodeId = state.Nodes[0].Id;
-        }
 
         RebuildBody();
     }
@@ -327,9 +325,9 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
                 ("cost", CrtConsoleKit.Money(node.UpgradeCost)));
 
         var upgrade = _kit.Button(upgradeText, CmuButtonStyles.Variant.Affirm);
-        upgrade.Disabled = !state.Active ||
-                          node.Upgrades >= node.MaxUpgrades ||
-                          state.Budget < node.UpgradeCost;
+        upgrade.Disabled = !state.Active
+                           || node.Upgrades >= node.MaxUpgrades
+                           || state.Budget < node.UpgradeCost;
         upgrade.OnPressed += _ => OnUpgrade?.Invoke(node.Id);
         column.AddChild(upgrade);
 

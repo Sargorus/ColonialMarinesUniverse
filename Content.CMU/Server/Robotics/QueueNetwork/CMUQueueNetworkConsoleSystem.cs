@@ -365,8 +365,8 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         var final = points[^1];
         foreach (var node in network.Nodes)
         {
-            if (comp.Nodes.TryGetValue(node.Id, out var runtime) &&
-                final.Queues.TryGetValue(node.Id, out var queue))
+            if (comp.Nodes.TryGetValue(node.Id, out var runtime)
+                && final.Queues.TryGetValue(node.Id, out var queue))
             {
                 runtime.Queue = queue;
             }
@@ -465,8 +465,8 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
 
         foreach (var (nodeId, analysis) in comp.Analyses)
         {
-            if (!comp.Nodes.TryGetValue(nodeId, out var runtime) ||
-                !rates.TryGetValue(nodeId, out var lambda))
+            if (!comp.Nodes.TryGetValue(nodeId, out var runtime)
+                || !rates.TryGetValue(nodeId, out var lambda))
             {
                 continue;
             }
