@@ -1,0 +1,48 @@
+# CMU cleanbot: the vanilla cleanbot plus an explicit blood-decal branch.
+# The normal puddle branch runs first; if no puddle is reachable, the bot
+# finds cleanable blood decals (including drag trails), walks to them and
+# removes them with the same mop effects.
+
+- type: htnCompound
+  id: CMUCleanbotCompound
+  branches:
+    - tasks:
+        - !type:HTNCompoundTask
+          task: BufferNearbyPuddlesCompound
+    - tasks:
+        - !type:HTNCompoundTask
+          task: CMUBufferNearbyBloodDecalsCompound
+    - tasks:
+        - !type:HTNCompoundTask
+          task: IdleCompound
+
+- type: htnCompound
+  id: CMUBufferNearbyBloodDecalsCompound
+  branches:
+    - tasks:
+        - !type:HTNPrimitiveTask
+          operator: !type:CMUPickNearbyBloodDecalOperator
+            targetCoordinatesKey: TargetCoordinates
+            range: 10
+        - !type:HTNPrimitiveTask
+          operator: !type:MoveToOperator
+            pathfindInPlanning: true
+            removeKeyOnFinish: false
+            targetKey: TargetCoordinates
+            pathfindKey: TargetPathfind
+            rangeKey: MeleeRange
+        - !type:HTNPrimitiveTask
+          operator: !type:CMUCleanBloodDecalOperator
+            targetCoordinatesKey: TargetCoordinates
+
+- type: entity
+  parent: MobCleanBot
+  id: CMUCleanBot
+  name: cleaner bot
+  suffix: CMU14
+  description: A Weyland-Yutani cleaner bot. It mops puddles and follows blood trails left by dragging a bleeding body.
+  components:
+  - type: CMUBotSlogan
+  - type: HTN
+    rootTask:
+      task: CMUCleanbotCompound

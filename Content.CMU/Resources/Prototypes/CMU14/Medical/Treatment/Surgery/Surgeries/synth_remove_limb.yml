@@ -1,0 +1,43 @@
+# Synth-only limb removal. The standard human amputation flow is hidden from
+# synth patients by the RMCSynthSurgery marker, so drones, Working Joes and
+# other synthetics need their own chassis-opening flow.
+- type: entity
+  parent: CMSurgeryBase
+  id: RMCSynthSurgeryRemoveLimb
+  name: Remove Synth Limb
+  components:
+  - type: CMSurgery
+    priority: 2
+    steps:
+    - RMCSynthSurgeryStepCutChassis
+    - RMCSynthSurgeryStepDetachLimb
+  - type: RMCSynthSurgery
+
+- type: entity
+  parent: CMSurgeryStepBase
+  id: RMCSynthSurgeryStepDetachLimb
+  name: Detach synth limb
+  components:
+  - type: CMSurgeryStep
+    skill: 2
+    tool:
+    - type: Blowtorch
+  - type: CMUSurgeryStepRemoveLimbEffect
+  - type: Sprite
+    sprite: _RMC14/Objects/Tools/welder.rsi
+    state: icon
+
+- type: cmuSurgeryStepMetadata
+  id: RMCSynthSurgeryStepMetaRemoveLimb
+  surgery: RMCSynthSurgeryRemoveLimb
+  displayName: cmu-medical-surgery-remove-synth-limb
+  validParts: [Arm, Hand, Leg, Foot]
+  category: amputation
+  minSkill: 2
+  steps:
+  - stepId: RMCSynthSurgeryStepCutChassis
+    label: cmu-medical-step-cut-chassis-open
+    toolCategory: blowtorch
+  - stepId: RMCSynthSurgeryStepDetachLimb
+    label: cmu-medical-step-detach-synth-limb
+    toolCategory: blowtorch

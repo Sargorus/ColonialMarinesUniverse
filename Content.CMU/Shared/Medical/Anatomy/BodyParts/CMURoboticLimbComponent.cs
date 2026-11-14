@@ -12,6 +12,14 @@ public sealed partial class CMURoboticLimbComponent : Component
     [DataField, AutoNetworkedField, ViewVariables(VVAccess.ReadWrite)]
     public LocId MaterialName = "cmu-robotic-limb-material-synthetic";
 
+    /// <summary>
+    /// Whether this is a replacement prosthesis fitted to an organic body.
+    /// Standard synthetic, Working Joe and drone limbs are their own limbs,
+    /// not prostheses, and are described as such by medical examine.
+    /// </summary>
+    [DataField, AutoNetworkedField, ViewVariables(VVAccess.ReadWrite)]
+    public bool Prosthetic = true;
+
     [DataField, AutoNetworkedField, ViewVariables(VVAccess.ReadWrite)]
     public FixedPoint2 BruteDamage;
 

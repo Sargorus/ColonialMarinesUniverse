@@ -1,0 +1,10 @@
+- type: entity
+  parent: CMUPaperRequisitionSlip
+  id: CMURoboticsOrderSlip
+  name: robotics supply order
+  description: A supply order form for a Weyland-Yutani robotics contract. The order details are printed on the sheet.
+  components:
+  - type: CMURoboticsOrderSlip
+  - type: RemoveComponents
+    components:
+    - type: CMURequisitionSlip

@@ -59,6 +59,12 @@
       # XRF crates are added via code
       #- cost: 1000
       #  crate: CMUCrateXRF
+      - cost: 4000
+        crate: CMUCrateRoboticsFabricator
+      - cost: 1500
+        crate: CMUCrateRoboticsOrderConsole
+      - cost: 100
+        crate: CMUCrateSyntheticTransport
       - cost: 2500
         crate: CMUCrateSecureWYRandomExp
       - cost: 9500
@@ -69,3 +75,19 @@
         crate: CMUCrateTychoRadsuit
       - cost: 1500
         crate: CMUCrateGasMaskFilterWY
+    - name: WEY drone
+      entries:
+      - cost: 2500
+        crate: CMUCrateCombatDroneFrame
+        maxStock: 1
+        startingStock: 1
+        stockReplenishDelay: 21600
+        stockReplenishAmount: 1
+      - cost: 1125
+        crate: CMUCrateDroneOutfitEngineering
+      - cost: 1500
+        crate: CMUCrateDroneOutfitMedical
+      - cost: 1500
+        crate: CMUCrateDroneOutfitPolice
+      - cost: 500
+        crate: CMUCrateDroneArmorM4

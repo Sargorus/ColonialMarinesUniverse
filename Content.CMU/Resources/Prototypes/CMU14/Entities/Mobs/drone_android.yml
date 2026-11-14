@@ -11,6 +11,11 @@
     nameDataset: CMUNamesDroneAndroid
     maxNameLength: 24
     followCloseRange: 1
+    inheritsOperatorSkills: false
+  - type: UserInterface
+    interfaces:
+      enum.CMUDroneConfigurationUi.Key:
+        type: CMUDroneConfigurationBui
   - type: RemoveComponents
     components:
     - type: WorkingJoeVoice
@@ -25,14 +30,14 @@
     organs:
       Torso: CMUPartDroneAndroidTorso
       Head: CMUPartDroneAndroidHead
-      ArmLeft: CMUPartRoboticLeftArm
-      ArmRight: CMUPartRoboticRightArm
-      HandLeft: CMUPartRoboticLeftHand
-      HandRight: CMUPartRoboticRightHand
-      LegLeft: CMUPartRoboticLeftLeg
-      LegRight: CMUPartRoboticRightLeg
-      FootLeft: CMUPartRoboticLeftFoot
-      FootRight: CMUPartRoboticRightFoot
+      ArmLeft: CMUPartDroneAndroidLeftArm
+      ArmRight: CMUPartDroneAndroidRightArm
+      HandLeft: CMUPartDroneAndroidLeftHand
+      HandRight: CMUPartDroneAndroidRightHand
+      LegLeft: CMUPartDroneAndroidLeftLeg
+      LegRight: CMUPartDroneAndroidRightLeg
+      FootLeft: CMUPartDroneAndroidLeftFoot
+      FootRight: CMUPartDroneAndroidRightFoot
       Brain: CMUOrganHumanBrain
       Eyes: CMUOrganHumanEyes
       Lungs: CMUOrganHumanLungs
@@ -67,6 +72,7 @@
     footstepSoundCollection:
       collection: FootstepBorg
   - type: Skills
+    preset: null
     skills: {}
   - type: HTN
     rootTask:
@@ -85,6 +91,79 @@
   - type: GrantMarineIcons
     factions:
     - UNMC
+
+# Robotics fabricator variants. The unarmed frame cannot use guns even if a
+# combat module is installed; the combat frame has weapon skills.
+- type: entity
+  parent: CMUDroneAndroid
+  id: CMUDroneAndroidUnarmed
+  name: civilian drone
+  description: A stripped-down synthetic drone frame with exposed servos. Its control bus is deliberately locked out of firearm use.
+  suffix: CMU14, Unarmed
+  components:
+  - type: Synth
+    canUseGuns: false
+  - type: CMUDroneAndroid
+    supportsCombatModule: false
+    relayOperatorSpeech: false
+
+- type: entity
+  parent: CMUDroneAndroid
+  id: CMUDroneAndroidCombat
+  name: combat drone
+  description: A reinforced synthetic drone frame with a combat-rated control bus and weapon routines.
+  suffix: CMU14, Combat
+  components:
+  - type: Synth
+    canUseGuns: true
+  - type: CMUDroneAndroid
+    inheritsOperatorSkills: true
+    relayOperatorSpeech: false
+  - type: Skills
+    skills:
+      RMCSkillCqc: 4
+      RMCSkillFirearms: 4
+      RMCSkillMeleeWeapons: 4
+      RMCSkillSmartGun: 4
+
+# Repair-order targets. They spawn with random missing limbs and randomized
+# burn and brute damage, and no control module installed.
+- type: entity
+  parent: CMUDroneAndroidUnarmed
+  id: CMUDroneAndroidUnarmedRepair
+  name: damaged civilian drone
+  suffix: CMU14, Repair target
+  components:
+  - type: CMUHumanMedical
+  - type: CMURoboticsDamagedBody
+
+- type: entity
+  parent: CMUDroneAndroidCombat
+  id: CMUDroneAndroidCombatRepair
+  name: damaged combat drone
+  suffix: CMU14, Repair target
+  components:
+  - type: CMUHumanMedical
+  - type: CMURoboticsDamagedBody
+
+# Stable repair-order variants. Their damage is pre-rolled when the order is
+# generated and applied when the crate is delivered, so the displayed reward
+# never changes after the order is accepted.
+- type: entity
+  parent: CMUDroneAndroidUnarmedRepair
+  id: CMUDroneAndroidUnarmedRepairOrder
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: CMURoboticsDamagedBody
+    randomizeOnMapInit: false
+
+- type: entity
+  parent: CMUDroneAndroidCombatRepair
+  id: CMUDroneAndroidCombatRepairOrder
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: CMURoboticsDamagedBody
+    randomizeOnMapInit: false
 
 - type: entity
   parent: AppearanceDroneAndroid

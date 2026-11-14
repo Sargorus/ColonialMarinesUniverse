@@ -3,8 +3,11 @@ using Content.Server.EUI;
 using Content.Server.Humanoid;
 using Content.Shared._RMC14.Chemistry.Reagent;
 using Content.Shared.CMU14.CharacterDescription;
+using Content.Shared.CMU14.DroneOperator;
 using Content.Shared.Eui;
 using Content.Shared.Humanoid;
+using Content.Shared.NPC.Components;
+using Content.Shared.NPC.Prototypes;
 using JetBrains.Annotations;
 using Robust.Shared.Prototypes;
 
@@ -78,6 +81,24 @@ public sealed partial class DetailedExamineEui : BaseEui
                 hairMarkings.Count > 0 && hairMarkings[0].MarkingColors.Count > 0)
             {
                 state.HairColorName = NamedColorHelper.NearestColorName(hairMarkings[0].MarkingColors[0]);
+            }
+        }
+
+        // Drones do not get a character profile, so surface their configured NPC faction in
+        // the same allegiance row used by ordinary colony roles.
+        if (state.Allegiance == null &&
+            _entManager.HasComponent<CMUDroneAndroidComponent>(uid) &&
+            _entManager.TryGetComponent(uid, out NpcFactionMemberComponent? factionMember))
+        {
+            foreach (var factionId in factionMember.Factions)
+            {
+                if (!_prototypeManager.TryIndex(factionId, out NpcFactionPrototype? factionProto))
+                    continue;
+
+                state.Allegiance = string.IsNullOrEmpty(factionProto.Name)
+                    ? factionId.Id
+                    : Loc.GetString(factionProto.Name);
+                break;
             }
         }
 

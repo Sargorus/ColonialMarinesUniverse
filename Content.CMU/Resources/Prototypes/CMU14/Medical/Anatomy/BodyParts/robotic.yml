@@ -1,7 +1,23 @@
+# Robotic prosthetics used by the prosthetic-limb character trait. Drone
+# android limbs are separate prototypes (drone_limbs.yml) so a drone can never
+# be repaired with a human prosthetic and a human cannot receive drone parts.
 - type: entity
-  parent: [ OrganBaseArmLeft, PartSilicon, CMUPartDroneAndroidVisual ]
+  id: CMUPartProstheticVisual
+  abstract: true
+  components:
+  - type: Sprite
+    sprite: CMU14/Mobs/DroneAndroid/parts.rsi
+  - type: VisualOrgan
+    data:
+      sprite: CMU14/Mobs/DroneAndroid/parts.rsi
+  - type: VisualOrganMarkings
+    markingData:
+      group: DroneAndroid
+
+- type: entity
+  parent: [ OrganBaseArmLeft, PartSilicon, CMUPartProstheticVisual ]
   id: CMUPartRoboticLeftArm
-  name: left robotic arm
+  name: left robotic prosthetic arm
   suffix: CMU
   components:
   - type: BodyPart
@@ -25,9 +41,9 @@
       state: l_arm
 
 - type: entity
-  parent: [ OrganBaseArmRight, PartSilicon, CMUPartDroneAndroidVisual ]
+  parent: [ OrganBaseArmRight, PartSilicon, CMUPartProstheticVisual ]
   id: CMUPartRoboticRightArm
-  name: right robotic arm
+  name: right robotic prosthetic arm
   suffix: CMU
   components:
   - type: BodyPart
@@ -51,9 +67,9 @@
       state: r_arm
 
 - type: entity
-  parent: [ OrganBaseHandLeft, PartSilicon, CMUPartDroneAndroidVisual ]
+  parent: [ OrganBaseHandLeft, PartSilicon, CMUPartProstheticVisual ]
   id: CMUPartRoboticLeftHand
-  name: left robotic hand
+  name: left robotic prosthetic hand
   suffix: CMU
   components:
   - type: BodyPart
@@ -77,9 +93,9 @@
       state: l_hand
 
 - type: entity
-  parent: [ OrganBaseHandRight, PartSilicon, CMUPartDroneAndroidVisual ]
+  parent: [ OrganBaseHandRight, PartSilicon, CMUPartProstheticVisual ]
   id: CMUPartRoboticRightHand
-  name: right robotic hand
+  name: right robotic prosthetic hand
   suffix: CMU
   components:
   - type: BodyPart
@@ -103,9 +119,9 @@
       state: r_hand
 
 - type: entity
-  parent: [ OrganBaseLegLeft, PartSilicon, CMUPartDroneAndroidVisual ]
+  parent: [ OrganBaseLegLeft, PartSilicon, CMUPartProstheticVisual ]
   id: CMUPartRoboticLeftLeg
-  name: left robotic leg
+  name: left robotic prosthetic leg
   suffix: CMU
   components:
   - type: BodyPart
@@ -132,9 +148,9 @@
       state: l_leg
 
 - type: entity
-  parent: [ OrganBaseLegRight, PartSilicon, CMUPartDroneAndroidVisual ]
+  parent: [ OrganBaseLegRight, PartSilicon, CMUPartProstheticVisual ]
   id: CMUPartRoboticRightLeg
-  name: right robotic leg
+  name: right robotic prosthetic leg
   suffix: CMU
   components:
   - type: BodyPart
@@ -161,9 +177,9 @@
       state: r_leg
 
 - type: entity
-  parent: [ OrganBaseFootLeft, PartSilicon, CMUPartDroneAndroidVisual ]
+  parent: [ OrganBaseFootLeft, PartSilicon, CMUPartProstheticVisual ]
   id: CMUPartRoboticLeftFoot
-  name: left robotic foot
+  name: left robotic prosthetic foot
   suffix: CMU
   components:
   - type: BodyPart
@@ -187,9 +203,9 @@
       state: l_foot
 
 - type: entity
-  parent: [ OrganBaseFootRight, PartSilicon, CMUPartDroneAndroidVisual ]
+  parent: [ OrganBaseFootRight, PartSilicon, CMUPartProstheticVisual ]
   id: CMUPartRoboticRightFoot
-  name: right robotic foot
+  name: right robotic prosthetic foot
   suffix: CMU
   components:
   - type: BodyPart

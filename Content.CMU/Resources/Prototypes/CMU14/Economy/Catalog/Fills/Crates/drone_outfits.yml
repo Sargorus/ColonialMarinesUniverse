@@ -1,0 +1,64 @@
+# Weyland-Yutani cargo outfit sets for drone frames.
+
+- type: entity
+  parent: RMCCrateBase
+  id: CMUCrateDroneOutfitEngineering
+  name: drone engineering outfit crate
+  description: A crate containing a Weyland-Yutani engineering jumpsuit, an engineer oversuit, a filled M276 toolbelt, and an engineering welder backpack.
+  components:
+  - type: StorageFill
+    contents:
+    - id: RMCJumpsuitCivilianEngineerWorker
+    - id: CMUClothingOuterSuitEngineer
+    - id: CMBeltUtilityFilled
+    - id: CMBackpackWelder
+
+- type: entity
+  parent: RMCCrateBase
+  id: CMUCrateDroneOutfitMedical
+  name: drone medical outfit crate
+  description: A crate containing orange medical scrubs, a CMU medical labcoat, an empty medical belt, a medical backpack, and an orange surgical cap.
+  components:
+  - type: StorageFill
+    contents:
+    - id: CMScrubsOrange
+    - id: RMCLabcoat
+    - id: CMBeltMedical
+    - id: CMBackpackMedical
+    - id: CMHeadCapSurgOrange
+
+- type: entity
+  parent: RMCCrateBase
+  id: CMUCrateDroneOutfitPolice
+  name: drone police outfit crate
+  description: A crate containing a Weyland-Yutani corporate security uniform, a lightweight combat pack, and a corporate security rig loaded with non-lethal equipment.
+  components:
+  - type: StorageFill
+    contents:
+    - id: AU14JumpsuitVeteranPMCCorporate
+    - id: RMCSatchelLightpack
+    - id: CMUBeltSecurityWeYaDroneFilled
+
+- type: entity
+  parent: RMCCrateBase
+  id: CMUCrateDroneArmorM4
+  name: corporate M4 vest crate
+  description: A crate containing one corporate-pattern M4 armor vest for a drone frame.
+  components:
+  - type: StorageFill
+    contents:
+    - id: CMUArmorM4PMCCorporate
+
+- type: entity
+  parent: RMCBeltSecurityWeYa
+  id: CMUBeltSecurityWeYaDroneFilled
+  suffix: Filled
+  components:
+  - type: StorageFill
+    contents:
+    - id: CMFlash
+    - id: RMCHandcuffs
+      amount: 3
+    - id: RMCZipties
+      amount: 2
+    - id: ForensicScanner

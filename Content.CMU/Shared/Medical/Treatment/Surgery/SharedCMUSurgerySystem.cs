@@ -82,6 +82,7 @@ public abstract partial class SharedCMUSurgerySystem : EntitySystem
         SubscribeLocalEvent<CMUSurgeryStepCauterizeBleedEffectComponent, CMSurgeryStepEvent>(OnCauterizeBleedStep);
         SubscribeLocalEvent<CMUSurgeryStepReattachLimbEffectComponent, CMSurgeryStepEvent>(OnReattachLimbStep);
         SubscribeLocalEvent<CMUSurgeryStepRemoveLimbEffectComponent, CMSurgeryStepEvent>(OnRemoveLimbStep);
+        SubscribeLocalEvent<CMUSurgeryStepRemoveLimbEffectComponent, CMSurgeryStepCompleteCheckEvent>(OnRemoveLimbCompleteCheck);
         SubscribeLocalEvent<CMUSurgeryStepDebrideEscharEffectComponent, CMSurgeryStepEvent>(OnDebrideEscharStep);
         SubscribeLocalEvent<CMUSurgeryStepResolveTraitEffectComponent, CMSurgeryStepEvent>(OnResolveSurgicalTraitStep);
         SubscribeLocalEvent<CMUSurgeryStepCloseStumpEffectComponent, CMSurgeryStepEvent>(OnCloseStumpStep);
@@ -366,6 +367,21 @@ public abstract partial class SharedCMUSurgerySystem : EntitySystem
         if (!IsSurgeryEnabled())
             return;
         args.Failed |= !ApplyLimbRemoval(args.User, args.Body, args.Part);
+    }
+
+    /// <summary>
+    /// The removal step has no marker of its own, so without this check the
+    /// framework considers it complete and ends the surgery before detaching
+    /// the limb. Keep it pending while the targeted part is still attached.
+    /// </summary>
+    private void OnRemoveLimbCompleteCheck(
+        Entity<CMUSurgeryStepRemoveLimbEffectComponent> ent,
+        ref CMSurgeryStepCompleteCheckEvent args)
+    {
+        if (args.Cancelled)
+            return;
+        if (TryComp<BodyPartComponent>(args.Part, out var part) && part.Body == args.Body)
+            args.Cancelled = true;
     }
 
     private void OnDebrideEscharStep(Entity<CMUSurgeryStepDebrideEscharEffectComponent> ent, ref CMSurgeryStepEvent args)

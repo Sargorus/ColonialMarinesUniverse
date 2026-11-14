@@ -1,0 +1,92 @@
+- type: entity
+  parent: RMCCommunicationsConsoleBase
+  id: CMURoboticsOrderConsole
+  name: robotics order console
+  description: A Weyland-Yutani contract terminal for robotics work. Accept a build or repair order, receive its synthetic transport crates in cargo, attach the printed order slip to a loaded crate, then lower the platform. Orders expire after fifteen minutes.
+  components:
+  - type: Transform
+    anchored: false
+    noRot: false
+  - type: Anchorable
+    flags: [Anchorable, Unanchorable]
+  - type: Rotatable
+  - type: RemoveComponents
+    components:
+    - type: WallMount
+  - type: Sprite
+    sprite: _RMC14/Structures/Machines/computer.rsi
+    state: terminal1_old
+  - type: InteractionOutline
+  - type: CMURoboticsOrderConsole
+    buildTargets:
+    - prototype: CMUDroneAndroidUnarmed
+      name: cmu-robotics-target-civilian-drone
+      reward: 3500
+      requiredModules:
+      - CMUDroneModuleMedical
+    repairTargets:
+    - prototype: CMUDroneAndroidUnarmed
+      name: cmu-robotics-target-civilian-drone
+      reward: 2400
+      repairPrototype: CMUDroneAndroidUnarmedRepairOrder
+      requiredModules:
+      - CMUDroneModuleMedical
+    - prototype: CMUDroneAndroidCombat
+      name: cmu-robotics-target-combat-drone
+      reward: 2500
+      repairPrototype: CMUDroneAndroidCombatRepairOrder
+      requiredModules:
+      - CMUDroneModuleCombat
+      - CMUDroneModuleMedical
+    - prototype: CMUWorkingJoeRepair
+      name: cmu-robotics-target-working-joe
+      reward: 2050
+      repairPrototype: CMUWorkingJoeRepairOrder
+      workingJoe: true
+      outfits:
+      - equipment:
+          jumpsuit: CMJumpsuitAverageJoe
+          shoes: CMBootsBlack
+          gloves: CMHandsBlackInsulated
+      - equipment:
+          jumpsuit: CMJumpsuitAverageJoe
+          shoes: AU14BootsUSArmy
+          gloves: CMHandsBlackInsulated
+      - equipment:
+          jumpsuit: AU14JoeHazmat
+          shoes: AU14BootsCBRN
+          head: RMCHoodBioGeneral
+          gloves: RMCHandsVeteranCBRN
+      - equipment:
+          jumpsuit: CMJumpsuitAverageJoe
+          shoes: RMCShoesTychoBoots
+          head: RMCHeadTychoRadiationHood
+          gloves: RMCHandsTychoGloves
+          outerClothing: RMCSuitTychoRadiationSuit
+      - equipment:
+          jumpsuit: CMJumpsuitAverageJoe
+          shoes: AU14BootsCBRN
+          head: RMCHoodBioGeneral
+          gloves: RMCHandsVeteranCBRN
+          outerClothing: AU14SuitBioWeYu
+      - equipment:
+          jumpsuit: CMJumpsuitAverageJoe
+          shoes: AU14BootsCBRN
+          head: RMCHoodBioGeneral
+          gloves: RMCHandsVeteranCBRN
+          outerClothing: CMUSuitBioWYSec
+      - equipment:
+          jumpsuit: CMJumpsuitSyntheticOutdated
+          shoes: RMCShoesBlack
+          gloves: CMHandsBlackInsulated
+  - type: ActivatableUI
+    key: enum.CMURoboticsOrderConsoleUiKey.Key
+  - type: ActivatableUIRequiresAccess
+  - type: AccessReader
+    access: [["AU14AccessCorporateWEYU"]]
+  - type: UserInterface
+    interfaces:
+      enum.CMURoboticsOrderConsoleUiKey.Key:
+        type: CMURoboticsOrderConsoleBoundUserInterface
+  - type: StaticPrice
+    price: 800

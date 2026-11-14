@@ -64,6 +64,63 @@
   - aumed
   roleWeight: 0.25
 
+- type: job
+  parent: CMJobBase
+  id: AU14JobCivilianScientistRoboticist
+  roundSide: Civilian
+  roundForce: WY
+  roundProfiles:
+  - AU14RoundJobProfileThirdParty
+  roundRole: CivilianScientistRoboticist
+  roundComponents:
+  - type: Skills
+    skills:
+      RMCSkillFireman: 1
+      RMCSkillVehicles: 2
+      RMCSkillDomestics: 1
+      RMCSkillEngineer: 3
+      RMCSkillConstruction: 3
+      RMCSkillResearch: 3
+      RMCSkillSurgery: 3
+      RMCSkillOverwatch: 2
+      RMCSkillFirearms: 1
+  - type: JobPrefix
+    prefix: au14-job-prefix-civilianscientistroboticist
+  - type: TacticalMapIcon
+    icon:
+      sprite: /Textures/_RMC14/Interface/cm_job_icons.rsi
+      state: weya_scientist
+  - type: CMUDroneOperator
+
+  name: au14-job-name-civilianscientistroboticist
+  description: au14-job-description-civilianscientistroboticist
+  setPreference: true
+  canBeAntag: true
+  playTimeTracker: AU14JobCivilianScientistRoboticist
+  requirements:
+  - !type:OverallPlaytimeRequirement
+    time: 7200 # 2 hours
+  ranks:
+    AU14RankScientistProfessor:
+    - !type:RoleTimeRequirement
+      role: AU14JobCivilianScientistRoboticist
+      time: 86400 # 24 hours
+    AU14RankScientistAssociate:
+    - !type:RoleTimeRequirement
+      role: AU14JobCivilianScientistRoboticist
+      time: 36000 # 10 hours
+    AU14RankScientistAssistant: []
+  startingGear: AU14GearCivilianScientistRoboticist
+  icon: "RMCJobIconPMCScientist"
+  requireAdminNotify: false
+  joinNotifyCrew: false
+  supervisors: au14-job-supervisors-colonycivilian
+  spawnMenuRoleName: au14-spawn-role-name-wy-scientist-roboticist
+  accessGroups:
+  - Colonist
+  - auwy
+  roleWeight: 0.25
+
 - type: startingGear
   id: AU14GearCivilianScientist
   equipment:
@@ -77,6 +134,23 @@
     back:
     - AU14StampWYSci
 
+- type: startingGear
+  id: AU14GearCivilianScientistRoboticist
+  equipment:
+    id: AU14IDCardCivilianScientistRoboticist
+    jumpsuit: AU14CivilianWorkwearBlue
+    shoes: RMCShoesBlack
+    ears: AU14ColonyWeylandHeadset
+    ears2: RMCM5CameraGear
+    outerClothing: RMCLabcoatOpened
+    belt: AU14BeltUtilityFilled
+    gloves: RMCHandsVeteranInsulated
+    eyes: RMCWeldingGoggles
+    head: RMCHelmetWelding
+  storage:
+    back:
+    - AU14StampWYSci
+
 - type: entity
   parent: CMSpawnPointJobBase
   id: AU14SpawnPointCivilianScientist
@@ -84,11 +158,18 @@
   components:
   - type: SpawnPoint
     job_id: AU14JobCivilianScientist
+  - type: CMUSpawnPointExtraJobs
+    jobs:
+    - AU14JobCivilianScientistRoboticist
   - type: Sprite
     state: syn_spawn
 
 - type: playTimeTracker
   id: AU14JobCivilianScientist
+  isHumanoid: true
+
+- type: playTimeTracker
+  id: AU14JobCivilianScientistRoboticist
   isHumanoid: true
 
 - type: roleLoadout
@@ -104,6 +185,24 @@
   - WYCLJumpsuitAU14
   - WYCLOuterwearAU14
   - MedJacketAU14
+  - CivJacketAU14
+  - WYCLHeadwearAU14
+  - WYCLFootwearAU14
+  - RecreationalRMC
+  - CannedDrinksAU14
+  - SmokablesRMC
+  - EyewearRMC
+  - MasksRMC
+  - HeadwearCLFAU14
+
+- type: roleLoadout
+  id: JobAU14JobCivilianScientistRoboticist
+  points: 7
+  groups:
+  - CivSatchelAU14
+  - PaperworkRMC
+  - WYCLJumpsuitAU14
+  - WYCLOuterwearAU14
   - CivJacketAU14
   - WYCLHeadwearAU14
   - WYCLFootwearAU14

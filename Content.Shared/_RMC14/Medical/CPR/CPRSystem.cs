@@ -224,6 +224,23 @@ public sealed partial class CPRSystem : EntitySystem
         return true;
     }
 
+    // CMU14 method: exposed for non-player CPR performers such as medical bots.
+    /// <summary>
+    /// Starts CPR for non-player performers such as medical bots.
+    /// </summary>
+    public bool TryStartCPR(EntityUid performer, EntityUid target)
+        => StartCPR(performer, target);
+
+    // CMU14 method: lets medibots skip corpses that were just treated.
+    /// <summary>
+    /// Whether this body received CPR too recently for another attempt.
+    /// </summary>
+    public bool IsRecentlyCPRed(EntityUid target)
+    {
+        return TryComp<CPRReceivedComponent>(target, out var received) &&
+               received.Last > _timing.CurTime - CPRCooldownSeconds;
+    }
+
     private bool StartCPR(EntityUid performer, EntityUid target)
     {
         if (!CanCPRPopup(performer, target, true, out _))

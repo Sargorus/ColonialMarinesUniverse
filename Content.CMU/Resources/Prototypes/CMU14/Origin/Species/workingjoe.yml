@@ -49,6 +49,7 @@
   id: CMUPartWorkingJoeVisual
   abstract: true
   components:
+  - type: CMUWorkingJoeLimb
   - type: Sprite
     sprite: CMU14/Mobs/WorkingJoe/parts.rsi
   - type: VisualOrgan
@@ -77,31 +78,71 @@
 - type: entity
   parent: [ CMUPartWorkingJoeVisual, CMUPartHumanLeftArm ]
   id: CMUPartWorkingJoeLeftArm
+  name: left Working Joe arm
+  suffix: CMU
+  components:
+  - type: CMURoboticLimb
+    prosthetic: false
 
 - type: entity
   parent: [ CMUPartWorkingJoeVisual, CMUPartHumanRightArm ]
   id: CMUPartWorkingJoeRightArm
+  name: right Working Joe arm
+  suffix: CMU
+  components:
+  - type: CMURoboticLimb
+    prosthetic: false
 
 - type: entity
   parent: [ CMUPartWorkingJoeVisual, CMUPartHumanLeftHand ]
   id: CMUPartWorkingJoeLeftHand
+  name: left Working Joe hand
+  suffix: CMU
+  components:
+  - type: CMURoboticLimb
+    prosthetic: false
 
 - type: entity
   parent: [ CMUPartWorkingJoeVisual, CMUPartHumanRightHand ]
   id: CMUPartWorkingJoeRightHand
+  name: right Working Joe hand
+  suffix: CMU
+  components:
+  - type: CMURoboticLimb
+    prosthetic: false
 
 - type: entity
   parent: [ CMUPartWorkingJoeVisual, CMUPartHumanLeftLeg ]
   id: CMUPartWorkingJoeLeftLeg
+  name: left Working Joe leg
+  suffix: CMU
+  components:
+  - type: CMURoboticLimb
+    prosthetic: false
 
 - type: entity
   parent: [ CMUPartWorkingJoeVisual, CMUPartHumanRightLeg ]
   id: CMUPartWorkingJoeRightLeg
+  name: right Working Joe leg
+  suffix: CMU
+  components:
+  - type: CMURoboticLimb
+    prosthetic: false
 
 - type: entity
   parent: [ CMUPartWorkingJoeVisual, CMUPartHumanLeftFoot ]
   id: CMUPartWorkingJoeLeftFoot
+  name: left Working Joe foot
+  suffix: CMU
+  components:
+  - type: CMURoboticLimb
+    prosthetic: false
 
 - type: entity
   parent: [ CMUPartWorkingJoeVisual, CMUPartHumanRightFoot ]
   id: CMUPartWorkingJoeRightFoot
+  name: right Working Joe foot
+  suffix: CMU
+  components:
+  - type: CMURoboticLimb
+    prosthetic: false

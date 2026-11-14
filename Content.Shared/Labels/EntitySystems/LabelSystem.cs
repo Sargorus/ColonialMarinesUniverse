@@ -40,11 +40,14 @@ public sealed partial class LabelSystem : EntitySystem
 
     private void OnLabelCompMapInit(Entity<LabelComponent> ent, ref MapInitEvent args)
     {
-        if (!string.IsNullOrEmpty(ent.Comp.CurrentLabel))
+        // CMU14 start: leave ready-made labels untouched instead of warning on them.
+        if (!string.IsNullOrEmpty(ent.Comp.CurrentLabel) &&
+            Loc.TryGetString(ent.Comp.CurrentLabel, out var label))
         {
-            ent.Comp.CurrentLabel = Loc.GetString(ent.Comp.CurrentLabel);
+            ent.Comp.CurrentLabel = label;
             Dirty(ent);
         }
+        // CMU14 end
 
         _nameModifier.RefreshNameModifiers(ent.Owner);
     }

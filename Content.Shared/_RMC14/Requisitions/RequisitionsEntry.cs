@@ -20,6 +20,10 @@ public sealed partial class RequisitionsEntry
     [DataField]
     public bool CMUFactionVendorItem;
 
+    // CMU14: stable robotics contract id, copied to the transport crate on delivery.
+    [NonSerialized]
+    public int CMUOrderId;
+
     [DataField]
     public List<EntProtoId> Entities = new();
 

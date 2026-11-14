@@ -161,6 +161,41 @@
       amount: 1
 
 - type: entity
+  parent: RMCSecureCaseStrapped
+  id: CMUCrateRoboticsFabricator
+  name: robotics fabricator crate
+  description: A sealed crate containing one Weyland-Yutani robotics fabricator. The fuel cell is not included; install a WL-6 universal fuel cell to power it. Pry it open with a crowbar.
+  components:
+  # The secure-case parent adds random loot on termination. RemoveComponents needs
+  # a fully deserializable value, so the spawner is named here and removed at init.
+  - type: RemoveComponents
+    components:
+    - type: SpawnOnTerminate
+      spawn: RMCSpawnerRandomCrateLoot
+  - type: Sprite
+    sprite: _RMC14/Structures/Storage/Crates/securecrate.rsi
+    noRot: true
+    layers:
+    - state: base
+      map: ["enum.StorageVisualLayers.Base"]
+  - type: Icon
+    sprite: _RMC14/Structures/Storage/Crates/securecrate.rsi
+    state: base
+  - type: CrateOpenable
+    spawn:
+    - id: CMURoboticsFabricator
+
+- type: entity
+  parent: RMCCrateConstruction
+  id: CMUCrateRoboticsOrderConsole
+  name: robotics order console crate
+  description: A sealed crate containing one Weyland-Yutani robotics order console. Pry it open with a crowbar.
+  components:
+  - type: CrateOpenable
+    spawn:
+    - id: CMURoboticsOrderConsole
+
+- type: entity
   parent: RMCCrateScience
   id: CMUCrateRadsuit
   name: radiation suit crate

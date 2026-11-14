@@ -11,6 +11,7 @@ using Content.Shared.Mind;
 using Content.Shared.Movement.Components;
 using Content.Shared.Movement.Systems;
 using Content.Shared.Stunnable;
+using Content.Shared.Verbs;
 using Robust.Shared.GameObjects;
 using Robust.Shared.Physics.Components;
 
@@ -171,6 +172,59 @@ public sealed class CMUDroneControlSafeguardsTest
             Assert.That(entities.HasComponent<CMUDroneControlSessionComponent>(droneUid), Is.False);
             Assert.That(language.CanSpeak(droneUid, "Portuguese"), Is.False,
                 "an unattended drone shouldn't keep the last operator's languages");
+        });
+        await pair.CleanReturnAsync();
+    }
+
+    [Test]
+    public async Task TabletUnlinkVerbClearsDroneBinding()
+    {
+        await using var pair = await PoolManager.GetServerClient(new PoolSettings { Dirty = true });
+        var map = await pair.CreateTestMap();
+        var server = pair.Server;
+        var entities = server.EntMan;
+
+        await server.WaitAssertion(() =>
+        {
+            var user = entities.SpawnEntity("CMMobHuman", map.GridCoords);
+            entities.AddComponent<CMUDroneOperatorComponent>(user);
+            var drone = entities.SpawnEntity("CMUDroneAndroidUnarmed", map.GridCoords.Offset(new Vector2(2, 0)));
+            var tablet = entities.SpawnEntity("CMUDroneControlTablet", map.GridCoords);
+            Assert.That(entities.System<SharedHandsSystem>().TryPickupAnyHand(user, tablet, checkActionBlocker: false), Is.True);
+
+            var beforeLink = new GetVerbsEvent<Verb>(
+                user, tablet, null, null, canInteract: true, canComplexInteract: true, canAccess: true,
+                new List<VerbCategory>());
+            entities.EventBus.RaiseLocalEvent(tablet, beforeLink);
+            Assert.That(beforeLink.Verbs.Any(verb => verb.Text == Loc.GetString("cmu-drone-unlink-verb")), Is.False,
+                "an unlinked tablet must not offer the unlink verb");
+
+            var link = new InteractUsingEvent(
+                user,
+                tablet,
+                drone,
+                entities.GetComponent<TransformComponent>(drone).Coordinates);
+            entities.EventBus.RaiseLocalEvent(drone, link);
+            Assert.That(link.Handled, Is.True);
+            Assert.That(entities.GetComponent<CMUDroneControlTabletComponent>(tablet).LinkedDrone, Is.EqualTo(drone));
+
+            var verbs = new GetVerbsEvent<Verb>(
+                user, tablet, null, null, canInteract: true, canComplexInteract: true, canAccess: true,
+                new List<VerbCategory>());
+            entities.EventBus.RaiseLocalEvent(tablet, verbs);
+            var unlink = verbs.Verbs.Single(verb => verb.Text == Loc.GetString("cmu-drone-unlink-verb"));
+            unlink.Act!();
+
+            var tabletComp = entities.GetComponent<CMUDroneControlTabletComponent>(tablet);
+            var droneComp = entities.GetComponent<CMUDroneAndroidComponent>(drone);
+            var operatorComp = entities.GetComponent<CMUDroneOperatorComponent>(user);
+            Assert.That(tabletComp.LinkedDrone, Is.Null);
+            Assert.That(tabletComp.Operator, Is.Null);
+            Assert.That(droneComp.Tablet, Is.Null);
+            Assert.That(droneComp.Operator, Is.Null);
+            Assert.That(operatorComp.Drone, Is.Null);
+            Assert.That(operatorComp.Tablet, Is.Null);
+            Assert.That(operatorComp.ControlledDrone, Is.Null);
         });
         await pair.CleanReturnAsync();
     }

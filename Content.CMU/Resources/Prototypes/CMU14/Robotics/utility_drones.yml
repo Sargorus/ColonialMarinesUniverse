@@ -1,0 +1,118 @@
+- type: entity
+  parent: CMUDroneAndroidUnarmed
+  id: CMUUtilityDrone
+  name: utility drone
+  description: A civilian android frame configured for programmed utility work. It has hands, no combat routines, and a physical stair-capable navigation stack.
+  suffix: CMU14, Utility
+  components:
+  - type: Synth
+    # Utility drones use the standard synth welder repair path. The default
+    # android frame disables self-repair almost entirely, which would make the
+    # scripted repair command unusable.
+    selfRepairTime: 12
+  - type: CMUUtilityDroneAgent
+  - type: ActiveNPC
+  - type: ActiveListener
+    range: 10
+  - type: ComplexInteraction
+  - type: Puller
+    needsHands: false
+  - type: ContainerContainer
+    containers:
+      cmu-drone-program-board: !type:ContainerSlot
+        ent: null
+        showEnts: False
+        occludes: True
+
+- type: entity
+  parent: CMUUtilityDrone
+  id: CMUUtilityDroneCombat
+  name: combat utility drone
+  description: A reinforced utility drone frame with a combat-rated control bus and firearm routines. It keeps the same programmable board port and stair-capable navigation stack as the civilian model.
+  suffix: CMU14, Utility, Combat
+  components:
+  - type: Synth
+    canUseGuns: true
+    selfRepairTime: 12
+  - type: CMUDroneAndroid
+    supportsCombatModule: true
+  - type: Skills
+    skills:
+      RMCSkillFirearms: 3
+      RMCSkillCqc: 3
+      RMCSkillConstruction: 2
+
+- type: entity
+  parent: RMCCommunicationsConsoleBase
+  id: CMUUtilityDroneConsole
+  name: utility drone console
+  description: A Weyland-Yutani terminal for editing one utility drone program, registering physical task markers, and printing directive boards.
+  components:
+  - type: Transform
+    anchored: false
+    noRot: false
+  - type: Anchorable
+    flags: [Anchorable, Unanchorable]
+  - type: Rotatable
+  - type: RemoveComponents
+    components:
+    - type: WallMount
+  - type: Sprite
+    sprite: _RMC14/Structures/Machines/computer.rsi
+    state: terminal1_old
+  - type: InteractionOutline
+  - type: CMUUtilityDroneConsole
+  - type: ActivatableUI
+    key: enum.CMUUtilityDroneUiKey.Key
+  - type: ActivatableUIRequiresAccess
+  - type: AccessReader
+    access: [["AU14AccessCorporateWEYU"]]
+  - type: UserInterface
+    interfaces:
+      enum.CMUUtilityDroneUiKey.Key:
+        type: CMUUtilityDroneBoundUserInterface
+  - type: StaticPrice
+    price: 800
+
+- type: entity
+  parent: BaseItem
+  id: CMUUtilityTaskMarker
+  name: utility task marker
+  description: A physical task beacon. Place it, anchor it with a wrench, then use a multitool on the marker and on a utility drone console to register it.
+  components:
+  - type: Sprite
+    sprite: Objects/Devices/station_beacon.rsi
+    state: icon
+  - type: Item
+    size: Small
+    storedRotation: -90
+  - type: Anchorable
+    flags: [Anchorable, Unanchorable]
+  - type: Physics
+    canCollide: false
+    bodyType: static
+  - type: CMUUtilityTaskMarker
+  - type: StaticPrice
+    price: 50
+
+- type: entity
+  parent: BaseElectronics
+  id: CMUUtilityDroneProgramBoard
+  name: utility drone directive board
+  description: A printed circuit board carrying one validated utility drone program. Install it in a programmable drone with a multitool while it is held in the main hand.
+  components:
+  - type: Sprite
+    state: cpuboard
+  - type: Item
+    size: Small
+  - type: CMUUtilityDroneProgramBoard
+  - type: StaticPrice
+    price: 200
+
+- type: entity
+  parent: MarkerBase
+  id: CMUUtilityDroneHomeAnchor
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: Sprite
+    visible: false
