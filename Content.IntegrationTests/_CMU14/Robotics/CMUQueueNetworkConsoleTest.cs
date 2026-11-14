@@ -236,6 +236,7 @@ public sealed class CMUQueueNetworkConsoleTest : GameTest
             var comp = SComp<CMUQueueNetworkConsoleComponent>(console);
             var network = comp.Network!;
             Assert.That(network.Bypasses, Is.Not.Empty);
+            Assert.That(network.Bypasses.Count, Is.GreaterThanOrEqualTo(2));
 
             var bypass = network.Bypasses[0];
             bypassId = bypass.Id;
@@ -268,6 +269,28 @@ public sealed class CMUQueueNetworkConsoleTest : GameTest
             Assert.That(rates[fromNode], Is.LessThan(lambdaBefore));
             Assert.That(rates[toNode], Is.GreaterThan(targetBefore));
         });
+
+        await Send(consoleNet, new CMUQueueReduceBypassMessage(bypassId));
+        await Server.WaitAssertion(() =>
+        {
+            var comp = SComp<CMUQueueNetworkConsoleComponent>(console);
+            var network = comp.Network!;
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(comp.BypassFractions[bypassId], Is.EqualTo(0).Within(0.001));
+                Assert.That(comp.Budget, Is.EqualTo(budgetBefore));
+            });
+
+            Assert.That(
+                CMUQueueNetworkMath.TrySolveArrivalRates(network, comp.BypassFractions, out var rates, out var error),
+                Is.True,
+                error);
+            Assert.That(rates[fromNode], Is.EqualTo(lambdaBefore).Within(0.001));
+            Assert.That(rates[toNode], Is.EqualTo(targetBefore).Within(0.001));
+        });
+
+        await Send(consoleNet, new CMUQueueRerouteMessage(bypassId));
 
         await Send(consoleNet, new CMUQueueResetInterventionsMessage());
         await Server.WaitAssertion(() =>
@@ -457,6 +480,7 @@ public sealed class CMUQueueNetworkConsoleTest : GameTest
                     CMUQueueStatusKind.Neutral,
                     "cmu-queue-network-branch-name",
                     "cmu-queue-network-branch-desc",
+                    0,
                     800,
                     15,
                     15,
@@ -519,7 +543,8 @@ public sealed class CMUQueueNetworkConsoleTest : GameTest
                     },
                     new List<CMUQueueBypassInfo>
                     {
-                        new("long-second", "long", "second", 0.1, 0.3, 0.1, 100, true, false),
+                        new("long-second", "long", "second", 0.1, 0.3, 0.1, 100, true, false, true, 100,
+                            9.9, 4.5, 8.91, 5.49, 0.99, 0.45, 0.89, 0.55),
                     },
                     history);
 

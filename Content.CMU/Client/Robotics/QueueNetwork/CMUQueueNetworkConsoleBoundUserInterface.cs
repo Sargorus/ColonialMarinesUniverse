@@ -19,6 +19,7 @@ public sealed class CMUQueueNetworkConsoleBoundUserInterface : BoundUserInterfac
         _window.OnAnalyze += nodeId => SendMessage(new CMUQueueAnalyzeNodeMessage(nodeId));
         _window.OnSetServiceRate += (nodeId, rate) => SendMessage(new CMUQueueSetServiceRateMessage(nodeId, rate));
         _window.OnReroute += bypassId => SendMessage(new CMUQueueRerouteMessage(bypassId));
+        _window.OnReduceBypass += bypassId => SendMessage(new CMUQueueReduceBypassMessage(bypassId));
         _window.OnProject += () => SendMessage(new CMUQueueProjectMessage());
         _window.OnSubmit += () => SendMessage(new CMUQueueSubmitMessage());
         _window.OnNewContract += () => SendMessage(new CMUQueueNewContractMessage());

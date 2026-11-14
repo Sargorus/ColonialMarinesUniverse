@@ -203,6 +203,7 @@ public sealed class CMUQueueNetworkMathTest
 
             Assert.That(network.Nodes.Count, Is.GreaterThanOrEqualTo(4), $"seed {seed}");
             Assert.That(network.Sources, Is.Not.Empty, $"seed {seed}");
+            Assert.That(network.Bypasses, Is.Not.Empty, $"seed {seed}: generator fell back to a bypass-less contract");
 
             Assert.That(
                 CMUQueueNetworkMath.TrySolveArrivalRates(network, out var rates, out var error),

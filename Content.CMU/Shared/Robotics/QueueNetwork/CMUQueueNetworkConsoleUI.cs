@@ -116,6 +116,16 @@ public sealed class CMUQueueBypassInfo
     public int NextCost { get; }
     public bool CanAfford { get; }
     public bool Maxed { get; }
+    public bool CanReduce { get; }
+    public int Refund { get; }
+    public double SourceLambda { get; }
+    public double TargetLambda { get; }
+    public double SourceLambdaAfter { get; }
+    public double TargetLambdaAfter { get; }
+    public double SourceRho { get; }
+    public double TargetRho { get; }
+    public double SourceRhoAfter { get; }
+    public double TargetRhoAfter { get; }
 
     public CMUQueueBypassInfo(
         string id,
@@ -126,7 +136,17 @@ public sealed class CMUQueueBypassInfo
         double stepPercent,
         int nextCost,
         bool canAfford,
-        bool maxed)
+        bool maxed,
+        bool canReduce,
+        int refund,
+        double sourceLambda,
+        double targetLambda,
+        double sourceLambdaAfter,
+        double targetLambdaAfter,
+        double sourceRho,
+        double targetRho,
+        double sourceRhoAfter,
+        double targetRhoAfter)
     {
         Id = id;
         From = from;
@@ -137,6 +157,16 @@ public sealed class CMUQueueBypassInfo
         NextCost = nextCost;
         CanAfford = canAfford;
         Maxed = maxed;
+        CanReduce = canReduce;
+        Refund = refund;
+        SourceLambda = sourceLambda;
+        TargetLambda = targetLambda;
+        SourceLambdaAfter = sourceLambdaAfter;
+        TargetLambdaAfter = targetLambdaAfter;
+        SourceRho = sourceRho;
+        TargetRho = targetRho;
+        SourceRhoAfter = sourceRhoAfter;
+        TargetRhoAfter = targetRhoAfter;
     }
 }
 
@@ -162,6 +192,7 @@ public sealed class CMUQueueNetworkConsoleState : BoundUserInterfaceState
     public CMUQueueStatusKind StatusKind { get; }
     public string NetworkName { get; }
     public string NetworkDescription { get; }
+    public int Seed { get; }
     public int Budget { get; }
     public int TimeLeft { get; }
     public int InitialTime { get; }
@@ -182,6 +213,7 @@ public sealed class CMUQueueNetworkConsoleState : BoundUserInterfaceState
         CMUQueueStatusKind statusKind,
         string networkName,
         string networkDescription,
+        int seed,
         int budget,
         int timeLeft,
         int initialTime,
@@ -201,6 +233,7 @@ public sealed class CMUQueueNetworkConsoleState : BoundUserInterfaceState
         StatusKind = statusKind;
         NetworkName = networkName;
         NetworkDescription = networkDescription;
+        Seed = seed;
         Budget = budget;
         TimeLeft = timeLeft;
         InitialTime = initialTime;
@@ -232,6 +265,12 @@ public sealed class CMUQueueSetServiceRateMessage(string nodeId, double targetSe
 
 [Serializable, NetSerializable]
 public sealed class CMUQueueRerouteMessage(string bypassId) : BoundUserInterfaceMessage
+{
+    public string BypassId { get; } = bypassId;
+}
+
+[Serializable, NetSerializable]
+public sealed class CMUQueueReduceBypassMessage(string bypassId) : BoundUserInterfaceMessage
 {
     public string BypassId { get; } = bypassId;
 }

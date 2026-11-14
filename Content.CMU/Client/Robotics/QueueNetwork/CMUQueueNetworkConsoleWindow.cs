@@ -22,6 +22,7 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
     public event Action<string>? OnAnalyze;
     public event Action<string, double>? OnSetServiceRate;
     public event Action<string>? OnReroute;
+    public event Action<string>? OnReduceBypass;
     public event Action? OnProject;
     public event Action? OnSubmit;
     public event Action? OnNewContract;
@@ -37,6 +38,8 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
 
     private CMUQueueNetworkConsoleState? _state;
     private string? _selectedNodeId;
+    private readonly CMUQueueTopologyView _topologyView = new();
+    private int _topologySeed = int.MinValue;
 
     public CMUQueueNetworkConsoleWindow()
     {
@@ -259,7 +262,7 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
             : (Color?) null;
         var section = _kit.Section(NodeName(node), out var column, accent);
 
-        var grid = NewFieldList();
+        var grid = NewFieldGrid();
         AddField(grid, Loc.GetString("cmu-queue-console-service"), FormatRate(node.ServiceRate));
         AddField(
             grid,
@@ -272,13 +275,13 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
         AddField(grid, Loc.GetString("cmu-queue-console-full-upgrade"), CrtConsoleKit.Money(node.UpgradeCost));
         AddField(grid, Loc.GetString("cmu-queue-console-external"), FormatRate(node.ExternalRate));
         AddField(grid, Loc.GetString("cmu-queue-console-queue"), FormatNumber(node.Queue));
-        column.AddChild(grid);
+        column.AddChild(grid.Container);
 
         if (node.Analyzed)
         {
             var metricColor = CrtTerminalPalette.TextBright;
 
-            var metrics = NewFieldList();
+            var metrics = NewFieldGrid();
             AddField(metrics, Loc.GetString("cmu-queue-console-lambda"), FormatRate(node.Lambda));
             AddField(
                 metrics,
@@ -289,7 +292,7 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
             AddField(metrics, Loc.GetString("cmu-queue-console-lq"), FormatNumber(node.Lq), metricColor);
             AddField(metrics, Loc.GetString("cmu-queue-console-w"), FormatMinutes(node.W), metricColor);
             AddField(metrics, Loc.GetString("cmu-queue-console-wq"), FormatMinutes(node.Wq), metricColor);
-            column.AddChild(metrics);
+            column.AddChild(metrics.Container);
         }
         else
         {
@@ -415,7 +418,7 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
         {
             var from = NodeName(state, bypass.From);
             var to = NodeName(state, bypass.To);
-            var grid = NewFieldList();
+            var grid = NewFieldGrid();
             AddField(grid, Loc.GetString("cmu-queue-console-bypass-route"), $"{from} → {to}");
             AddField(
                 grid,
@@ -428,7 +431,28 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
                 grid,
                 Loc.GetString("cmu-queue-console-bypass-cost"),
                 CrtConsoleKit.Money(bypass.NextCost));
-            column.AddChild(grid);
+            column.AddChild(grid.Container);
+
+            column.AddChild(CrtConsoleKit.Wrapping(
+                Loc.GetString(
+                    "cmu-queue-console-bypass-effect-line",
+                    ("node", from),
+                    ("lambda", FormatRate(bypass.SourceLambda)),
+                    ("lambdaAfter", FormatRate(bypass.SourceLambdaAfter)),
+                    ("rho", FormatRho(bypass.SourceRho)),
+                    ("rhoAfter", FormatRho(bypass.SourceRhoAfter))),
+                CrtTerminalPalette.TextDim));
+            column.AddChild(CrtConsoleKit.Wrapping(
+                Loc.GetString(
+                    "cmu-queue-console-bypass-effect-line",
+                    ("node", to),
+                    ("lambda", FormatRate(bypass.TargetLambda)),
+                    ("lambdaAfter", FormatRate(bypass.TargetLambdaAfter)),
+                    ("rho", FormatRho(bypass.TargetRho)),
+                    ("rhoAfter", FormatRho(bypass.TargetRhoAfter))),
+                bypass.TargetRhoAfter >= 1
+                    ? CrtTerminalPalette.Caution
+                    : CrtTerminalPalette.TextDim));
 
             var action = bypass.Maxed
                 ? Loc.GetString("cmu-queue-console-bypass-maxed")
@@ -443,6 +467,19 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
             var bypassId = bypass.Id;
             reroute.OnPressed += _ => OnReroute?.Invoke(bypassId);
             column.AddChild(reroute);
+
+            if (bypass.CanReduce)
+            {
+                var reduce = _kit.Button(
+                    Loc.GetString(
+                        "cmu-queue-console-bypass-reduce",
+                        ("percent", (bypass.StepPercent * 100).ToString("0", CultureInfo.CurrentCulture)),
+                        ("refund", CrtConsoleKit.Money(bypass.Refund))),
+                    CmuButtonStyles.Variant.Neutral);
+                reduce.Disabled = !state.Active;
+                reduce.OnPressed += _ => OnReduceBypass?.Invoke(bypassId);
+                column.AddChild(reduce);
+            }
         }
 
         return section;
@@ -451,9 +488,16 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
     private PanelContainer BuildTopology(CMUQueueNetworkConsoleState state)
     {
         var section = _kit.Section(Loc.GetString("cmu-queue-console-schematic"), out var column);
+        if (_topologySeed != state.Seed)
+        {
+            _topologyView.Reset();
+            _topologySeed = state.Seed;
+        }
+
         var topology = new CMUQueueTopologyControl
         {
             EmptyText = Loc.GetString("cmu-queue-console-schematic-empty"),
+            View = _topologyView,
         };
         topology.SetData(state.Nodes, state.Routes, state.Bypasses);
         column.AddChild(topology);
@@ -544,25 +588,59 @@ public sealed class CMUQueueNetworkConsoleWindow : DefaultWindow
         return section;
     }
 
-    private static BoxContainer NewFieldList()
+    private static CMUQueueFieldGrid NewFieldGrid()
     {
-        return CrtConsoleKit.Column(6);
+        return new CMUQueueFieldGrid(3);
     }
 
     private static void AddField(
-        BoxContainer list,
+        CMUQueueFieldGrid grid,
         string label,
         string value,
         Color? color = null)
     {
-        var field = CrtConsoleKit.Column(1);
-        field.AddChild(CrtConsoleKit.BoldWrapping(
-            label.ToUpperInvariant(),
-            CrtTerminalPalette.TextDim));
-        field.AddChild(CrtConsoleKit.Wrapping(
-            value,
-            color ?? CrtTerminalPalette.TextBright));
-        list.AddChild(field);
+        grid.Add(label, value, color);
+    }
+
+    /// <summary>
+    /// Compact field cards arranged into equal-width columns. Each card owns
+    /// both its label and value, so wrapping a long translation cannot push
+    /// text into the neighbouring column.
+    /// </summary>
+    private sealed class CMUQueueFieldGrid
+    {
+        private readonly List<BoxContainer> _columns = new();
+        private int _next;
+
+        public BoxContainer Container { get; }
+
+        public CMUQueueFieldGrid(int columns)
+        {
+            Container = CrtConsoleKit.Row(12);
+            Container.HorizontalExpand = true;
+            for (var index = 0; index < columns; index++)
+            {
+                var column = CrtConsoleKit.Column(6);
+                column.HorizontalExpand = true;
+                _columns.Add(column);
+                Container.AddChild(column);
+            }
+        }
+
+        public void Add(string label, string value, Color? color = null)
+        {
+            var field = CrtConsoleKit.Column(1);
+            field.HorizontalExpand = true;
+            field.AddChild(CrtConsoleKit.BoldWrapping(
+                label.ToUpperInvariant(),
+                CrtTerminalPalette.TextDim));
+            field.AddChild(CrtConsoleKit.Wrapping(
+                value,
+                color ?? CrtTerminalPalette.TextBright));
+
+            _columns[_next % _columns.Count].AddChild(field);
+            _next++;
+        }
     }
 
     private void SelectNode(string nodeId)

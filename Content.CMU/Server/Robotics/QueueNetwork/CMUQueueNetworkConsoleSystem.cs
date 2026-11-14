@@ -33,6 +33,7 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
             subs.Event<CMUQueueAnalyzeNodeMessage>(OnAnalyzeNode);
             subs.Event<CMUQueueSetServiceRateMessage>(OnSetServiceRate);
             subs.Event<CMUQueueRerouteMessage>(OnReroute);
+            subs.Event<CMUQueueReduceBypassMessage>(OnReduceBypass);
             subs.Event<CMUQueueProjectMessage>(OnProject);
             subs.Event<CMUQueueSubmitMessage>(OnSubmit);
             subs.Event<CMUQueueNewContractMessage>(OnNewContract);
@@ -287,6 +288,50 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
             ("from", NodeName(network, bypass.From)),
             ("to", NodeName(network, bypass.To)),
             ("percent", ((current + bypass.StepFraction) * 100).ToString("0", CultureInfo.CurrentCulture)));
+        comp.StatusKind = CMUQueueStatusKind.Neutral;
+        UpdateUi(ent);
+    }
+
+    private void OnReduceBypass(Entity<CMUQueueNetworkConsoleComponent> ent, ref CMUQueueReduceBypassMessage args)
+    {
+        var comp = ent.Comp;
+        if (!TryGetActive(ent, out var network))
+        {
+            comp.Status = Loc.GetString("cmu-queue-status-no-contract");
+            UpdateUi(ent);
+            return;
+        }
+
+        var bypassId = args.BypassId;
+        var bypass = network.Bypasses.FirstOrDefault(candidate => candidate.Id == bypassId);
+        if (bypass == null)
+        {
+            comp.Status = Loc.GetString("cmu-queue-status-unknown-bypass");
+            UpdateUi(ent);
+            return;
+        }
+
+        var current = comp.BypassFractions.GetValueOrDefault(bypass.Id);
+        if (current < bypass.StepFraction - 0.001)
+        {
+            comp.Status = Loc.GetString(
+                "cmu-queue-status-reroute-min",
+                ("from", NodeName(network, bypass.From)),
+                ("to", NodeName(network, bypass.To)));
+            UpdateUi(ent);
+            return;
+        }
+
+        comp.BypassFractions[bypass.Id] = Math.Max(0, current - bypass.StepFraction);
+        comp.Budget = Math.Min(comp.InitialBudget, comp.Budget + bypass.CostPerStep);
+        RecomputeAnalyses(comp, network);
+
+        comp.Status = Loc.GetString(
+            "cmu-queue-status-reroute-reduced",
+            ("from", NodeName(network, bypass.From)),
+            ("to", NodeName(network, bypass.To)),
+            ("percent", (bypass.StepFraction * 100).ToString("0", CultureInfo.CurrentCulture)),
+            ("refund", bypass.CostPerStep));
         comp.StatusKind = CMUQueueStatusKind.Neutral;
         UpdateUi(ent);
     }
@@ -557,6 +602,23 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         return Loc.TryGetString(key, out var value) ? value : fallback;
     }
 
+    private static double ServiceRate(
+        CMUQueueNetworkConsoleComponent comp,
+        CMUQueueNetworkDefinition network,
+        string nodeId)
+    {
+        if (comp.Nodes.TryGetValue(nodeId, out var runtime))
+            return runtime.ServiceRate;
+
+        var node = network.Nodes.FirstOrDefault(candidate => candidate.Id == nodeId);
+        return node?.ServiceRate ?? 0;
+    }
+
+    private static double Rho(double lambda, double serviceRate)
+    {
+        return serviceRate > 0 ? lambda / serviceRate : 0;
+    }
+
     private void UpdateUi(Entity<CMUQueueNetworkConsoleComponent> ent)
     {
         var comp = ent.Comp;
@@ -571,6 +633,11 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
             var effectiveSources = CMUQueueNetworkMath.GetEffectiveSourceRates(
                 network,
                 comp.BypassFractions);
+            CMUQueueNetworkMath.TrySolveArrivalRates(
+                network,
+                comp.BypassFractions,
+                out var rates,
+                out _);
 
             foreach (var node in network.Nodes)
             {
@@ -615,6 +682,27 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
             {
                 var current = comp.BypassFractions.GetValueOrDefault(bypass.Id);
                 var maxed = current + bypass.StepFraction > bypass.MaxFraction + 0.001;
+                var next = Math.Min(current + bypass.StepFraction, bypass.MaxFraction);
+
+                var previewFractions = new Dictionary<string, double>(
+                    comp.BypassFractions,
+                    StringComparer.Ordinal)
+                {
+                    [bypass.Id] = next,
+                };
+                CMUQueueNetworkMath.TrySolveArrivalRates(
+                    network,
+                    previewFractions,
+                    out var previewRates,
+                    out _);
+
+                var sourceLambda = rates.GetValueOrDefault(bypass.From);
+                var targetLambda = rates.GetValueOrDefault(bypass.To);
+                var sourceLambdaAfter = previewRates.GetValueOrDefault(bypass.From);
+                var targetLambdaAfter = previewRates.GetValueOrDefault(bypass.To);
+                var sourceService = ServiceRate(comp, network, bypass.From);
+                var targetService = ServiceRate(comp, network, bypass.To);
+
                 bypasses.Add(new CMUQueueBypassInfo(
                     bypass.Id,
                     bypass.From,
@@ -624,7 +712,17 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
                     bypass.StepFraction,
                     bypass.CostPerStep,
                     !maxed && comp.Budget >= bypass.CostPerStep,
-                    maxed));
+                    maxed,
+                    current >= bypass.StepFraction - 0.001,
+                    bypass.CostPerStep,
+                    sourceLambda,
+                    targetLambda,
+                    sourceLambdaAfter,
+                    targetLambdaAfter,
+                    Rho(sourceLambda, sourceService),
+                    Rho(targetLambda, targetService),
+                    Rho(sourceLambdaAfter, sourceService),
+                    Rho(targetLambdaAfter, targetService)));
             }
 
             foreach (var point in comp.History)
@@ -651,6 +749,7 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
                 comp.StatusKind,
                 network?.Name ?? string.Empty,
                 network?.Description ?? string.Empty,
+                network?.Seed ?? 0,
                 comp.Budget,
                 comp.TimeLeft,
                 comp.InitialTime,

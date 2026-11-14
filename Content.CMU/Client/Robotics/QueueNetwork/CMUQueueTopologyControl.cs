@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Text;
 using Content.Client.CMU14.Interface;
 using Content.Client.Resources;
 using Content.Shared.CMU14.Robotics.QueueNetwork;
@@ -9,22 +10,54 @@ using Robust.Client.Graphics;
 using Robust.Client.ResourceManagement;
 using Robust.Client.UserInterface;
 using Robust.Client.UserInterface.Controls;
+using Robust.Shared.Input;
 using Robust.Shared.IoC;
 using Robust.Shared.Maths;
 
 namespace Content.Client.CMU14.Robotics.QueueNetwork;
 
 /// <summary>
+/// Client-side view state for the network schematic. It survives UI state
+/// updates so moving nodes to declutter the drawing is not lost after every
+/// analysis or upgrade.
+/// </summary>
+public sealed class CMUQueueTopologyView
+{
+    public Dictionary<string, Vector2> Offsets { get; } = new(StringComparer.Ordinal);
+    public Vector2 Pan;
+    public float Zoom = 1f;
+
+    public void Reset()
+    {
+        Offsets.Clear();
+        Pan = Vector2.Zero;
+        Zoom = 1f;
+    }
+}
+
+/// <summary>
 /// Draws the generated queueing network: external supply, nodes, routing
-/// arrows, the sink and available intake diversions. The layout is authored
-/// by the generator through node column/row positions.
+/// arrows, the sink and available intake diversions. Nodes can be dragged,
+/// the background can be panned and the wheel zooms the schematic.
 /// </summary>
 public sealed class CMUQueueTopologyControl : Control
 {
+    private const float MinZoom = 0.85f;
+    private const float MaxZoom = 2f;
+
     private readonly Font _font;
     private IReadOnlyList<CMUQueueNodeInfo> _nodes = Array.Empty<CMUQueueNodeInfo>();
     private IReadOnlyList<CMUQueueRouteInfo> _routes = Array.Empty<CMUQueueRouteInfo>();
     private IReadOnlyList<CMUQueueBypassInfo> _bypasses = Array.Empty<CMUQueueBypassInfo>();
+
+    private string? _draggingNode;
+    private Vector2 _dragStartWorld;
+    private Vector2 _dragStartOffset;
+    private bool _panning;
+    private Vector2 _panStartScreen;
+    private Vector2 _panStart;
+
+    public CMUQueueTopologyView View { get; set; } = new();
 
     public string EmptyText = string.Empty;
 
@@ -32,9 +65,9 @@ public sealed class CMUQueueTopologyControl : Control
     {
         var cache = IoCManager.Resolve<IResourceCache>();
         _font = cache.GetFont("/Fonts/RobotoMono/RobotoMono-Regular.ttf", 10);
-        MinHeight = 280;
+        MinHeight = 300;
         HorizontalExpand = true;
-        MouseFilter = MouseFilterMode.Ignore;
+        MouseFilter = MouseFilterMode.Stop;
     }
 
     public void SetData(
@@ -45,6 +78,96 @@ public sealed class CMUQueueTopologyControl : Control
         _nodes = nodes;
         _routes = routes;
         _bypasses = bypasses;
+    }
+
+    protected override void KeyBindDown(GUIBoundKeyEventArgs args)
+    {
+        base.KeyBindDown(args);
+
+        if (args.Function == EngineKeyFunctions.UIRightClick)
+        {
+            View.Reset();
+            _draggingNode = null;
+            _panning = false;
+            args.Handle();
+            return;
+        }
+
+        if (args.Function != EngineKeyFunctions.UIClick)
+            return;
+
+        if (_nodes.Count == 0)
+            return;
+
+        var mouse = LocalMouse(args.RelativePixelPosition);
+        var world = ScreenToWorld(mouse);
+        BuildWorldLayout(out var boxes, out _, out _);
+
+        foreach (var node in _nodes)
+        {
+            if (!boxes.TryGetValue(node.Id, out var rect) || !Contains(rect, world))
+                continue;
+
+            _draggingNode = node.Id;
+            _dragStartWorld = world;
+            _dragStartOffset = View.Offsets.GetValueOrDefault(node.Id);
+            _panning = false;
+            args.Handle();
+            return;
+        }
+
+        _panning = true;
+        _panStartScreen = mouse;
+        _panStart = View.Pan;
+        args.Handle();
+    }
+
+    protected override void KeyBindUp(GUIBoundKeyEventArgs args)
+    {
+        base.KeyBindUp(args);
+
+        if (args.Function != EngineKeyFunctions.UIClick)
+            return;
+
+        _draggingNode = null;
+        _panning = false;
+    }
+
+    protected override void MouseMove(GUIMouseMoveEventArgs args)
+    {
+        base.MouseMove(args);
+
+        var mouse = LocalMouse(args.RelativePixelPosition);
+        if (_draggingNode != null)
+        {
+            var world = ScreenToWorld(mouse);
+            View.Offsets[_draggingNode] = _dragStartOffset + world - _dragStartWorld;
+            return;
+        }
+
+        if (_panning)
+            View.Pan = _panStart + mouse - _panStartScreen;
+    }
+
+    protected override void MouseWheel(GUIMouseWheelEventArgs args)
+    {
+        base.MouseWheel(args);
+
+        var delta = args.Delta.Y;
+        if (MathF.Abs(delta) < 0.01f)
+            return;
+
+        var mouse = LocalMouse(args.RelativePixelPosition);
+        var oldZoom = View.Zoom;
+        var factor = delta > 0 ? 1.15f : 1 / 1.15f;
+        var newZoom = Math.Clamp(oldZoom * factor, MinZoom, MaxZoom);
+        if (MathF.Abs(newZoom - oldZoom) < 0.001f)
+            return;
+
+        var world = (mouse - View.Pan) / oldZoom;
+        View.Zoom = newZoom;
+        View.Pan = mouse - world * newZoom;
+        args.Handle();
     }
 
     protected override void Draw(DrawingHandleScreen handle)
@@ -62,43 +185,18 @@ public sealed class CMUQueueTopologyControl : Control
             return;
         }
 
-        var columns = _nodes.Max(node => node.Column) + 1;
-        var rows = _nodes.Max(node => node.Row) + 1;
-        var left = box.Left + 68;
-        var right = box.Right - 68;
-        var top = box.Top + 20;
-        var bottom = box.Bottom - 26;
-        var cellWidth = (right - left) / columns;
-        var cellHeight = (bottom - top) / rows;
-        var nodeWidth = Math.Min(112, Math.Max(64, cellWidth * 0.78f));
-        var nodeHeight = Math.Min(46, Math.Max(40, cellHeight * 0.62f));
-
+        BuildWorldLayout(out var worldBoxes, out var worldSource, out var worldSink);
         var boxes = new Dictionary<string, UIBox2>(StringComparer.Ordinal);
-        foreach (var node in _nodes)
-        {
-            var centerX = left + cellWidth * node.Column + cellWidth / 2;
-            var centerY = top + cellHeight * node.Row + cellHeight / 2;
-            boxes[node.Id] = new UIBox2(
-                centerX - nodeWidth / 2,
-                centerY - nodeHeight / 2,
-                centerX + nodeWidth / 2,
-                centerY + nodeHeight / 2);
-        }
+        foreach (var (id, rect) in worldBoxes)
+            boxes[id] = MapBox(rect);
 
-        var sourceRect = new UIBox2(box.Left + 8, (box.Top + box.Bottom) / 2 - 20, box.Left + 58, (box.Top + box.Bottom) / 2 + 20);
-        var sinkRect = new UIBox2(box.Right - 58, (box.Top + box.Bottom) / 2 - 20, box.Right - 8, (box.Top + box.Bottom) / 2 + 20);
+        var sourceRect = MapBox(worldSource);
+        var sinkRect = MapBox(worldSink);
 
         DrawBox(handle, sourceRect, CrtTerminalPalette.Surface2, CrtTerminalPalette.Line);
         DrawBox(handle, sinkRect, CrtTerminalPalette.Surface2, CrtTerminalPalette.Line);
         DrawCentered(handle, sourceRect, Loc.GetString("cmu-queue-topology-in"), CrtTerminalPalette.TextDim);
         DrawCentered(handle, sinkRect, Loc.GetString("cmu-queue-topology-out"), CrtTerminalPalette.TextDim);
-
-        var totalExternal = _nodes.Sum(node => node.ExternalRate);
-        DrawLabel(
-            handle,
-            new Vector2((sourceRect.Left + sourceRect.Right) / 2, sourceRect.Top - 7),
-            totalExternal.ToString("0.#"),
-            CrtTerminalPalette.Accent);
 
         foreach (var node in _nodes)
         {
@@ -113,7 +211,7 @@ public sealed class CMUQueueTopologyControl : Control
             var perpendicular = new Vector2(-direction.Y, direction.X);
             DrawLabel(
                 handle,
-                (start + end) / 2 + perpendicular * 8,
+                (start + end) / 2 + perpendicular * 9,
                 node.ExternalRate.ToString("0.#"),
                 CrtTerminalPalette.Accent);
         }
@@ -128,7 +226,7 @@ public sealed class CMUQueueTopologyControl : Control
 
             var start = new Vector2((from.Left + from.Right) / 2, from.Top);
             var end = new Vector2((to.Left + to.Right) / 2, to.Top);
-            var bend = Math.Min(start.Y, end.Y) - 16;
+            var bend = Math.Min(start.Y, end.Y) - 18;
             DrawDashed(handle, start, new Vector2(start.X, bend), CrtTerminalPalette.Caution);
             DrawDashed(handle, new Vector2(start.X, bend), new Vector2(end.X, bend), CrtTerminalPalette.Caution);
             DrawArrow(handle, new Vector2(end.X, bend), end, CrtTerminalPalette.Caution);
@@ -138,7 +236,7 @@ public sealed class CMUQueueTopologyControl : Control
                     "cmu-queue-topology-bypass-active",
                     ("percent", (bypass.CurrentPercent * 100).ToString("0")))
                 : Loc.GetString("cmu-queue-topology-bypass");
-            DrawLabel(handle, new Vector2((start.X + end.X) / 2, bend - 7), label, CrtTerminalPalette.Caution);
+            DrawLabel(handle, new Vector2((start.X + end.X) / 2, bend - 11), label, CrtTerminalPalette.Caution);
         }
 
         foreach (var route in _routes)
@@ -168,7 +266,7 @@ public sealed class CMUQueueTopologyControl : Control
             {
                 var start = new Vector2((from.Left + from.Right) / 2, from.Top);
                 var end = new Vector2((to.Left + to.Right) / 2, to.Top);
-                var bend = Math.Min(start.Y, end.Y) - 12;
+                var bend = Math.Min(start.Y, end.Y) - 14;
                 handle.DrawLine(start, new Vector2(start.X, bend), CrtTerminalPalette.Line);
                 handle.DrawLine(new Vector2(start.X, bend), new Vector2(end.X, bend), CrtTerminalPalette.Line);
                 DrawArrow(handle, new Vector2(end.X, bend), end, CrtTerminalPalette.Line);
@@ -177,7 +275,7 @@ public sealed class CMUQueueTopologyControl : Control
                 {
                     DrawLabel(
                         handle,
-                        new Vector2((start.X + end.X) / 2, bend - 7),
+                        new Vector2((start.X + end.X) / 2, bend - 9),
                         Loc.GetString(
                             "cmu-queue-topology-percent",
                             ("percent", (route.Probability * 100).ToString("0"))),
@@ -196,7 +294,7 @@ public sealed class CMUQueueTopologyControl : Control
                     var perpendicular = new Vector2(-direction.Y, direction.X);
                     DrawLabel(
                         handle,
-                        (start + end) / 2 + perpendicular * 10,
+                        (start + end) / 2 + perpendicular * 13,
                         Loc.GetString(
                             "cmu-queue-topology-percent",
                             ("percent", (route.Probability * 100).ToString("0"))),
@@ -225,6 +323,81 @@ public sealed class CMUQueueTopologyControl : Control
         }
     }
 
+    private void BuildWorldLayout(
+        out Dictionary<string, UIBox2> boxes,
+        out UIBox2 sourceRect,
+        out UIBox2 sinkRect)
+    {
+        var box = PixelSizeBox;
+        var columns = _nodes.Max(node => node.Column) + 1;
+        var rows = _nodes.Max(node => node.Row) + 1;
+        var left = box.Left + 76;
+        var right = box.Right - 76;
+        var top = box.Top + 22;
+        var bottom = box.Bottom - 28;
+        var cellWidth = Math.Max(1, (right - left) / columns);
+        var cellHeight = Math.Max(1, (bottom - top) / rows);
+        var nodeWidth = Math.Min(118, Math.Max(64, cellWidth * 0.78f));
+        var nodeHeight = Math.Min(48, Math.Max(40, cellHeight * 0.62f));
+
+        boxes = new Dictionary<string, UIBox2>(StringComparer.Ordinal);
+        foreach (var node in _nodes)
+        {
+            var offset = View.Offsets.GetValueOrDefault(node.Id);
+            var centerX = left + cellWidth * node.Column + cellWidth / 2 + offset.X;
+            var centerY = top + cellHeight * node.Row + cellHeight / 2 + offset.Y;
+            boxes[node.Id] = new UIBox2(
+                centerX - nodeWidth / 2,
+                centerY - nodeHeight / 2,
+                centerX + nodeWidth / 2,
+                centerY + nodeHeight / 2);
+        }
+
+        var center = (box.Top + box.Bottom) / 2;
+        sourceRect = new UIBox2(box.Left + 8, center - 20, box.Left + 66, center + 20);
+        sinkRect = new UIBox2(box.Right - 66, center - 20, box.Right - 8, center + 20);
+    }
+
+    private Vector2 WorldToScreen(Vector2 point)
+    {
+        return point * View.Zoom + View.Pan;
+    }
+
+    private Vector2 ScreenToWorld(Vector2 point)
+    {
+        return (point - View.Pan) / View.Zoom;
+    }
+
+    private UIBox2 MapBox(UIBox2 box)
+    {
+        return new UIBox2(
+            WorldToScreen(new Vector2(box.Left, box.Top)),
+            WorldToScreen(new Vector2(box.Right, box.Bottom)));
+    }
+
+    private Vector2 LocalMouse(Vector2 relativePixelPosition)
+    {
+        var box = PixelSizeBox;
+        return new Vector2(box.Left + relativePixelPosition.X, box.Top + relativePixelPosition.Y);
+    }
+
+    private static bool Contains(UIBox2 rect, Vector2 point)
+    {
+        return point.X >= rect.Left
+            && point.X <= rect.Right
+            && point.Y >= rect.Top
+            && point.Y <= rect.Bottom;
+    }
+
+    private float MeasureText(string text)
+    {
+        var width = 0f;
+        foreach (var rune in text.EnumerateRunes())
+            width += _font.GetCharMetrics(rune, 1f)?.Advance ?? 0f;
+
+        return width;
+    }
+
     private static void DrawBox(
         DrawingHandleScreen handle,
         UIBox2 rect,
@@ -244,7 +417,7 @@ public sealed class CMUQueueTopologyControl : Control
         string text,
         Color color)
     {
-        var width = text.Length * 5.5f;
+        var width = MeasureText(text);
         handle.DrawString(
             _font,
             new Vector2((rect.Left + rect.Right) / 2 - width / 2, (rect.Top + rect.Bottom) / 2 - 6),
@@ -258,9 +431,9 @@ public sealed class CMUQueueTopologyControl : Control
         string text,
         Color color)
     {
-        var width = text.Length * 5.5f;
+        var width = MeasureText(text);
         handle.DrawRect(
-            new UIBox2(position.X - width / 2 - 2, position.Y - 7, position.X + width / 2 + 2, position.Y + 5),
+            new UIBox2(position.X - width / 2 - 3, position.Y - 8, position.X + width / 2 + 3, position.Y + 5),
             CrtTerminalPalette.Surface0);
         handle.DrawString(
             _font,

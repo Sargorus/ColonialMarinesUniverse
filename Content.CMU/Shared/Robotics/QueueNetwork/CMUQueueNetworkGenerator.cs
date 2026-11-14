@@ -103,6 +103,9 @@ public static class CMUQueueNetworkGenerator
             network.Nodes[index].Row = 0;
         }
 
+        if (!tutorial)
+            AddBypass(network, "intake", "processor1");
+
         return network;
     }
 
@@ -136,6 +139,8 @@ public static class CMUQueueNetworkGenerator
         SetPosition(network, "qc", 3, 0);
         SetPosition(network, "finishing", 4, 0);
         SetPosition(network, "packaging", 5, 1);
+
+        AddBypass(network, "intake", "processor");
 
         return network;
     }
@@ -171,6 +176,7 @@ public static class CMUQueueNetworkGenerator
         SetPosition(network, "qc", 3, 1);
         SetPosition(network, "packaging", 4, 1);
 
+        AddBypass(network, "intake", "processorA");
         AddBypass(network, "intake", "processorB");
 
         return network;
@@ -209,6 +215,7 @@ public static class CMUQueueNetworkGenerator
         SetPosition(network, "qc", 3, 0);
         SetPosition(network, "packaging", 4, 1);
 
+        AddBypass(network, "intake", "processorA");
         AddBypass(network, "intake", "processorB");
 
         return network;
@@ -248,6 +255,7 @@ public static class CMUQueueNetworkGenerator
         SetPosition(network, "merge", 3, 1);
         SetPosition(network, "packaging", 4, 1);
 
+        AddBypass(network, "intake", "lineA1");
         AddBypass(network, "intake", "lineB1");
 
         return network;

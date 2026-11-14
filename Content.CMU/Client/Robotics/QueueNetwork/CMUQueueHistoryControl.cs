@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Text;
 using Content.Client.CMU14.Interface;
 using Content.Client.Resources;
 using Content.Shared.CMU14.Robotics.QueueNetwork;
@@ -198,7 +199,7 @@ public sealed class CMUQueueHistoryControl : Control
                         ("name", NodeName(_nodes[bestNode])),
                         ("minute", bestPoint.Minute.ToString("0.00")),
                         ("queue", queue.ToString("0.00")));
-                    var labelWidth = label.Length * 6.1f;
+                    var labelWidth = MeasureText(label) + 6;
                     var minLabelX = left + labelWidth / 2 + 4;
                     var maxLabelX = right - labelWidth / 2 - 4;
                     var labelX = maxLabelX >= minLabelX
@@ -244,11 +245,21 @@ public sealed class CMUQueueHistoryControl : Control
         float bottom,
         string text)
     {
+        var width = MeasureText(text);
         handle.DrawString(
             _font,
-            new Vector2(x - text.Length * 3f, bottom + 5),
+            new Vector2(x - width / 2, bottom + 5),
             text,
             CrtTerminalPalette.TextDim);
+    }
+
+    private float MeasureText(string text)
+    {
+        var width = 0f;
+        foreach (var rune in text.EnumerateRunes())
+            width += _font.GetCharMetrics(rune, 1f)?.Advance ?? 0f;
+
+        return width;
     }
 
     private static double NiceCeil(double value)
