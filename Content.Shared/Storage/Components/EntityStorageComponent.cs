@@ -115,6 +115,12 @@ public sealed partial class EntityStorageComponent : Component, IGasMixtureHolde
     public bool Open;
 
     /// <summary>
+    /// Whether the open/close context-menu verb is shown.
+    /// </summary>
+    [DataField]
+    public bool ShowOpenVerb = true; // CMU14: allow prototypes to hide a redundant verb
+
+    /// <summary>
     /// The sound made when closed.
     /// </summary>
     [DataField]

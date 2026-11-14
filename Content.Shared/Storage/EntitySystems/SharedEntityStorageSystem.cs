@@ -173,7 +173,7 @@ public abstract partial class SharedEntityStorageSystem : EntitySystem
 
     private void AddToggleOpenVerb(EntityUid uid, EntityStorageComponent component, GetVerbsEvent<InteractionVerb> args)
     {
-        if (!args.CanAccess || !args.CanInteract)
+        if (!args.CanAccess || !args.CanInteract || !component.ShowOpenVerb) // CMU14: hide redundant open/close verb
             return;
 
         if (!CanOpen(args.User, args.Target, silent: true, component))

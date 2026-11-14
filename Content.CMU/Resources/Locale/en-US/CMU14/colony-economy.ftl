@@ -159,3 +159,18 @@ admin-console-trade-tax-section = -- Parcel Sales Tax --
 admin-console-current-trade-tax = Current Parcel Sales Tax: { $percent }%
 admin-console-trade-tax-description = Taken from what the drone pays for a parcel sold on a trade platform. That share goes to the colony budget, the rest to the seller.
 admin-console-trade-tax-announcement = Colony parcel sales tax has been set to { $percent }%. That share of every parcel sold on a trade platform goes to the colony.
+
+# Safe PIN
+cmu-safe-pin-title = Safe PIN
+cmu-safe-pin-prompt = Enter the safe's PIN.
+cmu-safe-current-pin-title = Change safe PIN
+cmu-safe-current-pin-prompt = Enter the current safe PIN.
+cmu-safe-pin-current-required = Enter the current PIN before changing it.
+cmu-safe-pin-wrong = Wrong PIN.
+cmu-safe-pin-accepted = PIN accepted.
+cmu-safe-set-pin-verb = Set PIN code
+cmu-safe-change-pin-verb = Change PIN code
+cmu-safe-set-pin-title = Set safe PIN
+cmu-safe-set-pin-prompt = Enter a new four-digit PIN for this safe.
+cmu-safe-pin-set = PIN code set.
+cmu-safe-pin-invalid = The PIN must be exactly four digits.

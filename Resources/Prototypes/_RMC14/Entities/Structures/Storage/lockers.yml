@@ -80,6 +80,18 @@
   components:
   - type: Sprite
     sprite: _RMC14/Structures/Storage/Lockers/safe.rsi
+  - type: EntityStorage # CMU14: left click toggles the safe; hide the redundant context-menu verb
+    showOpenVerb: false
+  - type: Lock # CMU14: the safe is opened through its PIN dialog
+    locked: false
+    showLockVerbs: false
+    unlockOnClick: false
+  - type: CMUSafe # CMU14
+    hitPoints: 2000
+  - type: UserInterface # CMU14: PIN dialog
+    interfaces:
+      enum.DialogUiKey.Key:
+        type: DialogBui
 
 - type: entity
   parent: CMLockerBase
@@ -94,6 +106,14 @@
         type: DialogBui
   - type: AccessReader
     access: [ [ "CMAccessColonyCommand" ] ]
+  - type: EntityStorage # CMU14: left click toggles the safe; hide the redundant context-menu verb
+    showOpenVerb: false
+  - type: Lock # CMU14: the safe is opened through its PIN dialog
+    locked: false
+    showLockVerbs: false
+    unlockOnClick: false
+  - type: CMUSafe # CMU14
+    hitPoints: 2000
 
 - type: entity
   parent: RMCLockerSecureSafe
