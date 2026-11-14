@@ -32,7 +32,7 @@ public sealed class CMUQueueTopologyControl : Control
     {
         var cache = IoCManager.Resolve<IResourceCache>();
         _font = cache.GetFont("/Fonts/RobotoMono/RobotoMono-Regular.ttf", 10);
-        MinHeight = 230;
+        MinHeight = 280;
         HorizontalExpand = true;
         MouseFilter = MouseFilterMode.Ignore;
     }
@@ -62,16 +62,16 @@ public sealed class CMUQueueTopologyControl : Control
             return;
         }
 
-        var maxColumn = Math.Max(1, _nodes.Max(node => node.Column));
-        var maxRow = Math.Max(1, _nodes.Max(node => node.Row));
+        var columns = _nodes.Max(node => node.Column) + 1;
+        var rows = _nodes.Max(node => node.Row) + 1;
         var left = box.Left + 68;
         var right = box.Right - 68;
-        var top = box.Top + 18;
-        var bottom = box.Bottom - 18;
-        var cellWidth = (right - left) / maxColumn;
-        var cellHeight = (bottom - top) / maxRow;
-        var nodeWidth = Math.Min(112, Math.Max(72, cellWidth * 0.72f));
-        var nodeHeight = Math.Min(46, Math.Max(34, cellHeight * 0.55f));
+        var top = box.Top + 20;
+        var bottom = box.Bottom - 26;
+        var cellWidth = (right - left) / columns;
+        var cellHeight = (bottom - top) / rows;
+        var nodeWidth = Math.Min(112, Math.Max(64, cellWidth * 0.78f));
+        var nodeHeight = Math.Min(46, Math.Max(40, cellHeight * 0.62f));
 
         var boxes = new Dictionary<string, UIBox2>(StringComparer.Ordinal);
         foreach (var node in _nodes)
@@ -109,9 +109,11 @@ public sealed class CMUQueueTopologyControl : Control
             var start = EdgePoint(sourceRect, Center(target));
             var end = EdgePoint(target, Center(sourceRect));
             DrawArrow(handle, start, end, CrtTerminalPalette.Accent);
+            var direction = Vector2.Normalize(end - start);
+            var perpendicular = new Vector2(-direction.Y, direction.X);
             DrawLabel(
                 handle,
-                (start + end) / 2,
+                (start + end) / 2 + perpendicular * 8,
                 node.ExternalRate.ToString("0.#"),
                 CrtTerminalPalette.Accent);
         }
@@ -147,9 +149,12 @@ public sealed class CMUQueueTopologyControl : Control
                 if (!boxes.TryGetValue(route.From, out var fromSink))
                     continue;
 
-                var start = EdgePoint(fromSink, Center(sinkRect));
-                var end = EdgePoint(sinkRect, Center(fromSink));
-                DrawArrow(handle, start, end, CrtTerminalPalette.Line);
+                var fromCenter = Center(fromSink);
+                var sinkEnd = new Vector2(
+                    sinkRect.Left,
+                    Math.Clamp(fromCenter.Y, sinkRect.Top + 4, sinkRect.Bottom - 4));
+                var start = EdgePoint(fromSink, sinkEnd);
+                DrawArrow(handle, start, sinkEnd, CrtTerminalPalette.Line);
                 continue;
             }
 
@@ -167,6 +172,17 @@ public sealed class CMUQueueTopologyControl : Control
                 handle.DrawLine(start, new Vector2(start.X, bend), CrtTerminalPalette.Line);
                 handle.DrawLine(new Vector2(start.X, bend), new Vector2(end.X, bend), CrtTerminalPalette.Line);
                 DrawArrow(handle, new Vector2(end.X, bend), end, CrtTerminalPalette.Line);
+
+                if (route.Probability < 0.999)
+                {
+                    DrawLabel(
+                        handle,
+                        new Vector2((start.X + end.X) / 2, bend - 7),
+                        Loc.GetString(
+                            "cmu-queue-topology-percent",
+                            ("percent", (route.Probability * 100).ToString("0"))),
+                        CrtTerminalPalette.TextDim);
+                }
             }
             else
             {
@@ -176,9 +192,11 @@ public sealed class CMUQueueTopologyControl : Control
 
                 if (route.Probability < 0.999)
                 {
+                    var direction = Vector2.Normalize(end - start);
+                    var perpendicular = new Vector2(-direction.Y, direction.X);
                     DrawLabel(
                         handle,
-                        (start + end) / 2,
+                        (start + end) / 2 + perpendicular * 10,
                         Loc.GetString(
                             "cmu-queue-topology-percent",
                             ("percent", (route.Probability * 100).ToString("0"))),
@@ -190,11 +208,9 @@ public sealed class CMUQueueTopologyControl : Control
         foreach (var node in _nodes)
         {
             var rect = boxes[node.Id];
-            var border = !node.Analyzed
-                ? CrtTerminalPalette.Line
-                : node.Stable
-                    ? CrtTerminalPalette.Accent
-                    : CrtTerminalPalette.Alert;
+            var border = node.Analyzed
+                ? CrtTerminalPalette.Accent
+                : CrtTerminalPalette.Line;
             DrawBox(handle, rect, CrtTerminalPalette.Surface2, border);
             DrawCentered(handle, rect, ShortName(node), CrtTerminalPalette.TextBright);
 

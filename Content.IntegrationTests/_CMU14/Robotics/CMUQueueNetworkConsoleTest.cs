@@ -182,7 +182,7 @@ public sealed class CMUQueueNetworkConsoleTest : GameTest
                 .ToList();
         });
 
-        Assert.That(unstableIds, Has.Count.EqualTo(2));
+        Assert.That(unstableIds, Has.Count.GreaterThanOrEqualTo(2));
 
         foreach (var nodeId in unstableIds)
             await SetStableRate(console, consoleNet, nodeId);

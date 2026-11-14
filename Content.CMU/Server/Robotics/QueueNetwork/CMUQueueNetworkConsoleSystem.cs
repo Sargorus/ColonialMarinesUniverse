@@ -159,7 +159,7 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
             "cmu-queue-status-analyzed",
             ("node", NodeName(network, nodeId)),
             ("rho", metrics.Rho.ToString("0.00", CultureInfo.CurrentCulture)));
-        comp.StatusKind = metrics.Stable ? CMUQueueStatusKind.Good : CMUQueueStatusKind.Bad;
+        comp.StatusKind = CMUQueueStatusKind.Neutral;
         UpdateUi(ent);
     }
 

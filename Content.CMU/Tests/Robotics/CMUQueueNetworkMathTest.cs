@@ -54,6 +54,34 @@ public sealed class CMUQueueNetworkMathTest
     }
 
     [Test]
+    public void BranchReworkLoopLoadsOneBranchTwice()
+    {
+        var network = MakeNetwork(
+            Node("intake", 15),
+            Node("processorA", 8),
+            Node("processorB", 8),
+            Node("assembler", 14),
+            Node("qc", 14),
+            Node("packaging", 14));
+        network.Sources.Add(Source("intake", 10));
+        network.Routes.Add(Route("intake", "processorA", 0.6));
+        network.Routes.Add(Route("intake", "processorB", 0.4));
+        network.Routes.Add(Route("processorA", "assembler", 1));
+        network.Routes.Add(Route("processorB", "assembler", 1));
+        network.Routes.Add(Route("assembler", "qc", 0.9));
+        network.Routes.Add(Route("assembler", "processorA", 0.1));
+        network.Routes.Add(Route("qc", "packaging", 1));
+        network.Routes.Add(Route("packaging", "sink", 1));
+
+        Assert.That(CMUQueueNetworkMath.TrySolveArrivalRates(network, out var rates, out var error), Is.True, error);
+
+        Assert.That(rates["processorA"], Is.EqualTo(64.0 / 9.0).Within(0.001));
+        Assert.That(rates["processorB"], Is.EqualTo(4).Within(0.001));
+        Assert.That(rates["assembler"], Is.EqualTo(100.0 / 9.0).Within(0.001));
+        Assert.That(rates["qc"], Is.EqualTo(10).Within(0.001));
+    }
+
+    [Test]
     public void OverloadedNodeHasNegativeSteadyStateValues()
     {
         var metrics = CMUQueueNetworkMath.ComputeMetrics(9, 7);
@@ -173,7 +201,7 @@ public sealed class CMUQueueNetworkMathTest
             if (network.Bypasses.Count > 0)
                 bypasses++;
 
-            Assert.That(network.Nodes.Count, Is.GreaterThanOrEqualTo(3), $"seed {seed}");
+            Assert.That(network.Nodes.Count, Is.GreaterThanOrEqualTo(4), $"seed {seed}");
             Assert.That(network.Sources, Is.Not.Empty, $"seed {seed}");
 
             Assert.That(
@@ -185,7 +213,21 @@ public sealed class CMUQueueNetworkMathTest
                 .Where(node => !CMUQueueNetworkMath.ComputeMetrics(rates[node.Id], node.ServiceRate).Stable)
                 .ToList();
 
-            Assert.That(unstable, Is.Not.Empty, $"seed {seed} produced no bottleneck");
+            Assert.That(unstable.Count, Is.GreaterThanOrEqualTo(2), $"seed {seed} produced a single-bottleneck contract");
+
+            // Upgrading any one node to its maximum must still leave another
+            // bottleneck behind, so the whole budget cannot be dumped into a
+            // single stage to finish the contract.
+            foreach (var upgradedNode in unstable)
+            {
+                var remaining = unstable.Count(node =>
+                    node != upgradedNode
+                    && !CMUQueueNetworkMath.ComputeMetrics(rates[node.Id], node.ServiceRate).Stable);
+                Assert.That(
+                    remaining,
+                    Is.GreaterThanOrEqualTo(1),
+                    $"seed {seed}: upgrading only {upgradedNode.Id} would solve the contract");
+            }
 
             var minimumCost = 0;
             foreach (var node in unstable)
@@ -214,6 +256,26 @@ public sealed class CMUQueueNetworkMathTest
                     $"seed {seed}: bypass starts at a node without external intake");
                 Assert.That(network.Nodes.Any(node => node.Id == bypass.To), Is.True,
                     $"seed {seed}: bypass target does not exist");
+            }
+
+            if (network.Bypasses.Count > 0)
+            {
+                var maxFractions = network.Bypasses.ToDictionary(
+                    bypass => bypass.Id,
+                    bypass => bypass.MaxFraction,
+                    StringComparer.Ordinal);
+                Assert.That(
+                    CMUQueueNetworkMath.TrySolveArrivalRates(network, maxFractions, out var rerouted, out var rerouteError),
+                    Is.True,
+                    $"seed {seed}: {rerouteError}");
+
+                var stillUnstable = network.Nodes
+                    .Where(node => !CMUQueueNetworkMath.ComputeMetrics(rerouted[node.Id], node.ServiceRate).Stable)
+                    .ToList();
+                Assert.That(
+                    stillUnstable.Count,
+                    Is.GreaterThanOrEqualTo(2),
+                    $"seed {seed}: moving all intake out of the slow node is enough to solve the contract");
             }
         }
 

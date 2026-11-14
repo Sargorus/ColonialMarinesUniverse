@@ -34,6 +34,8 @@ public sealed class CMUQueueHistoryControl : Control
     private IReadOnlyList<CMUQueueNodeInfo> _nodes = Array.Empty<CMUQueueNodeInfo>();
     private IReadOnlyList<CMUQueueHistoryInfo> _history = Array.Empty<CMUQueueHistoryInfo>();
     private int _elapsed;
+    private Vector2 _mousePosition;
+    private bool _hasMouse;
 
     /// <summary>Localized message shown before the first projection.</summary>
     public string EmptyText = string.Empty;
@@ -44,7 +46,20 @@ public sealed class CMUQueueHistoryControl : Control
         _font = cache.GetFont("/Fonts/RobotoMono/RobotoMono-Regular.ttf", 10);
         MinHeight = 170;
         HorizontalExpand = true;
-        MouseFilter = MouseFilterMode.Ignore;
+        MouseFilter = MouseFilterMode.Pass;
+    }
+
+    protected override void MouseMove(GUIMouseMoveEventArgs args)
+    {
+        base.MouseMove(args);
+        _mousePosition = args.RelativePixelPosition;
+        _hasMouse = true;
+    }
+
+    protected override void MouseExited()
+    {
+        base.MouseExited();
+        _hasMouse = false;
     }
 
     public static Color ColorFor(int index)
@@ -136,6 +151,91 @@ public sealed class CMUQueueHistoryControl : Control
                 previous = current;
             }
         }
+
+        if (_hasMouse && _history.Count > 0)
+        {
+            var mouse = new Vector2(box.Left + _mousePosition.X, box.Top + _mousePosition.Y);
+            if (mouse.X >= left && mouse.X <= right && mouse.Y >= top && mouse.Y <= bottom)
+            {
+                var bestDistance = float.MaxValue;
+                CMUQueueHistoryInfo? bestPoint = null;
+                var bestNode = 0;
+                var bestX = 0f;
+                var bestY = 0f;
+
+                foreach (var point in _history)
+                {
+                    var x = left + (right - left) * (point.Minute / maxTime);
+                    for (var nodeIndex = 0; nodeIndex < _nodes.Count; nodeIndex++)
+                    {
+                        var queue = nodeIndex < point.Queues.Count ? point.Queues[nodeIndex] : 0;
+                        var y = bottom - (bottom - top) * (float)(queue / maxQueue);
+                        var distance = Vector2.DistanceSquared(mouse, new Vector2(x, y));
+                        if (distance >= bestDistance)
+                            continue;
+
+                        bestDistance = distance;
+                        bestPoint = point;
+                        bestNode = nodeIndex;
+                        bestX = x;
+                        bestY = y;
+                    }
+                }
+
+                if (bestPoint != null)
+                {
+                    handle.DrawLine(
+                        new Vector2(bestX, top),
+                        new Vector2(bestX, bottom),
+                        CrtTerminalPalette.TextDim);
+                    handle.DrawRect(
+                        new UIBox2(bestX - 3, bestY - 3, bestX + 3, bestY + 3),
+                        ColorFor(bestNode));
+
+                    var queue = bestNode < bestPoint.Queues.Count ? bestPoint.Queues[bestNode] : 0;
+                    var label = Loc.GetString(
+                        "cmu-queue-console-hover-point",
+                        ("name", NodeName(_nodes[bestNode])),
+                        ("minute", bestPoint.Minute.ToString("0.00")),
+                        ("queue", queue.ToString("0.00")));
+                    var labelWidth = label.Length * 6.1f;
+                    var minLabelX = left + labelWidth / 2 + 4;
+                    var maxLabelX = right - labelWidth / 2 - 4;
+                    var labelX = maxLabelX >= minLabelX
+                        ? Math.Clamp((left + right) / 2, minLabelX, maxLabelX)
+                        : (left + right) / 2;
+                    DrawHoverLabel(
+                        handle,
+                        new Vector2(labelX, top + 8),
+                        label,
+                        labelWidth,
+                        CrtTerminalPalette.TextBright);
+                }
+            }
+        }
+    }
+
+    private void DrawHoverLabel(
+        DrawingHandleScreen handle,
+        Vector2 position,
+        string text,
+        float width,
+        Color color)
+    {
+        handle.DrawRect(
+            new UIBox2(position.X - width / 2 - 3, position.Y - 8, position.X + width / 2 + 3, position.Y + 5),
+            CrtTerminalPalette.Surface0);
+        handle.DrawString(
+            _font,
+            new Vector2(position.X - width / 2, position.Y - 7),
+            text,
+            color);
+    }
+
+    private static string NodeName(CMUQueueNodeInfo node)
+    {
+        var name = Loc.TryGetString(node.Name, out var fullName) ? fullName : node.Id;
+        return string.IsNullOrEmpty(node.Suffix) ? name : $"{name} {node.Suffix}";
     }
 
     private void DrawTimeLabel(

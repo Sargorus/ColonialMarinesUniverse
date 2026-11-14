@@ -20,9 +20,11 @@ public static class CMUQueueNetworkGenerator
         CMUQueueTopologyKind.Line,
         CMUQueueTopologyKind.Rework,
         CMUQueueTopologyKind.Branch,
+        CMUQueueTopologyKind.BranchRework,
         CMUQueueTopologyKind.SplitMerge,
         CMUQueueTopologyKind.Line,
         CMUQueueTopologyKind.Rework,
+        CMUQueueTopologyKind.BranchRework,
     };
 
     private static readonly int[] UpgradeCosts = { 150, 200, 250, 300 };
@@ -61,6 +63,7 @@ public static class CMUQueueNetworkGenerator
         return topology switch
         {
             CMUQueueTopologyKind.Branch => BuildBranch(random),
+            CMUQueueTopologyKind.BranchRework => BuildBranchRework(random),
             CMUQueueTopologyKind.Rework => BuildRework(random),
             CMUQueueTopologyKind.SplitMerge => BuildSplitMerge(random),
             _ => BuildLine(random, tutorial),
@@ -74,7 +77,7 @@ public static class CMUQueueNetworkGenerator
             tutorial ? "cmu-queue-network-tutorial-desc" : "cmu-queue-network-line-desc");
 
         AddNode(network, "intake", "cmu-queue-node-intake");
-        var processors = tutorial ? 1 : 1 + random.Next(0, 2);
+        var processors = tutorial ? 1 : 2 + random.Next(0, 2);
         for (var index = 0; index < processors; index++)
         {
             AddNode(
@@ -113,6 +116,7 @@ public static class CMUQueueNetworkGenerator
         AddNode(network, "processor", "cmu-queue-node-processor");
         AddNode(network, "assembler", "cmu-queue-node-assembler");
         AddNode(network, "qc", "cmu-queue-node-qc");
+        AddNode(network, "finishing", "cmu-queue-node-finishing");
         AddNode(network, "packaging", "cmu-queue-node-packaging");
 
         AddSource(network, "intake", 10 + random.Next(0, 5));
@@ -122,14 +126,16 @@ public static class CMUQueueNetworkGenerator
         AddRoute(network, "processor", "assembler", 1);
         AddRoute(network, "assembler", "qc", 1 - rework);
         AddRoute(network, "assembler", "processor", rework);
-        AddRoute(network, "qc", "packaging", 1);
+        AddRoute(network, "qc", "finishing", 1);
+        AddRoute(network, "finishing", "packaging", 1);
         AddRoute(network, "packaging", "sink", 1);
 
         SetPosition(network, "intake", 0, 1);
         SetPosition(network, "processor", 1, 0);
         SetPosition(network, "assembler", 2, 0);
         SetPosition(network, "qc", 3, 0);
-        SetPosition(network, "packaging", 4, 1);
+        SetPosition(network, "finishing", 4, 0);
+        SetPosition(network, "packaging", 5, 1);
 
         return network;
     }
@@ -144,6 +150,7 @@ public static class CMUQueueNetworkGenerator
         AddNode(network, "processorA", "cmu-queue-node-processor", "A");
         AddNode(network, "processorB", "cmu-queue-node-processor", "B");
         AddNode(network, "merge", "cmu-queue-node-merge");
+        AddNode(network, "qc", "cmu-queue-node-qc");
         AddNode(network, "packaging", "cmu-queue-node-packaging");
 
         AddSource(network, "intake", 11 + random.Next(0, 5));
@@ -153,14 +160,54 @@ public static class CMUQueueNetworkGenerator
         AddRoute(network, "intake", "processorB", 1 - split);
         AddRoute(network, "processorA", "merge", 1);
         AddRoute(network, "processorB", "merge", 1);
-        AddRoute(network, "merge", "packaging", 1);
+        AddRoute(network, "merge", "qc", 1);
+        AddRoute(network, "qc", "packaging", 1);
         AddRoute(network, "packaging", "sink", 1);
 
         SetPosition(network, "intake", 0, 1);
         SetPosition(network, "processorA", 1, 0);
         SetPosition(network, "processorB", 1, 2);
         SetPosition(network, "merge", 2, 1);
-        SetPosition(network, "packaging", 3, 1);
+        SetPosition(network, "qc", 3, 1);
+        SetPosition(network, "packaging", 4, 1);
+
+        AddBypass(network, "intake", "processorB");
+
+        return network;
+    }
+
+    private static CMUQueueNetworkDefinition BuildBranchRework(SystemRandom random)
+    {
+        var network = NewNetwork(
+            "cmu-queue-network-branch-rework-name",
+            "cmu-queue-network-branch-rework-desc");
+
+        AddNode(network, "intake", "cmu-queue-node-intake");
+        AddNode(network, "processorA", "cmu-queue-node-processor", "A");
+        AddNode(network, "processorB", "cmu-queue-node-processor", "B");
+        AddNode(network, "assembler", "cmu-queue-node-assembler");
+        AddNode(network, "qc", "cmu-queue-node-qc");
+        AddNode(network, "packaging", "cmu-queue-node-packaging");
+
+        AddSource(network, "intake", 11 + random.Next(0, 5));
+
+        var split = 0.5 + random.NextDouble() * 0.15;
+        var rework = 0.06 + random.NextDouble() * 0.06;
+        AddRoute(network, "intake", "processorA", split);
+        AddRoute(network, "intake", "processorB", 1 - split);
+        AddRoute(network, "processorA", "assembler", 1);
+        AddRoute(network, "processorB", "assembler", 1);
+        AddRoute(network, "assembler", "qc", 1 - rework);
+        AddRoute(network, "assembler", "processorA", rework);
+        AddRoute(network, "qc", "packaging", 1);
+        AddRoute(network, "packaging", "sink", 1);
+
+        SetPosition(network, "intake", 0, 1);
+        SetPosition(network, "processorA", 1, 0);
+        SetPosition(network, "processorB", 1, 2);
+        SetPosition(network, "assembler", 2, 1);
+        SetPosition(network, "qc", 3, 0);
+        SetPosition(network, "packaging", 4, 1);
 
         AddBypass(network, "intake", "processorB");
 
@@ -179,6 +226,7 @@ public static class CMUQueueNetworkGenerator
         AddNode(network, "lineB1", "cmu-queue-node-processor", "B1");
         AddNode(network, "lineB2", "cmu-queue-node-processor", "B2");
         AddNode(network, "merge", "cmu-queue-node-merge");
+        AddNode(network, "packaging", "cmu-queue-node-packaging");
 
         AddSource(network, "intake", 12 + random.Next(0, 6));
 
@@ -189,7 +237,8 @@ public static class CMUQueueNetworkGenerator
         AddRoute(network, "lineB1", "lineB2", 1);
         AddRoute(network, "lineA2", "merge", 1);
         AddRoute(network, "lineB2", "merge", 1);
-        AddRoute(network, "merge", "sink", 1);
+        AddRoute(network, "merge", "packaging", 1);
+        AddRoute(network, "packaging", "sink", 1);
 
         SetPosition(network, "intake", 0, 1);
         SetPosition(network, "lineA1", 1, 0);
@@ -197,6 +246,7 @@ public static class CMUQueueNetworkGenerator
         SetPosition(network, "lineB1", 1, 2);
         SetPosition(network, "lineB2", 2, 2);
         SetPosition(network, "merge", 3, 1);
+        SetPosition(network, "packaging", 4, 1);
 
         AddBypass(network, "intake", "lineB1");
 
@@ -216,13 +266,9 @@ public static class CMUQueueNetworkGenerator
 
         var bottleneckCount = tutorial
             ? 1
-            : network.Topology switch
-            {
-                CMUQueueTopologyKind.Rework => 2,
-                CMUQueueTopologyKind.Branch => 1 + random.Next(0, 2),
-                CMUQueueTopologyKind.SplitMerge => 1 + random.Next(0, 2),
-                _ => 1,
-            };
+            : network.Topology == CMUQueueTopologyKind.BranchRework
+                ? 3
+                : 2 + random.Next(0, 2);
 
         var candidates = network.Nodes.ToList();
         Shuffle(candidates, random);
@@ -251,6 +297,23 @@ public static class CMUQueueNetworkGenerator
         // Keep at least one healthy node under heavy but stable load so the
         // player has a plausible wrong suspect to rule out.
         EnsureRedHerring(network, rates, bottleneckIds, random);
+
+        // Diversions must not be a free win: even after moving every litre of
+        // external intake, at least two nodes still need a service upgrade.
+        // This also guarantees that spending the whole budget on one node
+        // cannot complete the contract.
+        if (!tutorial && network.Bypasses.Count > 0)
+        {
+            var maxFractions = network.Bypasses
+                .ToDictionary(bypass => bypass.Id, bypass => bypass.MaxFraction, StringComparer.Ordinal);
+            if (!CMUQueueNetworkMath.TrySolveArrivalRates(network, maxFractions, out var rerouted, out _))
+                return false;
+
+            var stillUnstable = network.Nodes.Count(node =>
+                !CMUQueueNetworkMath.ComputeMetrics(rerouted[node.Id], node.ServiceRate).Stable);
+            if (stillUnstable < 2)
+                return false;
+        }
 
         var minimumCost = network.Nodes
             .Where(node => bottleneckIds.Contains(node.Id))
@@ -341,22 +404,30 @@ public static class CMUQueueNetworkGenerator
             "cmu-queue-network-tutorial-desc");
 
         AddNode(network, "intake", "cmu-queue-node-intake");
-        AddNode(network, "processor", "cmu-queue-node-processor");
+        AddNode(network, "processor1", "cmu-queue-node-processor", "A");
+        AddNode(network, "processor2", "cmu-queue-node-processor", "B");
+        AddNode(network, "assembler", "cmu-queue-node-assembler");
         AddNode(network, "packaging", "cmu-queue-node-packaging");
         AddSource(network, "intake", 9);
-        AddRoute(network, "intake", "processor", 1);
-        AddRoute(network, "processor", "packaging", 1);
+        AddRoute(network, "intake", "processor1", 1);
+        AddRoute(network, "processor1", "processor2", 1);
+        AddRoute(network, "processor2", "assembler", 1);
+        AddRoute(network, "assembler", "packaging", 1);
         AddRoute(network, "packaging", "sink", 1);
 
         SetPosition(network, "intake", 0, 0);
-        SetPosition(network, "processor", 1, 0);
-        SetPosition(network, "packaging", 2, 0);
+        SetPosition(network, "processor1", 1, 0);
+        SetPosition(network, "processor2", 2, 0);
+        SetPosition(network, "assembler", 3, 0);
+        SetPosition(network, "packaging", 4, 0);
 
         network.Seed = seed;
         network.Topology = CMUQueueTopologyKind.Line;
         network.Nodes[0].ServiceRate = 12;
         network.Nodes[1].ServiceRate = 7;
-        network.Nodes[2].ServiceRate = 10;
+        network.Nodes[2].ServiceRate = 7;
+        network.Nodes[3].ServiceRate = 12;
+        network.Nodes[4].ServiceRate = 10;
         foreach (var node in network.Nodes)
         {
             node.UpgradeMultiplier = 1.5;
@@ -365,7 +436,7 @@ public static class CMUQueueNetworkGenerator
         }
 
         network.Budget = 400;
-        network.Reward = 800;
+        network.Reward = 900;
         return network;
     }
 

@@ -93,4 +93,5 @@ public enum CMUQueueTopologyKind : byte
     Branch,
     Rework,
     SplitMerge,
+    BranchRework,
 }
