@@ -149,6 +149,13 @@ public sealed class CMUQueueTopologyControl : Control
             View.Pan = _panStart + mouse - _panStartScreen;
     }
 
+    protected override void MouseExited()
+    {
+        base.MouseExited();
+        _draggingNode = null;
+        _panning = false;
+    }
+
     protected override void MouseWheel(GUIMouseWheelEventArgs args)
     {
         base.MouseWheel(args);
