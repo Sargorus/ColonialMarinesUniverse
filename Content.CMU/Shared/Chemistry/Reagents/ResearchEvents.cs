@@ -79,18 +79,6 @@ public sealed class UpdateDataTerminalClearanceEvent(
 }
 
 /// <summary>
-/// Adds or removes science currency for a faction. Handled on the server by the research account and used by
-/// the liaison console to pay mission rewards without depending on the research system directly.
-/// </summary>
-public sealed class CMUAddSciencePointsEvent(string faction, int chemistryPoints = 0, int roboticsPoints = 0)
-    : EntityEventArgs
-{
-    public string Faction = faction;
-    public int ChemistryPoints = chemistryPoints;
-    public int RoboticsPoints = roboticsPoints;
-}
-
-/// <summary>
 /// Synchronous query for a faction's current science balances, so consoles that cannot depend on the research
 /// system (it depends on them) can still display live points.
 /// </summary>

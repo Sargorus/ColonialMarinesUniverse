@@ -41,6 +41,18 @@
       - id: CMURoyalPlasmaVial
         amount: 1
 
+- type: entity
+  id: CMUCrateSecureYautjaTechnology
+  parent: RMCCrateSecureWeYa
+  name: secure Yautja technology crate
+  description: A sealed Weyland-Yutani container holding a recovered Yautja bracer for xenotechnology research.
+  suffix: CMU, Yautja Technology
+  components:
+  - type: StorageFill
+    contents:
+      - id: CMUYautjaBracer
+        amount: 1
+
 - type: entity  
   parent: Hypospray  
   id: AU14WeYuBloodburstingHypospray  

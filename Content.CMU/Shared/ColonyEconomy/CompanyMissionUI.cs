@@ -34,7 +34,7 @@ public sealed class CompanyMissionInfo
     public int Reward { get; }
     public int Progress { get; }
     public int Target { get; }
-    public int DeadlineMinute { get; }
+    public int TimeLimitMinutes { get; }
     public int SecondsRemaining { get; }
     public CompanyMissionStatus Status { get; }
 
@@ -46,7 +46,7 @@ public sealed class CompanyMissionInfo
         int reward,
         int progress,
         int target,
-        int deadlineMinute,
+        int timeLimitMinutes,
         int secondsRemaining,
         CompanyMissionStatus status)
     {
@@ -57,7 +57,7 @@ public sealed class CompanyMissionInfo
         Reward = reward;
         Progress = progress;
         Target = target;
-        DeadlineMinute = deadlineMinute;
+        TimeLimitMinutes = timeLimitMinutes;
         SecondsRemaining = secondsRemaining;
         Status = status;
     }
@@ -77,3 +77,9 @@ public sealed class CorporateConsoleSetDirectionBuiMsg(CorporateResearchDirectio
 
 [Serializable, NetSerializable]
 public sealed class CorporateConsoleCallPmcBuiMsg : BoundUserInterfaceMessage;
+
+[Serializable, NetSerializable]
+public sealed class CorporateConsoleRequestCreditBuiMsg : BoundUserInterfaceMessage;
+
+[Serializable, NetSerializable]
+public sealed class CorporateConsoleRequestAlienTechBuiMsg : BoundUserInterfaceMessage;

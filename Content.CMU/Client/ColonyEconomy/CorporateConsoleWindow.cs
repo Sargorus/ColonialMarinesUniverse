@@ -29,6 +29,8 @@ public sealed class CorporateConsoleWindow : DefaultWindow
     public event Action<string>? OnAcceptMission;
     public event Action<CorporateResearchDirection>? OnSetDirection;
     public event Action? OnCallPmc;
+    public event Action? OnRequestCredit;
+    public event Action? OnRequestAlienTech;
 
     private readonly TabContainer _tabs = new();
 
@@ -50,6 +52,7 @@ public sealed class CorporateConsoleWindow : DefaultWindow
     // Science.
     private Label _chemistryPoints = null!;
     private Label _roboticsPoints = null!;
+    private Label _companyValue = null!;
     private Label _scienceLevel = null!;
     private Label _scienceDirection = null!;
 
@@ -58,17 +61,26 @@ public sealed class CorporateConsoleWindow : DefaultWindow
     private RichTextLabel _missionStatus = null!;
     private Label _missionChemistry = null!;
     private Label _missionRobotics = null!;
+    private Label _missionCompanyValue = null!;
     private string _missionSignature = string.Empty;
 
-    // PMC.
-    private Label _pmcChemistry = null!;
+    // Company support.
+    private Label _pmcCompanyValue = null!;
     private Label _pmcCost = null!;
     private Label _pmcCalls = null!;
     private Label _pmcCooldown = null!;
     private ConfirmButton _pmcButton = null!;
+    private Label _creditCost = null!;
+    private Label _creditAmount = null!;
+    private ConfirmButton _creditButton = null!;
+    private Label _alienTechCostValueLabel = null!;
+    private ConfirmButton _alienTechButton = null!;
+    private RichTextLabel _supportStatus = null!;
     private int _pmcCostValue;
     private int _pmcCallsLeft;
     private int _pmcCooldownSeconds;
+    private int _creditCostValue;
+    private int _alienTechCostValue;
 
     // Direction.
     private Label _directionCurrent = null!;
@@ -210,8 +222,9 @@ public sealed class CorporateConsoleWindow : DefaultWindow
 
         var readouts = new GridContainer
         {
-            Columns = 3,
+            Columns = 2,
             HSeparationOverride = 6,
+            VSeparationOverride = 6,
             HorizontalExpand = true,
         };
         readouts.AddChild(_scienceKit.Readout(
@@ -220,6 +233,9 @@ public sealed class CorporateConsoleWindow : DefaultWindow
         readouts.AddChild(_scienceKit.Readout(
             Loc.GetString("cmu-corporate-science-robotics"), "0", out _roboticsPoints,
             CrtTerminalPalette.Caution));
+        readouts.AddChild(_scienceKit.Readout(
+            Loc.GetString("cmu-corporate-science-company-value"), "0", out _companyValue,
+            CrtTerminalPalette.Accent));
         readouts.AddChild(_scienceKit.Readout(
             Loc.GetString("cmu-corporate-science-level"), "1", out _scienceLevel,
             CrtTerminalPalette.TextBright));
@@ -242,6 +258,8 @@ public sealed class CorporateConsoleWindow : DefaultWindow
             Loc.GetString("cmu-corporate-science-chemistry-hint"), CrtTerminalPalette.TextDim));
         account.AddChild(CrtConsoleKit.Wrapping(
             Loc.GetString("cmu-corporate-science-robotics-hint"), CrtTerminalPalette.TextDim));
+        account.AddChild(CrtConsoleKit.Wrapping(
+            Loc.GetString("cmu-corporate-science-company-value-hint"), CrtTerminalPalette.TextDim));
 
         _scienceKit.Root.AddChild(_scienceKit.Footer(out var footer));
         footer.Text = Loc.GetString("cmu-corporate-science-footer");
@@ -255,7 +273,7 @@ public sealed class CorporateConsoleWindow : DefaultWindow
 
         var readouts = new GridContainer
         {
-            Columns = 2,
+            Columns = 3,
             HSeparationOverride = 6,
             HorizontalExpand = true,
         };
@@ -265,6 +283,9 @@ public sealed class CorporateConsoleWindow : DefaultWindow
         readouts.AddChild(_missionKit.Readout(
             Loc.GetString("cmu-corporate-science-robotics"), "0", out _missionRobotics,
             CrtTerminalPalette.Caution));
+        readouts.AddChild(_missionKit.Readout(
+            Loc.GetString("cmu-corporate-science-company-value"), "0", out _missionCompanyValue,
+            CrtTerminalPalette.Accent));
         _missionKit.Root.AddChild(readouts);
 
         var scroll = new ScrollContainer { VerticalExpand = true, HScrollEnabled = false };
@@ -293,7 +314,7 @@ public sealed class CorporateConsoleWindow : DefaultWindow
             HorizontalExpand = true,
         };
         readouts.AddChild(_pmcKit.Readout(
-            Loc.GetString("cmu-corporate-science-chemistry"), "0", out _pmcChemistry,
+            Loc.GetString("cmu-corporate-science-company-value"), "0", out _pmcCompanyValue,
             CrtTerminalPalette.Accent));
         readouts.AddChild(_pmcKit.Readout(
             Loc.GetString("cmu-corporate-pmc-cost"), "0", out _pmcCost,
@@ -306,7 +327,15 @@ public sealed class CorporateConsoleWindow : DefaultWindow
         _pmcCooldown = CrtConsoleKit.Text(string.Empty, _pmcKit.Small, CrtTerminalPalette.TextDim);
         _pmcKit.Root.AddChild(_pmcCooldown);
 
-        var section = _pmcKit.Section(Loc.GetString("cmu-corporate-pmc-contract"), out var contract);
+        var scroll = new ScrollContainer { VerticalExpand = true, HScrollEnabled = false };
+        var body = CrtConsoleKit.Column(8);
+        body.HorizontalExpand = true;
+        body.Margin = new Thickness(0, 0, 6, 0);
+        scroll.AddChild(body);
+        _pmcKit.Root.AddChild(scroll);
+
+        // PMC squad.
+        body.AddChild(_pmcKit.Section(Loc.GetString("cmu-corporate-pmc-contract"), out var contract));
         contract.AddChild(CrtConsoleKit.Wrapping(
             Loc.GetString("cmu-corporate-pmc-description"), CrtTerminalPalette.TextDim));
 
@@ -320,7 +349,59 @@ public sealed class CorporateConsoleWindow : DefaultWindow
         _pmcButton.Label.FontOverride = _pmcKit.Bold;
         _pmcButton.OnPressed += _ => OnCallPmc?.Invoke();
         contract.AddChild(_pmcButton);
-        _pmcKit.Root.AddChild(section);
+
+        // Credit.
+        body.AddChild(_pmcKit.Section(Loc.GetString("cmu-corporate-credit-heading"), out var credit));
+        credit.AddChild(CrtConsoleKit.Wrapping(
+            Loc.GetString("cmu-corporate-credit-description"), CrtTerminalPalette.TextDim));
+        var creditReadouts = new GridContainer
+        {
+            Columns = 2,
+            HSeparationOverride = 6,
+            HorizontalExpand = true,
+        };
+        creditReadouts.AddChild(_pmcKit.Readout(
+            Loc.GetString("cmu-corporate-credit-cost"), "0", out _creditCost,
+            CrtTerminalPalette.Caution));
+        creditReadouts.AddChild(_pmcKit.Readout(
+            Loc.GetString("cmu-corporate-credit-amount"), "0", out _creditAmount,
+            CrtTerminalPalette.Accent));
+        credit.AddChild(creditReadouts);
+
+        _creditButton = new ConfirmButton
+        {
+            Text = Loc.GetString("cmu-corporate-credit-request"),
+            ConfirmationText = Loc.GetString("cmu-corporate-credit-confirm"),
+            MinWidth = 260,
+        };
+        CmuButtonStyles.Apply(_creditButton, CmuButtonStyles.Variant.Affirm);
+        _creditButton.Label.FontOverride = _pmcKit.Bold;
+        _creditButton.OnPressed += _ => OnRequestCredit?.Invoke();
+        credit.AddChild(_creditButton);
+
+        // Alien technology.
+        body.AddChild(_pmcKit.Section(Loc.GetString("cmu-corporate-alien-tech-heading"), out var alienTech));
+        alienTech.AddChild(CrtConsoleKit.Wrapping(
+            Loc.GetString("cmu-corporate-alien-tech-description"), CrtTerminalPalette.TextDim));
+        alienTech.AddChild(_pmcKit.Readout(
+            Loc.GetString("cmu-corporate-alien-tech-cost"), "0", out _alienTechCostValueLabel,
+            CrtTerminalPalette.Caution));
+
+        _alienTechButton = new ConfirmButton
+        {
+            Text = Loc.GetString("cmu-corporate-alien-tech-request"),
+            ConfirmationText = Loc.GetString("cmu-corporate-alien-tech-confirm"),
+            MinWidth = 260,
+        };
+        CmuButtonStyles.Apply(_alienTechButton, CmuButtonStyles.Variant.Affirm);
+        _alienTechButton.Label.FontOverride = _pmcKit.Bold;
+        _alienTechButton.OnPressed += _ => OnRequestAlienTech?.Invoke();
+        alienTech.AddChild(_alienTechButton);
+
+        var statusStrip = CrtConsoleKit.Strip(CrtTerminalPalette.Surface1);
+        _supportStatus = CrtConsoleKit.Wrapping(string.Empty, CrtTerminalPalette.TextDim);
+        statusStrip.AddChild(_supportStatus);
+        _pmcKit.Root.AddChild(statusStrip);
 
         _pmcKit.Root.AddChild(_pmcKit.Footer(out var footer));
         footer.Text = Loc.GetString("cmu-corporate-pmc-footer");
@@ -399,12 +480,14 @@ public sealed class CorporateConsoleWindow : DefaultWindow
         // Science.
         _chemistryPoints.Text = state.ChemistryPoints.ToString();
         _roboticsPoints.Text = state.RoboticsPoints.ToString();
+        _companyValue.Text = state.CompanyValue.ToString();
         _scienceLevel.Text = state.ScienceLevel.ToString();
         _scienceDirection.Text = DirectionName(state.Direction);
 
         // Missions.
         _missionChemistry.Text = state.ChemistryPoints.ToString();
         _missionRobotics.Text = state.RoboticsPoints.ToString();
+        _missionCompanyValue.Text = state.CompanyValue.ToString();
         var missionSignature = $"{state.MissionStatus}|" +
             string.Join(';', state.ActiveMissions.Select(MissionSignature)) + "|" +
             string.Join(';', state.AvailableMissions.Select(MissionSignature)) + "|" +
@@ -415,10 +498,10 @@ public sealed class CorporateConsoleWindow : DefaultWindow
             BuildMissions(state);
         }
 
-        // PMC.
-        _pmcChemistry.Text = state.ChemistryPoints.ToString();
-        _pmcCostValue = state.PmcCost;
-        _pmcCost.Text = state.PmcCost.ToString();
+        // Company support.
+        _pmcCompanyValue.Text = state.CompanyValue.ToString();
+        _pmcCostValue = state.PmcCostCompanyValue;
+        _pmcCost.Text = state.PmcCostCompanyValue.ToString();
         _pmcCallsLeft = state.PmcCallsLeft;
         _pmcCooldownSeconds = state.PmcCooldownSeconds;
         _pmcCalls.Text = state.PmcCallsLeft.ToString();
@@ -431,8 +514,22 @@ public sealed class CorporateConsoleWindow : DefaultWindow
             _pmcCooldown.Text = Loc.GetString("cmu-corporate-pmc-ready");
 
         _pmcButton.Disabled = _pmcCallsLeft <= 0 ||
-                              state.ChemistryPoints < _pmcCostValue ||
+                              state.CompanyValue < _pmcCostValue ||
                               _pmcCooldownSeconds > 0;
+
+        _creditCostValue = state.CreditCostCompanyValue;
+        _creditCost.Text = state.CreditCostCompanyValue.ToString();
+        _creditAmount.Text = CrtConsoleKit.Money(state.CreditAmount);
+        _creditButton.Disabled = state.CompanyValue < _creditCostValue;
+
+        _alienTechCostValue = state.AlienTechCostCompanyValue;
+        _alienTechCostValueLabel.Text = state.AlienTechCostCompanyValue.ToString();
+        _alienTechCostValueLabel.FontColorOverride = state.CompanyValue < _alienTechCostValue
+            ? CrtTerminalPalette.Alert
+            : CrtTerminalPalette.Caution;
+        _alienTechButton.Disabled = state.CompanyValue < _alienTechCostValue;
+
+        SetRichText(_supportStatus, state.SupportStatus, CrtTerminalPalette.TextDim);
 
         // Direction.
         _directionCurrent.Text = DirectionName(state.Direction);

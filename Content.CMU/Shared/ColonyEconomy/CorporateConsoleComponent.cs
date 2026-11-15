@@ -48,10 +48,10 @@ public sealed partial class CorporateConsoleComponent : Component
     public TimeSpan NextCallInAt;
 
     /// <summary>
-    ///     Chemistry science points charged for a WEYU PMC squad call.
+    ///     Company value charged for a WEYU PMC squad call.
     /// </summary>
-    [DataField("pmcCostChemistry")]
-    public int PmcCostChemistry = 25;
+    [DataField("pmcCostCompanyValue")]
+    public int PmcCostCompanyValue = 25;
 
     /// <summary>
     ///     How many PMC squads can be called per round, shared by every corporate console.
@@ -74,4 +74,38 @@ public sealed partial class CorporateConsoleComponent : Component
     /// </summary>
     [DataField("pmcCooldown")]
     public TimeSpan PmcCooldown = TimeSpan.FromMinutes(20);
+
+    /// <summary>
+    ///     Company value charged for a corporate credit request.
+    /// </summary>
+    [DataField("creditCostCompanyValue")]
+    public int CreditCostCompanyValue = 10;
+
+    /// <summary>
+    ///     Corporate budget credited by one credit request.
+    /// </summary>
+    [DataField("creditAmount")]
+    public int CreditAmount = 5000;
+
+    /// <summary>
+    ///     Earliest time another credit request may be made.
+    /// </summary>
+    public TimeSpan NextCreditAt;
+
+    /// <summary>
+    ///     Delay between credit requests.
+    /// </summary>
+    [DataField("creditCooldown")]
+    public TimeSpan CreditCooldown = TimeSpan.FromSeconds(10);
+
+    /// <summary>
+    ///     Company value charged for a Yautja technology delivery.
+    /// </summary>
+    [DataField("alienTechCostCompanyValue")]
+    public int AlienTechCostCompanyValue = 5;
+
+    /// <summary>
+    ///     Last Company Support action result.
+    /// </summary>
+    public string SupportStatus = string.Empty;
 }

@@ -384,6 +384,7 @@ public sealed partial class CMUYautjaExperimentSystem : EntitySystem
         {
             ent.Comp.Unlocked = true;
             Authorize(ent, args.User);
+            RaiseLocalEvent(ent.Owner, new CMUYautjaBracerUnlockedEvent(ent.Owner, args.User));
         }
         if (discovery)
         {

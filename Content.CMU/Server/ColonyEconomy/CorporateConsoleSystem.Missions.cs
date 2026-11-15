@@ -2,21 +2,22 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Content.Server.CMU14.Ops.ThirdParty;
+using Content.Server._RMC14.Requisitions;
 using Content.Shared.CMU14.Chemistry.Reagent;
 using Content.Shared.CMU14.Chemistry.Reagents;
 using Content.Shared.CMU14.ColonyEconomy;
 using Content.Shared.CMU14.Threats;
 using Content.Shared.CMU14.Threats.Mobs.Wendigo.Lab;
 using Content.Shared.CMU14.Yautja;
-using Content.Shared.Cuffs;
-using Content.Shared.Cuffs.Components;
-using Content.Shared.GameTicking;
 using Content.Shared.Mobs.Components;
 using Content.Shared.Mobs.Systems;
 using Content.Shared.NPC.Prototypes;
 using Content.Shared.NPC.Systems;
+using Content.Shared._RMC14.Requisitions;
+using Content.Shared._RMC14.Requisitions.Components;
 using Content.Shared._RMC14.Xenonids.Hive;
 using Content.Shared._RMC14.Xenonids.HiveLeader;
+using Robust.Shared.GameObjects;
 using Robust.Shared.Prototypes;
 
 namespace Content.Server.CMU14.ColonyEconomy;
@@ -25,6 +26,7 @@ public sealed partial class CorporateConsoleSystem
 {
     private const string CorporateFaction = "corporate";
     private const string PmcPartyId = "CMUWYPMCTeamSmall";
+    private static readonly EntProtoId YautjaTechnologyCrate = "CMUCrateSecureYautjaTechnology";
     private const int MaxActiveMissions = 3;
 
     private static readonly ProtoId<ThirdPartyPrototype> PmcParty = new(PmcPartyId);
@@ -38,7 +40,7 @@ public sealed partial class CorporateConsoleSystem
         CreateWendigo,
         CorruptedHiveRepresentative,
         CorruptedHiveAlliance,
-        PredatorCuffs,
+        PredatorBracer,
     }
 
     private sealed record CompanyMissionDefinition(
@@ -49,7 +51,8 @@ public sealed partial class CorporateConsoleSystem
         string ObjectiveLoc,
         int Reward,
         int Target,
-        int DeadlineMinute);
+        int TimeLimitMinutes,
+        bool Repeatable = false);
 
     private sealed class ActiveCompanyMission
     {
@@ -74,6 +77,9 @@ public sealed partial class CorporateConsoleSystem
     {
         public CorporateResearchDirection Direction;
 
+        /// <summary>The liaison's third currency: how valuable the complex is to the company.</summary>
+        public int CompanyValue;
+
         public readonly List<ActiveCompanyMission> Active = new();
         public readonly List<MissionRecord> History = new();
         public readonly HashSet<string> CompletedIds = new(StringComparer.Ordinal);
@@ -82,9 +88,9 @@ public sealed partial class CorporateConsoleSystem
     }
 
     /// <summary>
-    /// The basic company mission board. Values are intentionally in one place so balance passes do not have to
-    /// hunt through UI code: targets are absolute balances, deadlines are round minutes, and rewards are chemistry
-    /// science points unless a mission overrides them dynamically (Wendigo variants and predator cuffs).
+    /// The company mission board. Values are intentionally in one place so balance passes do not have to hunt
+    /// through UI code: targets are absolute balances, time limits run from acceptance, and every mission pays
+    /// company value. The Yautja bracer task is repeatable so every recovered bracer can be rewarded.
     /// </summary>
     private static readonly CompanyMissionDefinition[] MissionCatalog =
     [
@@ -96,7 +102,7 @@ public sealed partial class CorporateConsoleSystem
             "cmu-company-mission-robotics-objective",
             Reward: 15,
             Target: 25,
-            DeadlineMinute: 60),
+            TimeLimitMinutes: 60),
         new(
             "chemistry-points",
             CompanyMissionKind.ChemistryPoints,
@@ -105,7 +111,7 @@ public sealed partial class CorporateConsoleSystem
             "cmu-company-mission-chemistry-objective",
             Reward: 15,
             Target: 20,
-            DeadlineMinute: 60),
+            TimeLimitMinutes: 60),
         new(
             "chemistry-scan-simple",
             CompanyMissionKind.ChemistryScanSimple,
@@ -114,7 +120,7 @@ public sealed partial class CorporateConsoleSystem
             "cmu-company-mission-scan-objective",
             Reward: 10,
             Target: 1,
-            DeadlineMinute: 45),
+            TimeLimitMinutes: 45),
         new(
             "chemistry-scan-complex",
             CompanyMissionKind.ChemistryScanComplex,
@@ -123,7 +129,7 @@ public sealed partial class CorporateConsoleSystem
             "cmu-company-mission-scan-objective",
             Reward: 25,
             Target: 1,
-            DeadlineMinute: 75),
+            TimeLimitMinutes: 75),
         new(
             "create-wendigo",
             CompanyMissionKind.CreateWendigo,
@@ -132,7 +138,7 @@ public sealed partial class CorporateConsoleSystem
             "cmu-company-mission-wendigo-objective",
             Reward: 20,
             Target: 1,
-            DeadlineMinute: 90),
+            TimeLimitMinutes: 90),
         new(
             "corrupted-hive-representative",
             CompanyMissionKind.CorruptedHiveRepresentative,
@@ -141,7 +147,7 @@ public sealed partial class CorporateConsoleSystem
             "cmu-company-mission-single-objective",
             Reward: 25,
             Target: 1,
-            DeadlineMinute: 90),
+            TimeLimitMinutes: 90),
         new(
             "corrupted-hive-alliance",
             CompanyMissionKind.CorruptedHiveAlliance,
@@ -150,22 +156,24 @@ public sealed partial class CorporateConsoleSystem
             "cmu-company-mission-single-objective",
             Reward: 30,
             Target: 1,
-            DeadlineMinute: 90),
+            TimeLimitMinutes: 90),
         new(
-            "predator-cuffs",
-            CompanyMissionKind.PredatorCuffs,
-            "cmu-company-mission-cuffs-name",
-            "cmu-company-mission-cuffs-desc",
-            "cmu-company-mission-cuffs-objective",
+            "predator-bracer",
+            CompanyMissionKind.PredatorBracer,
+            "cmu-company-mission-bracer-name",
+            "cmu-company-mission-bracer-desc",
+            "cmu-company-mission-bracer-objective",
             Reward: 1,
-            Target: 10,
-            DeadlineMinute: 75),
+            Target: 1,
+            TimeLimitMinutes: 60,
+            Repeatable: true),
     ];
 
-    [Dependency] private SharedGameTicker _ticker = default!;
     [Dependency] private MobStateSystem _mobState = default!;
     [Dependency] private SharedXenoHiveSystem _xenoHive = default!;
     [Dependency] private NpcFactionSystem _npcFaction = default!;
+    [Dependency] private RequisitionsSystem _requisitions = default!;
+    [Dependency] private SharedTransformSystem _transform = default!;
 
     private readonly Dictionary<string, FactionMissionState> _missionStates =
         new(StringComparer.OrdinalIgnoreCase);
@@ -201,6 +209,11 @@ public sealed partial class CorporateConsoleSystem
         return GetMissionState(faction).Direction;
     }
 
+    public int GetCompanyValue(string faction)
+    {
+        return GetMissionState(faction).CompanyValue;
+    }
+
     private void OnSetDirection(EntityUid uid, CorporateConsoleComponent comp,
         CorporateConsoleSetDirectionBuiMsg msg)
     {
@@ -228,7 +241,8 @@ public sealed partial class CorporateConsoleSystem
         if (definition == null)
             return;
 
-        if (state.CompletedIds.Contains(definition.Id) || state.FailedIds.Contains(definition.Id))
+        if (!definition.Repeatable &&
+            (state.CompletedIds.Contains(definition.Id) || state.FailedIds.Contains(definition.Id)))
         {
             state.Status = Loc.GetString("cmu-company-mission-already-done");
             UpdateAllUi();
@@ -249,19 +263,10 @@ public sealed partial class CorporateConsoleSystem
             return;
         }
 
-        if (_ticker.RoundDuration().TotalMinutes >= definition.DeadlineMinute)
-        {
-            state.Status = Loc.GetString(
-                "cmu-company-mission-too-late",
-                ("minute", definition.DeadlineMinute));
-            UpdateAllUi();
-            return;
-        }
-
         var active = new ActiveCompanyMission
         {
             Definition = definition,
-            Deadline = TimeSpan.FromMinutes(definition.DeadlineMinute),
+            Deadline = _timing.CurTime + TimeSpan.FromMinutes(definition.TimeLimitMinutes),
             Target = definition.Target,
             Reward = definition.Reward,
         };
@@ -288,10 +293,11 @@ public sealed partial class CorporateConsoleSystem
             return;
 
         var faction = GetConsoleFaction(uid);
-        var science = QueryScience(faction);
-        if (science.ChemistryPoints < comp.PmcCostChemistry)
+        var state = GetMissionState(faction);
+        if (state.CompanyValue < comp.PmcCostCompanyValue)
         {
-            _ui.SetUiState(uid, CorporateConsoleUi.Key, BuildUiState(uid, comp));
+            SetSupportStatus(comp, "cmu-corporate-pmc-no-value");
+            UpdateAllUi();
             return;
         }
 
@@ -307,15 +313,104 @@ public sealed partial class CorporateConsoleSystem
                 Actor: msg.Actor,
                 Console: uid));
 
-        RaiseLocalEvent(new CMUAddSciencePointsEvent(faction, -comp.PmcCostChemistry));
+        state.CompanyValue -= comp.PmcCostCompanyValue;
 
+        var nextCall = _timing.CurTime + comp.PmcCooldown;
         var query = EntityQueryEnumerator<CorporateConsoleComponent>();
         while (query.MoveNext(out var consoleUid, out var other))
         {
             other.PmcCalls++;
-            other.NextPmcCallAt = _timing.CurTime + other.PmcCooldown;
+            other.NextPmcCallAt = nextCall;
+            SetSupportStatus(other, "cmu-corporate-pmc-called");
             _ui.SetUiState(consoleUid, CorporateConsoleUi.Key, BuildUiState(consoleUid, other));
         }
+    }
+
+    private void OnRequestCredit(EntityUid uid, CorporateConsoleComponent comp, CorporateConsoleRequestCreditBuiMsg msg)
+    {
+        var faction = GetConsoleFaction(uid);
+        var state = GetMissionState(faction);
+        if (_timing.CurTime < comp.NextCreditAt)
+            return;
+
+        if (state.CompanyValue < comp.CreditCostCompanyValue)
+        {
+            SetSupportStatus(comp, "cmu-corporate-credit-no-value");
+            UpdateAllUi();
+            return;
+        }
+
+        state.CompanyValue -= comp.CreditCostCompanyValue;
+        comp.NextCreditAt = _timing.CurTime + comp.CreditCooldown;
+        AddToCorporateBudget(comp.CreditAmount);
+        SetSupportStatus(comp, "cmu-corporate-credit-granted");
+        UpdateAllUi();
+    }
+
+    private void OnRequestAlienTech(EntityUid uid, CorporateConsoleComponent comp,
+        CorporateConsoleRequestAlienTechBuiMsg msg)
+    {
+        var faction = GetConsoleFaction(uid);
+        var state = GetMissionState(faction);
+        if (state.CompanyValue < comp.AlienTechCostCompanyValue)
+        {
+            SetSupportStatus(comp, "cmu-corporate-alien-tech-no-value");
+            UpdateAllUi();
+            return;
+        }
+
+        if (FindCorporateElevator(uid) is not { } elevator)
+        {
+            SetSupportStatus(comp, "cmu-corporate-alien-tech-no-cargo");
+            UpdateAllUi();
+            return;
+        }
+
+        var entry = new RequisitionsEntry
+        {
+            Crate = YautjaTechnologyCrate,
+        };
+
+        if (!_requisitions.TryAddElevatorOrders(elevator, new List<RequisitionsEntry> { entry }))
+        {
+            SetSupportStatus(comp, "cmu-corporate-alien-tech-queue-full");
+            UpdateAllUi();
+            return;
+        }
+
+        state.CompanyValue -= comp.AlienTechCostCompanyValue;
+        SetSupportStatus(comp, "cmu-corporate-alien-tech-queued");
+        UpdateAllUi();
+    }
+
+    private void SetSupportStatus(CorporateConsoleComponent comp, string locId)
+    {
+        comp.SupportStatus = Loc.GetString(locId);
+    }
+
+    private Entity<RequisitionsElevatorComponent>? FindCorporateElevator(EntityUid console)
+    {
+        var map = _transform.GetMapId(console);
+        var origin = _transform.GetWorldPosition(console);
+        Entity<RequisitionsElevatorComponent>? closest = null;
+        var closestDistance = float.MaxValue;
+
+        var query = EntityQueryEnumerator<RequisitionsElevatorComponent, TransformComponent>();
+        while (query.MoveNext(out var uid, out var elevator, out var xform))
+        {
+            if (xform.MapID != map ||
+                !string.Equals(elevator.Faction, "corporate", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var distance = (origin - _transform.GetWorldPosition(uid)).LengthSquared();
+            if (distance >= closestDistance)
+                continue;
+
+            closest = (uid, elevator);
+            closestDistance = distance;
+        }
+
+        return closest;
     }
 
     private void OnChemicalScanned(CMUChemicalScannedEvent args)
@@ -422,18 +517,16 @@ public sealed partial class CorporateConsoleSystem
             UpdateAllUi();
     }
 
-    private void OnCuffRemoved(CuffRemovedEvent args)
+    private void OnBracerUnlocked(Entity<CMUYautjaExperimentComponent> ent,
+        ref CMUYautjaBracerUnlockedEvent args)
     {
-        if (!IsPredatorCuff(args.Cuff))
-            return;
-
         var changed = false;
         foreach (var (faction, state) in _missionStates.ToArray())
         {
             for (var i = state.Active.Count - 1; i >= 0; i--)
             {
                 var mission = state.Active[i];
-                if (mission.Definition.Kind != CompanyMissionKind.PredatorCuffs)
+                if (mission.Definition.Kind != CompanyMissionKind.PredatorBracer)
                     continue;
 
                 if (_timing.CurTime >= mission.Deadline)
@@ -450,20 +543,6 @@ public sealed partial class CorporateConsoleSystem
 
         if (changed)
             UpdateAllUi();
-    }
-
-    private bool IsPredatorCuff(EntityUid cuff)
-    {
-        if (HasComp<CMUXenoRestraintsComponent>(cuff))
-            return true;
-
-        if (!TryComp<MetaDataComponent>(cuff, out var meta) || meta.EntityPrototype is not { } prototype)
-            return false;
-
-        var id = prototype.ID;
-        return id.StartsWith("CMUHunterShipPlacedHandcuffs", StringComparison.OrdinalIgnoreCase)
-            || id.StartsWith("CMUHunterShipPlacedZipties", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(id, "CMUYautjaStrongXenoRestraints", StringComparison.OrdinalIgnoreCase);
     }
 
     private void UpdateMissionProgress()
@@ -598,8 +677,7 @@ public sealed partial class CorporateConsoleSystem
             SecondsRemaining = 0,
         });
 
-        if (mission.Reward > 0)
-            RaiseLocalEvent(new CMUAddSciencePointsEvent(faction, mission.Reward));
+        state.CompanyValue += mission.Reward;
 
         state.Status = Loc.GetString(
             "cmu-company-mission-completed",
@@ -632,12 +710,13 @@ public sealed partial class CorporateConsoleSystem
         var available = new List<CompanyMissionInfo>();
         foreach (var definition in MissionCatalog)
         {
-            if (state.CompletedIds.Contains(definition.Id) || state.FailedIds.Contains(definition.Id))
+            if (!definition.Repeatable &&
+                (state.CompletedIds.Contains(definition.Id) || state.FailedIds.Contains(definition.Id)))
                 continue;
             if (state.Active.Any(mission => mission.Definition.Id == definition.Id))
                 continue;
 
-            var reward = definition.Kind == CompanyMissionKind.PredatorCuffs
+            var reward = definition.Kind == CompanyMissionKind.PredatorBracer
                 ? definition.Target
                 : definition.Reward;
             available.Add(BuildMissionInfo(definition, CompanyMissionStatus.Available, 0,
@@ -680,16 +759,10 @@ public sealed partial class CorporateConsoleSystem
         int reward,
         int secondsRemaining)
     {
-        var objective = definition.ObjectiveLoc switch
-        {
-            "cmu-company-mission-robotics-objective" or "cmu-company-mission-chemistry-objective" =>
-                Loc.GetString(definition.ObjectiveLoc, ("target", target), ("minute", definition.DeadlineMinute)),
-            "cmu-company-mission-scan-objective" =>
-                Loc.GetString(definition.ObjectiveLoc, ("minute", definition.DeadlineMinute)),
-            "cmu-company-mission-wendigo-objective" or "cmu-company-mission-cuffs-objective" =>
-                Loc.GetString(definition.ObjectiveLoc, ("target", target), ("minute", definition.DeadlineMinute)),
-            _ => Loc.GetString(definition.ObjectiveLoc, ("minute", definition.DeadlineMinute)),
-        };
+        var objective = Loc.GetString(
+            definition.ObjectiveLoc,
+            ("target", target),
+            ("minutes", definition.TimeLimitMinutes));
 
         return new CompanyMissionInfo(
             definition.Id,
@@ -699,7 +772,7 @@ public sealed partial class CorporateConsoleSystem
             reward,
             progress,
             target,
-            definition.DeadlineMinute,
+            definition.TimeLimitMinutes,
             secondsRemaining,
             status);
     }

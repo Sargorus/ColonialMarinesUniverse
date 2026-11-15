@@ -70,7 +70,6 @@ public abstract partial class SharedResearchDataTerminalSystem : EntitySystem
             SubscribeLocalEvent<UpdateDataTerminalClearanceEvent>(OnUpdateClearance);
 
         SubscribeLocalEvent<CMUScienceStatusQueryEvent>(OnScienceStatusQuery);
-        SubscribeLocalEvent<CMUAddSciencePointsEvent>(OnAddSciencePoints);
     }
 
     private void OnScienceStatusQuery(CMUScienceStatusQueryEvent args)
@@ -78,17 +77,6 @@ public abstract partial class SharedResearchDataTerminalSystem : EntitySystem
         args.ChemistryPoints = GetSampleData(args.Faction);
         args.RoboticsPoints = GetRoboticsPoints(args.Faction);
         args.ScienceLevel = GetClearance(args.Faction);
-    }
-
-    private void OnAddSciencePoints(CMUAddSciencePointsEvent args)
-    {
-        if (_net.IsClient)
-            return;
-
-        if (args.ChemistryPoints != 0)
-            UpdateSampleData(GetSampleData(args.Faction) + args.ChemistryPoints, args.Faction);
-        if (args.RoboticsPoints != 0)
-            UpdateRoboticsPoints(GetRoboticsPoints(args.Faction) + args.RoboticsPoints, args.Faction);
     }
 
     protected void ResetResearchAccounts()

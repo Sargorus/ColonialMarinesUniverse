@@ -8,8 +8,7 @@ using Content.Shared.CMU14.Chemistry.Reagents;
 using Content.Shared.CMU14.ColonyEconomy;
 using Content.Shared.CMU14.Threats;
 using Content.Shared.CMU14.Threats.Mobs.Wendigo.Lab;
-using Content.Shared.Cuffs;
-using Content.Shared.Cuffs.Components;
+using Content.Shared.CMU14.Yautja;
 using Content.Shared.GameTicking;
 using Content.Shared.Stacks;
 using Content.Shared.Interaction;
@@ -53,9 +52,11 @@ public sealed partial class CorporateConsoleSystem : EntitySystem
         SubscribeLocalEvent<CorporateConsoleComponent, CorporateConsoleAcceptMissionBuiMsg>(OnAcceptMission);
         SubscribeLocalEvent<CorporateConsoleComponent, CorporateConsoleSetDirectionBuiMsg>(OnSetDirection);
         SubscribeLocalEvent<CorporateConsoleComponent, CorporateConsoleCallPmcBuiMsg>(OnCallPmc);
+        SubscribeLocalEvent<CorporateConsoleComponent, CorporateConsoleRequestCreditBuiMsg>(OnRequestCredit);
+        SubscribeLocalEvent<CorporateConsoleComponent, CorporateConsoleRequestAlienTechBuiMsg>(OnRequestAlienTech);
         SubscribeLocalEvent<CMUChemicalScannedEvent>(OnChemicalScanned);
         SubscribeLocalEvent<CMUWendigoCreatedEvent>(OnWendigoCreated);
-        SubscribeLocalEvent<CuffRemovedEvent>(OnCuffRemoved);
+        SubscribeLocalEvent<CMUYautjaExperimentComponent, CMUYautjaBracerUnlockedEvent>(OnBracerUnlocked);
         SubscribeLocalEvent<RoundRestartCleanupEvent>(OnRoundRestartCleanup);
     }
 
@@ -80,6 +81,8 @@ public sealed partial class CorporateConsoleSystem : EntitySystem
             comp.CorporateBudget = other.CorporateBudget;
             comp.PmcCalls = other.PmcCalls;
             comp.NextPmcCallAt = other.NextPmcCallAt;
+            comp.NextCreditAt = other.NextCreditAt;
+            comp.SupportStatus = other.SupportStatus;
             return;
         }
     }
@@ -277,17 +280,22 @@ public sealed partial class CorporateConsoleSystem : EntitySystem
             _adminConsole.BuildEconomyStatus(),
             science.ChemistryPoints,
             science.RoboticsPoints,
+            state.CompanyValue,
             science.ScienceLevel,
             state.Direction,
             BuildAvailableMissions(state),
             BuildActiveMissions(state),
             BuildMissionHistory(state),
-            comp.PmcCostChemistry,
+            comp.PmcCostCompanyValue,
             Math.Max(0, comp.MaxPmcCalls - comp.PmcCalls),
             comp.NextPmcCallAt,
             Math.Max(0, (int) Math.Ceiling((comp.NextPmcCallAt - _timing.CurTime).TotalSeconds)),
             comp.PmcCalls > 0,
-            state.Status);
+            comp.CreditCostCompanyValue,
+            comp.CreditAmount,
+            comp.AlienTechCostCompanyValue,
+            state.Status,
+            comp.SupportStatus);
     }
 
     private void UpdateAllUi()

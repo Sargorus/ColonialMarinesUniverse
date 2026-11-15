@@ -33,6 +33,9 @@ public sealed class CorporateConsoleBuiState : BoundUserInterfaceState
     /// <summary>Robotics science points held by the corporate research account.</summary>
     public int RoboticsPoints { get; }
 
+    /// <summary>The liaison's third currency: how valuable the complex is to the company.</summary>
+    public int CompanyValue { get; }
+
     /// <summary>Research clearance level shown on the science tab.</summary>
     public int ScienceLevel { get; }
 
@@ -42,14 +45,21 @@ public sealed class CorporateConsoleBuiState : BoundUserInterfaceState
     public List<CompanyMissionInfo> ActiveMissions { get; }
     public List<CompanyMissionInfo> MissionHistory { get; }
 
-    public int PmcCost { get; }
+    public int PmcCostCompanyValue { get; }
     public int PmcCallsLeft { get; }
     public TimeSpan PmcNextCallInAt { get; }
     public int PmcCooldownSeconds { get; }
     public bool PmcCalled { get; }
 
+    public int CreditCostCompanyValue { get; }
+    public int CreditAmount { get; }
+    public int AlienTechCostCompanyValue { get; }
+
     /// <summary>Last mission action result shown on the Company Tasks tab.</summary>
     public string MissionStatus { get; }
+
+    /// <summary>Last Company Support action result shown on the support tab.</summary>
+    public string SupportStatus { get; }
 
     public CorporateConsoleBuiState(
         float transitTariffPercent,
@@ -57,34 +67,44 @@ public sealed class CorporateConsoleBuiState : BoundUserInterfaceState
         EconomyStatusState economyStatus,
         int chemistryPoints = 0,
         int roboticsPoints = 0,
+        int companyValue = 0,
         int scienceLevel = 1,
         CorporateResearchDirection direction = CorporateResearchDirection.None,
         List<CompanyMissionInfo>? availableMissions = null,
         List<CompanyMissionInfo>? activeMissions = null,
         List<CompanyMissionInfo>? missionHistory = null,
-        int pmcCost = 0,
+        int pmcCostCompanyValue = 0,
         int pmcCallsLeft = 0,
         TimeSpan pmcNextCallInAt = default,
         int pmcCooldownSeconds = 0,
         bool pmcCalled = false,
-        string missionStatus = "")
+        int creditCostCompanyValue = 0,
+        int creditAmount = 0,
+        int alienTechCostCompanyValue = 0,
+        string missionStatus = "",
+        string supportStatus = "")
     {
         TransitTariffPercent = transitTariffPercent;
         CorporateBudget = corporateBudget;
         EconomyStatus = economyStatus;
         ChemistryPoints = chemistryPoints;
         RoboticsPoints = roboticsPoints;
+        CompanyValue = companyValue;
         ScienceLevel = scienceLevel;
         Direction = direction;
         AvailableMissions = availableMissions ?? new List<CompanyMissionInfo>();
         ActiveMissions = activeMissions ?? new List<CompanyMissionInfo>();
         MissionHistory = missionHistory ?? new List<CompanyMissionInfo>();
-        PmcCost = pmcCost;
+        PmcCostCompanyValue = pmcCostCompanyValue;
         PmcCallsLeft = pmcCallsLeft;
         PmcNextCallInAt = pmcNextCallInAt;
         PmcCooldownSeconds = pmcCooldownSeconds;
         PmcCalled = pmcCalled;
+        CreditCostCompanyValue = creditCostCompanyValue;
+        CreditAmount = creditAmount;
+        AlienTechCostCompanyValue = alienTechCostCompanyValue;
         MissionStatus = missionStatus;
+        SupportStatus = supportStatus;
     }
 }
 
