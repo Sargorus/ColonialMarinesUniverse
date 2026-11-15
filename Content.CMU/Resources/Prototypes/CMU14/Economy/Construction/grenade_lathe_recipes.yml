@@ -9,6 +9,16 @@
   - CMUCustomGrenadeCasing
   - CMUChemicalPayload
   - CMUTimerTrigger
+  - CMUEmpPayload
+
+- type: latheRecipe
+  id: CMUEmpPayload
+  result: EmpPayload
+  completetime: 3
+  materials:
+    CMSteel: 300
+    RMCPlastic: 250
+    CMGlass: 125
 
 - type: latheRecipe
   id: CMUCustomGrenadeCasing

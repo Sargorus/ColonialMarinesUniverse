@@ -1,0 +1,13 @@
+# The inert byproduct of the chemical EMP reaction. NoGeneration keeps it out of
+# research contract pools; the reaction itself is also collision-checked against
+# generated contract recipes.
+- type: reagent
+  id: CMUEmpResidue
+  name: reagent-name-cmu-emp-residue
+  desc: reagent-desc-cmu-emp-residue
+  physicalDesc: reagent-physical-desc-powdery
+  flavor: bitter
+  class: Special
+  flags: NoGeneration
+  color: "#5b6f86"
+  reward: 0
