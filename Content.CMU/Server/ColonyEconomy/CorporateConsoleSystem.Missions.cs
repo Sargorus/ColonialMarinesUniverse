@@ -339,6 +339,9 @@ public sealed partial class CorporateConsoleSystem
             if (!matches)
                 continue;
 
+            if (_timing.CurTime >= mission.Deadline)
+                continue;
+
             mission.Progress = 1;
             CompleteMission(args.Faction, state, i);
             changed = true;
@@ -399,6 +402,9 @@ public sealed partial class CorporateConsoleSystem
                 if (mission.Definition.Kind != CompanyMissionKind.CreateWendigo)
                     continue;
 
+                if (_timing.CurTime >= mission.Deadline)
+                    continue;
+
                 var reward = mission.Definition.Reward;
                 if (!args.FullWendigo)
                     reward = Math.Max(1, reward / 2);
@@ -428,6 +434,9 @@ public sealed partial class CorporateConsoleSystem
             {
                 var mission = state.Active[i];
                 if (mission.Definition.Kind != CompanyMissionKind.PredatorCuffs)
+                    continue;
+
+                if (_timing.CurTime >= mission.Deadline)
                     continue;
 
                 mission.Progress++;
