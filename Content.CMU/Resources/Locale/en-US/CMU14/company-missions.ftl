@@ -39,15 +39,15 @@ cmu-corporate-missions-failed = Failed
 
 # Company task definitions
 cmu-company-mission-robotics-name = Robotics science target
-cmu-company-mission-robotics-desc = Build the complex's robotics science balance. SMO production contracts and completed drone work orders fund it.
+cmu-company-mission-robotics-desc = Build the complex's robotics science balance. SMO production contracts and completed drone work orders fund it. Repeatable; each repeat raises the target by 10 points.
 cmu-company-mission-robotics-objective = Reach { $target } robotics points within { $minutes } minutes.
 cmu-company-mission-chemistry-name = Chemistry science target
-cmu-company-mission-chemistry-desc = Build the complex's chemistry science balance through contracts, scans and synthesis.
+cmu-company-mission-chemistry-desc = Build the complex's chemistry science balance through contracts, scans and synthesis. Repeatable; each repeat raises the target by 10 points.
 cmu-company-mission-chemistry-objective = Reach { $target } chemistry points within { $minutes } minutes.
 cmu-company-mission-scan-simple-name = Simple property scan
-cmu-company-mission-scan-simple-desc = Scan a substance whose properties are all common or uncommon. The sample must include at least one positive and one negative property, the antipodal pair the synthesis machine can transfer.
+cmu-company-mission-scan-simple-desc = Scan a substance whose properties are all common or uncommon. The sample must include at least one positive and one negative property, the antipodal pair the synthesis machine can transfer. The liaison can start at most three scan missions per round.
 cmu-company-mission-scan-complex-name = Complex property scan
-cmu-company-mission-scan-complex-desc = Scan a substance carrying at least one rare or legendary property.
+cmu-company-mission-scan-complex-desc = Scan a substance carrying at least one rare or legendary property. The liaison can start at most three scan missions per round.
 cmu-company-mission-scan-objective = Complete the required scan within { $minutes } minutes.
 cmu-company-mission-wendigo-name = Create a Wendigo
 cmu-company-mission-wendigo-desc = Put a subject through the laboratory procedure. A lesser Wendigo pays half, a full MN-33 or cannibal-grown Wendigo pays full, and a tamed result pays double. Admin-spawned and round-threat Wendigos do not count.
@@ -68,6 +68,7 @@ cmu-company-mission-failed = { $name } expired before completion.
 cmu-company-mission-already-done = That mission is already closed.
 cmu-company-mission-already-active = That mission is already active.
 cmu-company-mission-limit = The liaison can run at most { $limit } company missions at once.
+cmu-company-mission-scan-limit = The liaison can start at most { $limit } scan missions per round.
 
 # Main direction
 cmu-company-direction-none = Not chosen
@@ -78,13 +79,13 @@ cmu-company-direction-set = Main direction set to { $direction }.
 # Company support tab
 cmu-corporate-pmc-heading = COMPANY SUPPORT
 cmu-corporate-pmc-subheading = WEYU CORPORATE SUPPORT // CONTRACT & LOGISTICS
-cmu-corporate-pmc-cost = Company value cost
+cmu-corporate-pmc-cost = Company value requirement
 cmu-corporate-pmc-calls = Calls left
 cmu-corporate-pmc-contract = PMC squad
-cmu-corporate-pmc-description = Hire a Weyland-Yutani PMC fireteam for corporate security, recovery or deniable operations. The squad deploys by shuttle and answers to the liaison.
+cmu-corporate-pmc-description = Hire a Weyland-Yutani PMC fireteam for corporate security, recovery or deniable operations. Requires 30 company value; the requirement is not spent. The squad deploys by shuttle and answers to the liaison.
 cmu-corporate-pmc-call = Request PMC squad
 cmu-corporate-pmc-confirm = CONFIRM CALL
-cmu-corporate-pmc-footer = Company Support requests are paid from the complex's company value and come from WEYU logistics.
+cmu-corporate-pmc-footer = PMC squads require company value but do not consume it. The other Company Support requests are paid from company value.
 cmu-corporate-pmc-no-calls = No PMC calls remain this round.
 cmu-corporate-pmc-cooldown = Next PMC squad available in { $seconds } sec.
 cmu-corporate-pmc-ready = PMC squad ready for tasking.
@@ -92,7 +93,7 @@ cmu-corporate-pmc-no-value = Not enough company value for a PMC squad.
 cmu-corporate-pmc-called = PMC squad requested. Corporate security is en route.
 
 cmu-corporate-credit-heading = Corporate credit
-cmu-corporate-credit-description = Draw on the company's line of credit. The funds are added to the corporate budget and can be withdrawn from the Operations tab.
+cmu-corporate-credit-description = Draw on the company's line of credit. The request grants $10,000 to the corporate budget and can be withdrawn from the Operations tab.
 cmu-corporate-credit-cost = Company value cost
 cmu-corporate-credit-amount = Credit amount
 cmu-corporate-credit-request = Request credit
@@ -109,6 +110,18 @@ cmu-corporate-alien-tech-no-value = Not enough company value for an alien techno
 cmu-corporate-alien-tech-no-cargo = No WEYU cargo elevator is available.
 cmu-corporate-alien-tech-queue-full = The WEYU cargo queue is full.
 cmu-corporate-alien-tech-queued = Yautja bracer queued for delivery on the WEYU cargo elevator.
+
+cmu-corporate-guard-heading = Corporate guard squad
+cmu-corporate-guard-description = Call an additional Weyland-Yutani corporate security team. The squad is paid for from company value and is limited per round.
+cmu-corporate-guard-cost = Company value cost
+cmu-corporate-guard-calls = Calls left
+cmu-corporate-guard-call = Request guard squad
+cmu-corporate-guard-confirm = CONFIRM CALL
+cmu-corporate-guard-no-calls = No guard calls remain this round.
+cmu-corporate-guard-cooldown = Next guard squad available in { $seconds } sec.
+cmu-corporate-guard-ready = Guard squad ready for tasking.
+cmu-corporate-guard-no-value = Not enough company value for a guard squad.
+cmu-corporate-guard-called = Guard squad requested. Corporate security is en route.
 
 # Direction tab
 cmu-corporate-direction-heading = COMPLEX DIRECTION

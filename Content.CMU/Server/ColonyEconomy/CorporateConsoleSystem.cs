@@ -52,6 +52,7 @@ public sealed partial class CorporateConsoleSystem : EntitySystem
         SubscribeLocalEvent<CorporateConsoleComponent, CorporateConsoleAcceptMissionBuiMsg>(OnAcceptMission);
         SubscribeLocalEvent<CorporateConsoleComponent, CorporateConsoleSetDirectionBuiMsg>(OnSetDirection);
         SubscribeLocalEvent<CorporateConsoleComponent, CorporateConsoleCallPmcBuiMsg>(OnCallPmc);
+        SubscribeLocalEvent<CorporateConsoleComponent, CorporateConsoleCallGuardBuiMsg>(OnCallGuard);
         SubscribeLocalEvent<CorporateConsoleComponent, CorporateConsoleRequestCreditBuiMsg>(OnRequestCredit);
         SubscribeLocalEvent<CorporateConsoleComponent, CorporateConsoleRequestAlienTechBuiMsg>(OnRequestAlienTech);
         SubscribeLocalEvent<CMUChemicalScannedEvent>(OnChemicalScanned);
@@ -81,6 +82,8 @@ public sealed partial class CorporateConsoleSystem : EntitySystem
             comp.CorporateBudget = other.CorporateBudget;
             comp.PmcCalls = other.PmcCalls;
             comp.NextPmcCallAt = other.NextPmcCallAt;
+            comp.GuardCalls = other.GuardCalls;
+            comp.NextGuardCallAt = other.NextGuardCallAt;
             comp.NextCreditAt = other.NextCreditAt;
             comp.SupportStatus = other.SupportStatus;
             return;
@@ -294,6 +297,10 @@ public sealed partial class CorporateConsoleSystem : EntitySystem
             comp.CreditCostCompanyValue,
             comp.CreditAmount,
             comp.AlienTechCostCompanyValue,
+            comp.GuardCostCompanyValue,
+            Math.Max(0, comp.MaxGuardCalls - comp.GuardCalls),
+            Math.Max(0, (int) Math.Ceiling((comp.NextGuardCallAt - _timing.CurTime).TotalSeconds)),
+            comp.GuardCalls > 0,
             state.Status,
             comp.SupportStatus);
     }

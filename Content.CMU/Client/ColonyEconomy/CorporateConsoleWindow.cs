@@ -29,6 +29,7 @@ public sealed class CorporateConsoleWindow : DefaultWindow
     public event Action<string>? OnAcceptMission;
     public event Action<CorporateResearchDirection>? OnSetDirection;
     public event Action? OnCallPmc;
+    public event Action? OnCallGuard;
     public event Action? OnRequestCredit;
     public event Action? OnRequestAlienTech;
 
@@ -70,6 +71,10 @@ public sealed class CorporateConsoleWindow : DefaultWindow
     private Label _pmcCalls = null!;
     private Label _pmcCooldown = null!;
     private ConfirmButton _pmcButton = null!;
+    private Label _guardCost = null!;
+    private Label _guardCalls = null!;
+    private Label _guardCooldown = null!;
+    private ConfirmButton _guardButton = null!;
     private Label _creditCost = null!;
     private Label _creditAmount = null!;
     private ConfirmButton _creditButton = null!;
@@ -79,6 +84,9 @@ public sealed class CorporateConsoleWindow : DefaultWindow
     private int _pmcCostValue;
     private int _pmcCallsLeft;
     private int _pmcCooldownSeconds;
+    private int _guardCostValue;
+    private int _guardCallsLeft;
+    private int _guardCooldownSeconds;
     private int _creditCostValue;
     private int _alienTechCostValue;
 
@@ -350,6 +358,38 @@ public sealed class CorporateConsoleWindow : DefaultWindow
         _pmcButton.OnPressed += _ => OnCallPmc?.Invoke();
         contract.AddChild(_pmcButton);
 
+        // Corporate guard squad.
+        body.AddChild(_pmcKit.Section(Loc.GetString("cmu-corporate-guard-heading"), out var guard));
+        guard.AddChild(CrtConsoleKit.Wrapping(
+            Loc.GetString("cmu-corporate-guard-description"), CrtTerminalPalette.TextDim));
+        var guardReadouts = new GridContainer
+        {
+            Columns = 2,
+            HSeparationOverride = 6,
+            HorizontalExpand = true,
+        };
+        guardReadouts.AddChild(_pmcKit.Readout(
+            Loc.GetString("cmu-corporate-guard-cost"), "0", out _guardCost,
+            CrtTerminalPalette.Caution));
+        guardReadouts.AddChild(_pmcKit.Readout(
+            Loc.GetString("cmu-corporate-guard-calls"), "0", out _guardCalls,
+            CrtTerminalPalette.TextBright));
+        guard.AddChild(guardReadouts);
+
+        _guardCooldown = CrtConsoleKit.Text(string.Empty, _pmcKit.Small, CrtTerminalPalette.TextDim);
+        guard.AddChild(_guardCooldown);
+
+        _guardButton = new ConfirmButton
+        {
+            Text = Loc.GetString("cmu-corporate-guard-call"),
+            ConfirmationText = Loc.GetString("cmu-corporate-guard-confirm"),
+            MinWidth = 260,
+        };
+        CmuButtonStyles.Apply(_guardButton, CmuButtonStyles.Variant.Affirm);
+        _guardButton.Label.FontOverride = _pmcKit.Bold;
+        _guardButton.OnPressed += _ => OnCallGuard?.Invoke();
+        guard.AddChild(_guardButton);
+
         // Credit.
         body.AddChild(_pmcKit.Section(Loc.GetString("cmu-corporate-credit-heading"), out var credit));
         credit.AddChild(CrtConsoleKit.Wrapping(
@@ -516,6 +556,23 @@ public sealed class CorporateConsoleWindow : DefaultWindow
         _pmcButton.Disabled = _pmcCallsLeft <= 0 ||
                               state.CompanyValue < _pmcCostValue ||
                               _pmcCooldownSeconds > 0;
+
+        _guardCostValue = state.GuardCostCompanyValue;
+        _guardCost.Text = state.GuardCostCompanyValue.ToString();
+        _guardCallsLeft = state.GuardCallsLeft;
+        _guardCalls.Text = state.GuardCallsLeft.ToString();
+        _guardCooldownSeconds = state.GuardCooldownSeconds;
+        if (_guardCallsLeft <= 0)
+            _guardCooldown.Text = Loc.GetString("cmu-corporate-guard-no-calls");
+        else if (_guardCooldownSeconds > 0)
+            _guardCooldown.Text = Loc.GetString("cmu-corporate-guard-cooldown",
+                ("seconds", _guardCooldownSeconds));
+        else
+            _guardCooldown.Text = Loc.GetString("cmu-corporate-guard-ready");
+
+        _guardButton.Disabled = _guardCallsLeft <= 0 ||
+                                state.CompanyValue < _guardCostValue ||
+                                _guardCooldownSeconds > 0;
 
         _creditCostValue = state.CreditCostCompanyValue;
         _creditCost.Text = state.CreditCostCompanyValue.ToString();

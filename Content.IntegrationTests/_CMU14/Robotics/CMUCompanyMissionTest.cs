@@ -1,6 +1,7 @@
 using System.Linq;
 using Content.IntegrationTests.Fixtures;
 using Content.Server.CMU14.Chemistry.Research;
+using Content.Server.CMU14.ColonyEconomy;
 using Content.Server.CMU14.Robotics;
 using Content.Shared.CMU14.ColonyEconomy;
 using Content.Shared.CMU14.Robotics;
@@ -70,7 +71,7 @@ public sealed class CMUCompanyMissionTest : GameTest
             Assert.That(state!.ActiveMissions.Select(mission => mission.Id), Does.Contain("robotics-points"));
             Assert.That(
                 state.ActiveMissions.Single(mission => mission.Id == "robotics-points").TimeLimitMinutes,
-                Is.EqualTo(60),
+                Is.EqualTo(30),
                 "the mission limit runs from acceptance, not from a fixed round minute");
         });
 
@@ -90,10 +91,15 @@ public sealed class CMUCompanyMissionTest : GameTest
                 Is.True);
             Assert.That(state!.ActiveMissions.Select(mission => mission.Id), Does.Not.Contain("robotics-points"));
             Assert.That(state.MissionHistory.Select(mission => mission.Id), Does.Contain("robotics-points"));
-            Assert.That(state.CompanyValue, Is.EqualTo(15),
+            Assert.That(state.CompanyValue, Is.EqualTo(5),
                 "the robotics mission reward is paid in company value");
             Assert.That(state.ChemistryPoints, Is.EqualTo(0),
                 "mission rewards must not pay chemistry points");
+
+            var next = state.AvailableMissions.Single(mission => mission.Id == "robotics-points");
+            Assert.That(next.Target, Is.EqualTo(35),
+                "the repeatable points mission raises its target by 10");
+            Assert.That(next.Reward, Is.EqualTo(5));
         });
     }
 
@@ -175,29 +181,14 @@ public sealed class CMUCompanyMissionTest : GameTest
         });
         await Pair.RunUntilSynced();
 
-        // Earn company value through a mission first.
         await Server.WaitAssertion(() =>
         {
-            SEntMan.EventBus.RaiseLocalEvent(console, new CorporateConsoleAcceptMissionBuiMsg("robotics-points")
-            {
-                Actor = EntityUid.Invalid,
-                UiKey = CorporateConsoleUi.Key,
-            });
-        });
-        await Pair.RunUntilSynced();
-        await Server.WaitAssertion(() =>
-        {
-            SEntMan.System<ServerResearchDataTerminalSystem>().UpdateRoboticsPoints(25, "corporate");
-        });
-        await Pair.RunSeconds(2);
-
-        await Server.WaitAssertion(() =>
-        {
+            Server.System<CorporateConsoleSystem>().SetCompanyValue("corporate", 50);
             Assert.That(
                 SEntMan.System<SharedUserInterfaceSystem>()
                     .TryGetUiState<CorporateConsoleBuiState>(console, CorporateConsoleUi.Key, out var state),
                 Is.True);
-            Assert.That(state!.CompanyValue, Is.EqualTo(15));
+            Assert.That(state!.CompanyValue, Is.EqualTo(50));
         });
 
         await Server.WaitAssertion(() =>
@@ -213,12 +204,12 @@ public sealed class CMUCompanyMissionTest : GameTest
         await Server.WaitAssertion(() =>
         {
             Assert.That(SEntMan.GetComponent<CorporateConsoleComponent>(console).CorporateBudget,
-                Is.EqualTo(5000));
+                Is.EqualTo(10000));
             Assert.That(
                 SEntMan.System<SharedUserInterfaceSystem>()
                     .TryGetUiState<CorporateConsoleBuiState>(console, CorporateConsoleUi.Key, out var state),
                 Is.True);
-            Assert.That(state!.CompanyValue, Is.EqualTo(5));
+            Assert.That(state!.CompanyValue, Is.EqualTo(40));
         });
 
         await Server.WaitAssertion(() =>
@@ -240,7 +231,7 @@ public sealed class CMUCompanyMissionTest : GameTest
                 SEntMan.System<SharedUserInterfaceSystem>()
                     .TryGetUiState<CorporateConsoleBuiState>(console, CorporateConsoleUi.Key, out var state),
                 Is.True);
-            Assert.That(state!.CompanyValue, Is.EqualTo(0));
+            Assert.That(state!.CompanyValue, Is.EqualTo(20));
         });
     }
 }

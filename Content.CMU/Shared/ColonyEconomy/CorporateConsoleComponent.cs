@@ -48,10 +48,10 @@ public sealed partial class CorporateConsoleComponent : Component
     public TimeSpan NextCallInAt;
 
     /// <summary>
-    ///     Company value charged for a WEYU PMC squad call.
+    ///     Company value required to call a WEYU PMC squad. The requirement is not spent.
     /// </summary>
     [DataField("pmcCostCompanyValue")]
-    public int PmcCostCompanyValue = 25;
+    public int PmcCostCompanyValue = 30;
 
     /// <summary>
     ///     How many PMC squads can be called per round, shared by every corporate console.
@@ -85,7 +85,7 @@ public sealed partial class CorporateConsoleComponent : Component
     ///     Corporate budget credited by one credit request.
     /// </summary>
     [DataField("creditAmount")]
-    public int CreditAmount = 5000;
+    public int CreditAmount = 10000;
 
     /// <summary>
     ///     Earliest time another credit request may be made.
@@ -102,7 +102,35 @@ public sealed partial class CorporateConsoleComponent : Component
     ///     Company value charged for a Yautja technology delivery.
     /// </summary>
     [DataField("alienTechCostCompanyValue")]
-    public int AlienTechCostCompanyValue = 5;
+    public int AlienTechCostCompanyValue = 20;
+
+    /// <summary>
+    ///     Company value charged for an additional corporate guard squad.
+    /// </summary>
+    [DataField("guardCostCompanyValue")]
+    public int GuardCostCompanyValue = 20;
+
+    /// <summary>
+    ///     How many guard squads can be called per round, shared by every corporate console.
+    /// </summary>
+    [DataField("maxGuardCalls")]
+    public int MaxGuardCalls = 1;
+
+    /// <summary>
+    ///     Guard squads already called this round.
+    /// </summary>
+    public int GuardCalls;
+
+    /// <summary>
+    ///     Earliest time another guard squad may be called.
+    /// </summary>
+    public TimeSpan NextGuardCallAt;
+
+    /// <summary>
+    ///     Delay between guard squad calls.
+    /// </summary>
+    [DataField("guardCooldown")]
+    public TimeSpan GuardCooldown = TimeSpan.FromMinutes(20);
 
     /// <summary>
     ///     Last Company Support action result.

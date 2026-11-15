@@ -17,6 +17,7 @@ public sealed class CorporateConsoleBui(EntityUid owner, Enum uiKey) : BoundUser
         _window.OnAcceptMission += id => SendPredictedMessage(new CorporateConsoleAcceptMissionBuiMsg(id));
         _window.OnSetDirection += direction => SendPredictedMessage(new CorporateConsoleSetDirectionBuiMsg(direction));
         _window.OnCallPmc += () => SendPredictedMessage(new CorporateConsoleCallPmcBuiMsg());
+        _window.OnCallGuard += () => SendPredictedMessage(new CorporateConsoleCallGuardBuiMsg());
         _window.OnRequestCredit += () => SendPredictedMessage(new CorporateConsoleRequestCreditBuiMsg());
         _window.OnRequestAlienTech += () => SendPredictedMessage(new CorporateConsoleRequestAlienTechBuiMsg());
     }

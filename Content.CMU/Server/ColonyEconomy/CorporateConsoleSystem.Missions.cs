@@ -26,10 +26,14 @@ public sealed partial class CorporateConsoleSystem
 {
     private const string CorporateFaction = "corporate";
     private const string PmcPartyId = "CMUWYPMCTeamSmall";
+    private const string GuardPartyId = "CMUWYSecurityTeam";
     private static readonly EntProtoId YautjaTechnologyCrate = "CMUCrateSecureYautjaTechnology";
     private const int MaxActiveMissions = 3;
+    private const int MaxScanMissionsPerRound = 3;
+    private const int PointsMissionStep = 10;
 
     private static readonly ProtoId<ThirdPartyPrototype> PmcParty = new(PmcPartyId);
+    private static readonly ProtoId<ThirdPartyPrototype> GuardParty = new(GuardPartyId);
 
     private enum CompanyMissionKind : byte
     {
@@ -80,6 +84,13 @@ public sealed partial class CorporateConsoleSystem
         /// <summary>The liaison's third currency: how valuable the complex is to the company.</summary>
         public int CompanyValue;
 
+        /// <summary>Scan missions started this round, across both simple and complex varieties.</summary>
+        public int ScanMissionsStarted;
+
+        /// <summary>How many times each escalating points mission has been completed.</summary>
+        public readonly Dictionary<string, int> PointsMissionCompletions =
+            new(StringComparer.OrdinalIgnoreCase);
+
         public readonly List<ActiveCompanyMission> Active = new();
         public readonly List<MissionRecord> History = new();
         public readonly HashSet<string> CompletedIds = new(StringComparer.Ordinal);
@@ -100,18 +111,20 @@ public sealed partial class CorporateConsoleSystem
             "cmu-company-mission-robotics-name",
             "cmu-company-mission-robotics-desc",
             "cmu-company-mission-robotics-objective",
-            Reward: 15,
+            Reward: 5,
             Target: 25,
-            TimeLimitMinutes: 60),
+            TimeLimitMinutes: 30,
+            Repeatable: true),
         new(
             "chemistry-points",
             CompanyMissionKind.ChemistryPoints,
             "cmu-company-mission-chemistry-name",
             "cmu-company-mission-chemistry-desc",
             "cmu-company-mission-chemistry-objective",
-            Reward: 15,
+            Reward: 5,
             Target: 20,
-            TimeLimitMinutes: 60),
+            TimeLimitMinutes: 30,
+            Repeatable: true),
         new(
             "chemistry-scan-simple",
             CompanyMissionKind.ChemistryScanSimple,
@@ -120,23 +133,25 @@ public sealed partial class CorporateConsoleSystem
             "cmu-company-mission-scan-objective",
             Reward: 10,
             Target: 1,
-            TimeLimitMinutes: 45),
+            TimeLimitMinutes: 45,
+            Repeatable: true),
         new(
             "chemistry-scan-complex",
             CompanyMissionKind.ChemistryScanComplex,
             "cmu-company-mission-scan-complex-name",
             "cmu-company-mission-scan-complex-desc",
             "cmu-company-mission-scan-objective",
-            Reward: 25,
+            Reward: 10,
             Target: 1,
-            TimeLimitMinutes: 75),
+            TimeLimitMinutes: 75,
+            Repeatable: true),
         new(
             "create-wendigo",
             CompanyMissionKind.CreateWendigo,
             "cmu-company-mission-wendigo-name",
             "cmu-company-mission-wendigo-desc",
             "cmu-company-mission-wendigo-objective",
-            Reward: 20,
+            Reward: 50,
             Target: 1,
             TimeLimitMinutes: 90),
         new(
@@ -145,7 +160,7 @@ public sealed partial class CorporateConsoleSystem
             "cmu-company-mission-hive-rep-name",
             "cmu-company-mission-hive-rep-desc",
             "cmu-company-mission-single-objective",
-            Reward: 25,
+            Reward: 60,
             Target: 1,
             TimeLimitMinutes: 90),
         new(
@@ -154,7 +169,7 @@ public sealed partial class CorporateConsoleSystem
             "cmu-company-mission-hive-alliance-name",
             "cmu-company-mission-hive-alliance-desc",
             "cmu-company-mission-single-objective",
-            Reward: 30,
+            Reward: 20,
             Target: 1,
             TimeLimitMinutes: 90),
         new(
@@ -214,6 +229,32 @@ public sealed partial class CorporateConsoleSystem
         return GetMissionState(faction).CompanyValue;
     }
 
+    /// <summary>Sets the liaison's company value. Used by admin tools and tests.</summary>
+    public void SetCompanyValue(string faction, int value)
+    {
+        GetMissionState(faction).CompanyValue = Math.Max(0, value);
+        UpdateAllUi();
+    }
+
+    private static bool IsPointsMission(CompanyMissionKind kind)
+    {
+        return kind is CompanyMissionKind.RoboticsPoints or CompanyMissionKind.ChemistryPoints;
+    }
+
+    private static bool IsScanMission(CompanyMissionKind kind)
+    {
+        return kind is CompanyMissionKind.ChemistryScanSimple or CompanyMissionKind.ChemistryScanComplex;
+    }
+
+    private static int GetPointsMissionTarget(FactionMissionState state, CompanyMissionDefinition definition)
+    {
+        if (!IsPointsMission(definition.Kind))
+            return definition.Target;
+
+        var completed = state.PointsMissionCompletions.GetValueOrDefault(definition.Id);
+        return definition.Target + completed * PointsMissionStep;
+    }
+
     private void OnSetDirection(EntityUid uid, CorporateConsoleComponent comp,
         CorporateConsoleSetDirectionBuiMsg msg)
     {
@@ -263,15 +304,25 @@ public sealed partial class CorporateConsoleSystem
             return;
         }
 
+        if (IsScanMission(definition.Kind) && state.ScanMissionsStarted >= MaxScanMissionsPerRound)
+        {
+            state.Status = Loc.GetString(
+                "cmu-company-mission-scan-limit",
+                ("limit", MaxScanMissionsPerRound));
+            UpdateAllUi();
+            return;
+        }
+
+        var target = GetPointsMissionTarget(state, definition);
         var active = new ActiveCompanyMission
         {
             Definition = definition,
             Deadline = _timing.CurTime + TimeSpan.FromMinutes(definition.TimeLimitMinutes),
-            Target = definition.Target,
+            Target = target,
             Reward = definition.Reward,
         };
 
-        if (definition.Kind is CompanyMissionKind.RoboticsPoints or CompanyMissionKind.ChemistryPoints)
+        if (IsPointsMission(definition.Kind))
         {
             var science = QueryScience(faction);
             var current = definition.Kind == CompanyMissionKind.RoboticsPoints
@@ -279,6 +330,9 @@ public sealed partial class CorporateConsoleSystem
                 : science.ChemistryPoints;
             active.Progress = Math.Min(current, active.Target);
         }
+
+        if (IsScanMission(definition.Kind))
+            state.ScanMissionsStarted++;
 
         state.Active.Add(active);
         state.Status = Loc.GetString(
@@ -313,8 +367,6 @@ public sealed partial class CorporateConsoleSystem
                 Actor: msg.Actor,
                 Console: uid));
 
-        state.CompanyValue -= comp.PmcCostCompanyValue;
-
         var nextCall = _timing.CurTime + comp.PmcCooldown;
         var query = EntityQueryEnumerator<CorporateConsoleComponent>();
         while (query.MoveNext(out var consoleUid, out var other))
@@ -322,6 +374,45 @@ public sealed partial class CorporateConsoleSystem
             other.PmcCalls++;
             other.NextPmcCallAt = nextCall;
             SetSupportStatus(other, "cmu-corporate-pmc-called");
+            _ui.SetUiState(consoleUid, CorporateConsoleUi.Key, BuildUiState(consoleUid, other));
+        }
+    }
+
+    private void OnCallGuard(EntityUid uid, CorporateConsoleComponent comp, CorporateConsoleCallGuardBuiMsg msg)
+    {
+        if (comp.GuardCalls >= comp.MaxGuardCalls || _timing.CurTime < comp.NextGuardCallAt)
+            return;
+
+        var faction = GetConsoleFaction(uid);
+        var state = GetMissionState(faction);
+        if (state.CompanyValue < comp.GuardCostCompanyValue)
+        {
+            SetSupportStatus(comp, "cmu-corporate-guard-no-value");
+            UpdateAllUi();
+            return;
+        }
+
+        if (!_proto.TryIndex<ThirdPartyPrototype>(GuardParty, out var partyProto)
+            || !_auRound.IsThirdPartyAllowedForCurrentContext(partyProto)
+            || !_proto.TryIndex(partyProto.PartySpawn, out var spawnProto))
+            return;
+
+        _thirdParty.SpawnThirdParty(partyProto, spawnProto, false,
+            caller: new ThirdPartyCaller(
+                Name(msg.Actor),
+                Loc.GetString("cmu-third-party-caller-corporate"),
+                Actor: msg.Actor,
+                Console: uid));
+
+        state.CompanyValue -= comp.GuardCostCompanyValue;
+
+        var nextCall = _timing.CurTime + comp.GuardCooldown;
+        var query = EntityQueryEnumerator<CorporateConsoleComponent>();
+        while (query.MoveNext(out var consoleUid, out var other))
+        {
+            other.GuardCalls++;
+            other.NextGuardCallAt = nextCall;
+            SetSupportStatus(other, "cmu-corporate-guard-called");
             _ui.SetUiState(consoleUid, CorporateConsoleUi.Key, BuildUiState(consoleUid, other));
         }
     }
@@ -679,6 +770,12 @@ public sealed partial class CorporateConsoleSystem
 
         state.CompanyValue += mission.Reward;
 
+        if (IsPointsMission(mission.Definition.Kind))
+        {
+            state.PointsMissionCompletions[mission.Definition.Id] =
+                state.PointsMissionCompletions.GetValueOrDefault(mission.Definition.Id) + 1;
+        }
+
         state.Status = Loc.GetString(
             "cmu-company-mission-completed",
             ("name", Loc.GetString(mission.Definition.NameLoc)),
@@ -715,12 +812,15 @@ public sealed partial class CorporateConsoleSystem
                 continue;
             if (state.Active.Any(mission => mission.Definition.Id == definition.Id))
                 continue;
+            if (IsScanMission(definition.Kind) && state.ScanMissionsStarted >= MaxScanMissionsPerRound)
+                continue;
 
+            var target = GetPointsMissionTarget(state, definition);
             var reward = definition.Kind == CompanyMissionKind.PredatorBracer
                 ? definition.Target
                 : definition.Reward;
             available.Add(BuildMissionInfo(definition, CompanyMissionStatus.Available, 0,
-                definition.Target, reward, 0));
+                target, reward, 0));
         }
 
         return available;

@@ -79,6 +79,9 @@ public sealed class CorporateConsoleSetDirectionBuiMsg(CorporateResearchDirectio
 public sealed class CorporateConsoleCallPmcBuiMsg : BoundUserInterfaceMessage;
 
 [Serializable, NetSerializable]
+public sealed class CorporateConsoleCallGuardBuiMsg : BoundUserInterfaceMessage;
+
+[Serializable, NetSerializable]
 public sealed class CorporateConsoleRequestCreditBuiMsg : BoundUserInterfaceMessage;
 
 [Serializable, NetSerializable]

@@ -54,6 +54,10 @@ public sealed class CorporateConsoleBuiState : BoundUserInterfaceState
     public int CreditCostCompanyValue { get; }
     public int CreditAmount { get; }
     public int AlienTechCostCompanyValue { get; }
+    public int GuardCostCompanyValue { get; }
+    public int GuardCallsLeft { get; }
+    public int GuardCooldownSeconds { get; }
+    public bool GuardCalled { get; }
 
     /// <summary>Last mission action result shown on the Company Tasks tab.</summary>
     public string MissionStatus { get; }
@@ -81,6 +85,10 @@ public sealed class CorporateConsoleBuiState : BoundUserInterfaceState
         int creditCostCompanyValue = 0,
         int creditAmount = 0,
         int alienTechCostCompanyValue = 0,
+        int guardCostCompanyValue = 0,
+        int guardCallsLeft = 0,
+        int guardCooldownSeconds = 0,
+        bool guardCalled = false,
         string missionStatus = "",
         string supportStatus = "")
     {
@@ -103,6 +111,10 @@ public sealed class CorporateConsoleBuiState : BoundUserInterfaceState
         CreditCostCompanyValue = creditCostCompanyValue;
         CreditAmount = creditAmount;
         AlienTechCostCompanyValue = alienTechCostCompanyValue;
+        GuardCostCompanyValue = guardCostCompanyValue;
+        GuardCallsLeft = guardCallsLeft;
+        GuardCooldownSeconds = guardCooldownSeconds;
+        GuardCalled = guardCalled;
         MissionStatus = missionStatus;
         SupportStatus = supportStatus;
     }
