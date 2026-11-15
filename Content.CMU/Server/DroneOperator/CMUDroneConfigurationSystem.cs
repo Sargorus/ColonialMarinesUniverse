@@ -255,9 +255,42 @@ public sealed partial class CMUDroneConfigurationSystem : EntitySystem
             selectedAccess.UnionWith(accessComp.Tags.Select(tag => tag.Id));
 
         var utilityDrone = TryComp<CMUUtilityDroneAgentComponent>(drone, out var utility);
+        TryComp<CMUDroneAndroidComponent>(drone, out var androidComp);
         var step = utility != null && (utility.ProgramRunning || utility.ForcedReturn)
             ? utility.StepIndex + 1
             : 0;
+
+        var skillsModule = string.Empty;
+        if (androidComp?.InstalledModule is { } module &&
+            !TerminatingOrDeleted(module) &&
+            HasComp<CMUDroneModuleComponent>(module))
+        {
+            skillsModule = Name(module);
+        }
+
+        var programSystem = string.Empty;
+        if (androidComp?.InstalledProgramSystem is { } programBoard &&
+            !TerminatingOrDeleted(programBoard) &&
+            HasComp<CMUUtilityDroneSystemBoardComponent>(programBoard))
+        {
+            programSystem = Name(programBoard);
+        }
+        else if (utility != null)
+        {
+            programSystem = Loc.GetString("cmu-drone-config-board-built-in");
+        }
+
+        var combatSystem = string.Empty;
+        if (androidComp?.InstalledCombatSystem is { } combatBoard &&
+            !TerminatingOrDeleted(combatBoard) &&
+            HasComp<CMUUtilityDroneSystemBoardComponent>(combatBoard))
+        {
+            combatSystem = Name(combatBoard);
+        }
+        else if (androidComp?.StartsCombatProgramCapable == true)
+        {
+            combatSystem = Loc.GetString("cmu-drone-config-board-built-in");
+        }
 
         var state = new CMUDroneConfigurationBuiState(
             factions,
@@ -275,7 +308,10 @@ public sealed partial class CMUDroneConfigurationSystem : EntitySystem
             utility?.ProgramPaused ?? false,
             step,
             utility?.Program.Steps.Count ?? 0,
-            utility?.Activity ?? string.Empty);
+            utility?.Activity ?? string.Empty,
+            skillsModule,
+            programSystem,
+            combatSystem);
 
         _ui.SetUiState(drone, CMUDroneConfigurationUi.Key, state);
     }

@@ -19,8 +19,12 @@ public sealed partial class CMURoboticsFabricatorComponent : Component
     [DataField]
     public string CellContainerSlot = "cmu_robotics_fabricator_cell";
 
+    /// <summary>
+    /// Recipe packs permanently unlocked on this fabricator by cartridges.
+    /// Cartridges are consumed on insertion.
+    /// </summary>
     [DataField]
-    public string CartridgeContainerSlot = "cmu_robotics_fabricator_cartridge";
+    public List<ProtoId<LatheRecipePackPrototype>> UnlockedPacks = new();
 
     [DataField]
     public EntProtoId<SkillDefinitionComponent> ResearchSkill = "RMCSkillResearch";

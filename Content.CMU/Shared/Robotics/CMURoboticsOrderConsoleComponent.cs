@@ -24,7 +24,7 @@ public sealed partial class CMURoboticsOrderConsoleComponent : Component
 
     /// <summary>
     /// Minimum real-time delay between accepting a work order and starting a
-    /// production-network contract. Both tabs of the terminal share it.
+    /// production-network contract. Each queue keeps its own deadline.
     /// </summary>
     [DataField]
     public TimeSpan OrderCooldown = TimeSpan.FromMinutes(3);
@@ -66,11 +66,16 @@ public sealed partial class CMURoboticsOrderConsoleComponent : Component
     public TimeSpan NextUiUpdate;
 
     /// <summary>
-    /// Earliest time another work order or production-network contract may be
-    /// started on this terminal.
+    /// Earliest time another drone build/repair order may be started.
     /// </summary>
     [ViewVariables]
-    public TimeSpan NextOrderAllowed;
+    public TimeSpan NextDroneOrderAllowed;
+
+    /// <summary>
+    /// Earliest time another production-network contract may be started.
+    /// </summary>
+    [ViewVariables]
+    public TimeSpan NextNetworkOrderAllowed;
 
     [ViewVariables]
     public string CartridgeStatus = string.Empty;

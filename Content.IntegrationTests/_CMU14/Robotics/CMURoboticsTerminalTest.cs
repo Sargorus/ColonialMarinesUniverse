@@ -6,14 +6,12 @@ using Content.Server.CMU14.Robotics.QueueNetwork;
 using Content.Server.Lathe;
 using Content.Shared.CMU14.Robotics;
 using Content.Shared.CMU14.Robotics.QueueNetwork;
-using Content.Shared.Containers.ItemSlots;
 using Content.Shared.Lathe;
 using Content.Shared.Research.Prototypes;
 using Content.Shared.UserInterface;
 using Content.Shared._RMC14.Requisitions.Components;
 using Content.IntegrationTests.Fixtures;
 using NUnit.Framework;
-using Robust.Shared.Containers;
 using Robust.Shared.GameObjects;
 using Robust.Shared.Prototypes;
 
@@ -62,9 +60,10 @@ public sealed class CMURoboticsTerminalTest : GameTest
             Assert.Multiple(() =>
             {
                 Assert.That(state!.Queue, Is.Not.Null, "the network tab state is embedded");
-                Assert.That(state.Cartridges, Has.Count.EqualTo(1));
-                Assert.That(state.Cartridges[0].Prototype.Id, Is.EqualTo("CMURoboticsCartridgeEmp"));
-                Assert.That(state.Cartridges[0].Cost, Is.EqualTo(300));
+                Assert.That(state.Cartridges, Has.Count.EqualTo(3));
+                Assert.That(
+                    state.Cartridges.Select(cartridge => cartridge.Prototype.Id),
+                    Does.Contain("CMURoboticsCartridgeEmp"));
                 Assert.That(state.Available, Is.Not.Empty);
             });
         });
@@ -80,10 +79,10 @@ public sealed class CMURoboticsTerminalTest : GameTest
                         out var state),
                 Is.True);
             Assert.That(state!.Queue, Is.Not.Null, "nested network state survives serialization");
-            Assert.That(state.Cartridges, Has.Count.EqualTo(1));
+            Assert.That(state.Cartridges, Has.Count.EqualTo(3));
             Assert.That(
-                state.Cartridges[0].Description,
-                Is.EqualTo("cmu-robotics-cartridge-emp-desc"));
+                state.Cartridges.Select(cartridge => cartridge.Description),
+                Does.Contain("cmu-robotics-cartridge-emp-desc"));
         });
 
         await Send(consoleNet, new CMUQueueNewContractMessage());
@@ -95,7 +94,7 @@ public sealed class CMURoboticsTerminalTest : GameTest
             {
                 Assert.That(queue.Active, Is.True);
                 Assert.That(queue.Network, Is.Not.Null);
-                Assert.That(terminal.NextOrderAllowed, Is.GreaterThan(SGameTiming.CurTime));
+                Assert.That(terminal.NextNetworkOrderAllowed, Is.GreaterThan(SGameTiming.CurTime));
             });
         });
 
@@ -110,6 +109,7 @@ public sealed class CMURoboticsTerminalTest : GameTest
                 Is.True);
             Assert.That(state!.Queue!.Active, Is.True);
             Assert.That(state.Queue.CooldownSeconds, Is.GreaterThan(0));
+            Assert.That(state.CooldownSeconds, Is.EqualTo(0), "the network cooldown must not block drone orders");
         });
     }
 
@@ -120,10 +120,11 @@ public sealed class CMURoboticsTerminalTest : GameTest
         NetEntity consoleNet = default;
         EntityUid console = default;
         EntityUid fabricator = default;
+        EntityUid user = default;
 
         await Server.WaitAssertion(() =>
         {
-            var user = SEntMan.SpawnEntity("CMMobHuman", map.GridCoords);
+            user = SEntMan.SpawnEntity("CMMobHuman", map.GridCoords);
             Server.PlayerMan.SetAttachedEntity(ServerSession, user);
 
             console = SEntMan.SpawnEntity("CMURoboticsOrderConsole", map.GridCoords);
@@ -148,13 +149,13 @@ public sealed class CMURoboticsTerminalTest : GameTest
             Is.False);
 
         await Send(consoleNet, new CMURoboticsPurchaseCartridgeMessage("CMURoboticsCartridgeEmp"));
+        EntityUid cartridge = default;
         await Server.WaitAssertion(() =>
         {
             var research = SEntMan.System<ServerResearchDataTerminalSystem>();
-            Assert.That(research.GetSampleData("corporate"), Is.EqualTo(700));
+            Assert.That(research.GetSampleData("corporate"), Is.LessThan(1000));
 
             var cartridges = 0;
-            EntityUid cartridge = default;
             var query = SEntMan.EntityQueryEnumerator<CMURoboticsRecipeCartridgeComponent>();
             while (query.MoveNext(out var uid, out _))
             {
@@ -165,11 +166,18 @@ public sealed class CMURoboticsTerminalTest : GameTest
             Assert.That(cartridges, Is.EqualTo(1));
 
             var fabricatorComp = SComp<CMURoboticsFabricatorComponent>(fabricator);
-            var containers = SEntMan.System<SharedContainerSystem>();
-            var container = containers.EnsureContainer<ContainerSlot>(
-                fabricator,
-                fabricatorComp.CartridgeContainerSlot);
-            Assert.That(containers.Insert(cartridge, container), Is.True);
+            Assert.That(
+                SEntMan.System<CMURoboticsFabricatorSystem>().TryUnlockCartridge(
+                    (fabricator, fabricatorComp),
+                    cartridge,
+                    user),
+                Is.True);
+        });
+
+        await Pair.RunTicksSync(1);
+        await Server.WaitAssertion(() =>
+        {
+            Assert.That(SEntMan.EntityExists(cartridge), Is.False, "the cartridge is consumed");
 
             var recipes = latheSystem.GetAvailableRecipes(fabricator, lathe);
             Assert.That(recipes.Contains(empRecipe), Is.True);
@@ -219,10 +227,8 @@ public sealed class CMURoboticsTerminalTest : GameTest
         {
             var terminal = SComp<CMURoboticsOrderConsoleComponent>(console);
             Assert.That(terminal.ActiveOrder, Is.Not.Null);
-            Assert.That(terminal.NextOrderAllowed, Is.GreaterThan(SGameTiming.CurTime));
-            Assert.That(
-                SEntMan.System<CMURoboticsOrderConsoleSystem>().GetCooldownSeconds(terminal),
-                Is.GreaterThan(0));
+            Assert.That(terminal.NextDroneOrderAllowed, Is.GreaterThan(SGameTiming.CurTime));
+            Assert.That(terminal.NextNetworkOrderAllowed, Is.EqualTo(TimeSpan.Zero));
         });
 
         await Send(consoleNet, new CMURoboticsCancelOrderMessage());

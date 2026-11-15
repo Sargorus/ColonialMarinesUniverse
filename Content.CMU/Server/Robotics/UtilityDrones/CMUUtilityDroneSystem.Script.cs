@@ -126,6 +126,12 @@ public sealed partial class CMUUtilityDroneSystem
             return false;
         }
 
+        if (compiled.UsesCombat && !CanProgramCombat(drone))
+        {
+            error = Loc.GetString("cmu-utility-drone-error-combat-board-required");
+            return false;
+        }
+
         var now = _timing.CurTime;
         _steering.Unregister(drone);
         // Text programs never carry legacy steps or rules; the board source is

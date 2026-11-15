@@ -116,6 +116,33 @@ public sealed partial class CMUDroneAndroidComponent : Component
     [DataField]
     public string ModuleContainerId = "cmu-drone-module";
 
+    /// <summary>
+    /// Dedicated container for the basic program system board.
+    /// </summary>
+    [DataField]
+    public string ProgramSystemContainerId = "cmu-drone-program-system";
+
+    /// <summary>
+    /// Dedicated container for the combat program system board.
+    /// </summary>
+    [DataField]
+    public string CombatSystemContainerId = "cmu-drone-combat-system";
+
+    /// <summary>
+    /// Prototype frames that can run combat script commands before a combat
+    /// system board is fitted. Civilian frames leave this false.
+    /// </summary>
+    [DataField]
+    public bool StartsCombatProgramCapable;
+
+    public EntityUid? InstalledProgramSystem;
+
+    public EntityUid? InstalledCombatSystem;
+
+    public bool BaseCanUseGuns;
+
+    public bool BaseCanUseGunsCached;
+
     [DataField]
     public EntProtoId CombatModule = "CMUDroneModuleCombat";
 

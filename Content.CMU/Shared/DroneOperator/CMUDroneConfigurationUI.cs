@@ -40,6 +40,9 @@ public sealed class CMUDroneConfigurationBuiState : BoundUserInterfaceState
     public int Step { get; }
     public int StepCount { get; }
     public string Activity { get; }
+    public string SkillsModule { get; }
+    public string ProgramSystem { get; }
+    public string CombatSystem { get; }
 
     public CMUDroneConfigurationBuiState(
         List<CMUConfigurationOption> factions,
@@ -57,7 +60,10 @@ public sealed class CMUDroneConfigurationBuiState : BoundUserInterfaceState
         bool programPaused = false,
         int step = 0,
         int stepCount = 0,
-        string activity = "")
+        string activity = "",
+        string skillsModule = "",
+        string programSystem = "",
+        string combatSystem = "")
     {
         Factions = factions;
         CurrentFaction = currentFaction;
@@ -75,6 +81,9 @@ public sealed class CMUDroneConfigurationBuiState : BoundUserInterfaceState
         Step = step;
         StepCount = stepCount;
         Activity = activity;
+        SkillsModule = skillsModule;
+        ProgramSystem = programSystem;
+        CombatSystem = combatSystem;
     }
 }
 

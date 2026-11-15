@@ -122,7 +122,8 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
                     continue;
                 }
             }
-            else if (now > console.NextOrderAllowed + TimeSpan.FromSeconds(1))
+            else if (now > console.NextDroneOrderAllowed + TimeSpan.FromSeconds(1) &&
+                     now > console.NextNetworkOrderAllowed + TimeSpan.FromSeconds(1))
             {
                 continue;
             }
@@ -217,7 +218,7 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
             return;
         }
 
-        var cooldown = GetCooldownSeconds(ent.Comp);
+        var cooldown = GetDroneCooldownSeconds(ent.Comp);
         if (cooldown > 0)
         {
             ent.Comp.Status = Loc.GetString("cmu-robotics-console-cooldown-message", ("seconds", cooldown));
@@ -254,7 +255,7 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
 
         ent.Comp.AvailableOrders.Remove(order);
         ent.Comp.ActiveOrder = order;
-        ent.Comp.NextOrderAllowed = _timing.CurTime + ent.Comp.OrderCooldown;
+        ent.Comp.NextDroneOrderAllowed = _timing.CurTime + ent.Comp.OrderCooldown;
         ent.Comp.LastPenalty = 0;
         ent.Comp.LastMissingElements = 0;
         ent.Comp.Status = Loc.GetString(
@@ -839,16 +840,17 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
             .ToList();
 
         var active = ent.Comp.ActiveOrder == null ? null : ToInfo(ent.Comp.ActiveOrder);
-        var cooldown = GetCooldownSeconds(ent.Comp);
+        var cooldown = GetDroneCooldownSeconds(ent.Comp);
+        var networkCooldown = GetNetworkCooldownSeconds(ent.Comp);
 
         CMUQueueNetworkConsoleState? queue = null;
         if (TryComp<CMUQueueNetworkConsoleComponent>(ent.Owner, out var queueComp)
             && (ent.Comp.LastQueueRevision != queueComp.Revision
-                || ent.Comp.LastQueueCooldown != cooldown))
+                || ent.Comp.LastQueueCooldown != networkCooldown))
         {
             queue = _queueNetwork.BuildState((ent.Owner, queueComp));
             ent.Comp.LastQueueRevision = queueComp.Revision;
-            ent.Comp.LastQueueCooldown = cooldown;
+            ent.Comp.LastQueueCooldown = networkCooldown;
         }
 
         var cartridges = ent.Comp.Cartridges
@@ -874,12 +876,22 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
                 ent.Comp.CartridgeStatus));
     }
 
-    public int GetCooldownSeconds(CMURoboticsOrderConsoleComponent comp)
+    private int GetDroneCooldownSeconds(CMURoboticsOrderConsoleComponent comp)
+    {
+        return CooldownSeconds(comp, comp.NextDroneOrderAllowed);
+    }
+
+    private int GetNetworkCooldownSeconds(CMURoboticsOrderConsoleComponent comp)
+    {
+        return CooldownSeconds(comp, comp.NextNetworkOrderAllowed);
+    }
+
+    private int CooldownSeconds(CMURoboticsOrderConsoleComponent comp, TimeSpan nextAllowed)
     {
         if (comp.OrderCooldown <= TimeSpan.Zero)
             return 0;
 
-        return Math.Max(0, (int) Math.Ceiling((comp.NextOrderAllowed - _timing.CurTime).TotalSeconds));
+        return Math.Max(0, (int) Math.Ceiling((nextAllowed - _timing.CurTime).TotalSeconds));
     }
 
     private CMURoboticsOrderInfo ToInfo(CMURoboticsOrder order)

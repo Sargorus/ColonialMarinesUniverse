@@ -98,7 +98,7 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         comp.Bonus = 0;
         comp.Elapsed = 0;
         if (terminal != null)
-            terminal.NextOrderAllowed = _timing.CurTime + terminal.OrderCooldown;
+            terminal.NextNetworkOrderAllowed = _timing.CurTime + terminal.OrderCooldown;
         comp.Status = Loc.GetString(
             "cmu-queue-status-started",
             ("network", LocOrId(network.Name, Loc.GetString("cmu-queue-network-unknown"))));
@@ -568,7 +568,7 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         if (terminal.OrderCooldown <= TimeSpan.Zero)
             return 0;
 
-        return Math.Max(0, (int) Math.Ceiling((terminal.NextOrderAllowed - _timing.CurTime).TotalSeconds));
+        return Math.Max(0, (int) Math.Ceiling((terminal.NextNetworkOrderAllowed - _timing.CurTime).TotalSeconds));
     }
 
     private bool TryGetActive(
@@ -688,7 +688,8 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
 
         if (HasComp<CMURoboticsOrderConsoleComponent>(ent.Owner))
         {
-            RaiseLocalEvent(ent.Owner, new CMURoboticsTerminalQueueUpdatedEvent());
+            var updated = new CMURoboticsTerminalQueueUpdatedEvent();
+            RaiseLocalEvent(ent.Owner, ref updated);
             return;
         }
 

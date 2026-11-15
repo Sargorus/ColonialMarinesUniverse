@@ -36,6 +36,7 @@
     selfRepairTime: 12
   - type: CMUDroneAndroid
     supportsCombatModule: true
+    startsCombatProgramCapable: true
   - type: Skills
     skills:
       RMCSkillFirearms: 3

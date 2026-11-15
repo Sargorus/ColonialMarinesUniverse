@@ -1,8 +1,8 @@
 # Recipe cartridges sold by the robotics terminal for sample data.
 #
-# A cartridge unlocks its recipe pack only while inserted into a robotics
-# fabricator. The unlocked recipes live in their own lathe category so they do
-# not get mixed up with the fabricator's baseline drone-part list.
+# A cartridge is consumed when inserted into a robotics fabricator and
+# permanently unlocks its recipe pack on that fabricator. Unlocked recipes use
+# their own lathe category so they stay separate from the baseline parts list.
 
 - type: entity
   parent: BaseItem
@@ -20,9 +20,41 @@
   - type: StaticPrice
     price: 150
 
+- type: entity
+  parent: BaseItem
+  id: CMURoboticsCartridgeProgramSystem
+  name: drone program system recipe cartridge
+  description: A Weyland-Yutani recipe cartridge. Insert it into a robotics fabricator to unlock the drone program system board recipe.
+  components:
+  - type: Sprite
+    sprite: Objects/Devices/cartridge.rsi
+    state: cart-e
+  - type: Item
+    size: Small
+  - type: CMURoboticsRecipeCartridge
+    pack: CMURoboticsProgramSystemCartridge
+  - type: StaticPrice
+    price: 150
+
+- type: entity
+  parent: BaseItem
+  id: CMURoboticsCartridgeCombatSystem
+  name: drone combat system recipe cartridge
+  description: A Weyland-Yutani recipe cartridge. Insert it into a robotics fabricator to unlock the drone combat program system board recipe.
+  components:
+  - type: Sprite
+    sprite: Objects/Devices/cartridge.rsi
+    state: cart-sec
+  - type: Item
+    size: Small
+  - type: CMURoboticsRecipeCartridge
+    pack: CMURoboticsCombatSystemCartridge
+  - type: StaticPrice
+    price: 150
+
 - type: latheRecipe
   id: CMURoboticsEmpPayload
-  result: EmpPayload
+  result: CMUEmpPayload
   completetime: 4
   materials:
     CMSteel: 3000
@@ -34,3 +66,13 @@
   id: CMURoboticsEmpCartridge
   recipes:
   - CMURoboticsEmpPayload
+
+- type: latheRecipePack
+  id: CMURoboticsProgramSystemCartridge
+  recipes:
+  - CMURoboticsProgramSystemBoard
+
+- type: latheRecipePack
+  id: CMURoboticsCombatSystemCartridge
+  recipes:
+  - CMURoboticsCombatSystemBoard

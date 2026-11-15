@@ -69,3 +69,32 @@ public sealed partial class CMUDroneModuleInstallDoAfterEvent : SimpleDoAfterEve
 
 [Serializable, NetSerializable]
 public sealed partial class CMUDroneModuleUninstallDoAfterEvent : SimpleDoAfterEvent;
+
+[Serializable, NetSerializable]
+public sealed partial class CMUDroneSystemBoardInstallDoAfterEvent : SimpleDoAfterEvent;
+
+[Serializable, NetSerializable]
+public sealed partial class CMUDroneSystemBoardRemoveDoAfterEvent : DoAfterEvent
+{
+    [DataField]
+    public bool Combat;
+
+    private CMUDroneSystemBoardRemoveDoAfterEvent()
+    {
+    }
+
+    public CMUDroneSystemBoardRemoveDoAfterEvent(bool combat)
+    {
+        Combat = combat;
+    }
+
+    public override DoAfterEvent Clone()
+    {
+        return new CMUDroneSystemBoardRemoveDoAfterEvent(Combat);
+    }
+
+    public override bool IsDuplicate(DoAfterEvent other)
+    {
+        return other is CMUDroneSystemBoardRemoveDoAfterEvent remove && remove.Combat == Combat;
+    }
+}

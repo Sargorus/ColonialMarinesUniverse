@@ -1,4 +1,5 @@
 using Content.Shared.CMU14.Robotics.QueueNetwork;
+using Robust.Shared.GameObjects;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Serialization;
 
@@ -126,4 +127,5 @@ public sealed class CMURoboticsPurchaseCartridgeMessage(string prototype) : Boun
 /// Raised on a robotics terminal after the embedded queue-network state
 /// changes, so the order system can push a fresh combined UI state.
 /// </summary>
-public sealed class CMURoboticsTerminalQueueUpdatedEvent : EntityEventArgs;
+[ByRefEvent]
+public readonly record struct CMURoboticsTerminalQueueUpdatedEvent;

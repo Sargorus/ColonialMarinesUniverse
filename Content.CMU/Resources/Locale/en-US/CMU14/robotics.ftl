@@ -16,6 +16,21 @@ ent-CMUCrateSyntheticTransport = synthetic transport crate
 ent-CMURoboticsCartridgeEmp = EMP payload recipe cartridge
     .desc = A Weyland-Yutani recipe cartridge. Insert it into a robotics fabricator to unlock the modular-grenade EMP payload recipe.
 
+ent-CMURoboticsCartridgeProgramSystem = drone program system recipe cartridge
+    .desc = A Weyland-Yutani recipe cartridge. Insert it into a robotics fabricator to unlock the drone program system board recipe.
+
+ent-CMURoboticsCartridgeCombatSystem = drone combat system recipe cartridge
+    .desc = A Weyland-Yutani recipe cartridge. Insert it into a robotics fabricator to unlock the drone combat program system board recipe.
+
+ent-CMUEmpPayload = EMP payload
+    .desc = A single-use electromagnetic payload. Disables electronics in a wide radius.
+
+ent-CMUUtilityDroneProgramSystemBoard = drone program system board
+    .desc = A Weyland-Yutani control bus board. Install it in a drone to let it run directive-board programs; the skills module slot stays free.
+
+ent-CMUUtilityDroneCombatSystemBoard = drone combat program system board
+    .desc = A reinforced Weyland-Yutani control bus board. Install it in a drone to run directive-board programs and use weapon commands.
+
 ent-CMUMedibot = medical bot
     .desc = A Weyland-Yutani medical bot. It injects the contents of its beaker and performs CPR on intact corpses. Its beaker slot is behind a screw-fastened service panel.
 
@@ -102,13 +117,11 @@ cmu-robotics-fabricator-cell-remove-verb = Remove fuel cell
 cmu-robotics-fabricator-cell-remove-finish = You remove the fuel cell from the fabricator.
 cmu-robotics-fabricator-examine-cell-inserted = The fuel cell is [color=cyan]inserted[/color].
 cmu-robotics-fabricator-examine-cell-empty = The fuel cell is [color=red]not inserted[/color].
-cmu-robotics-fabricator-examine-cartridge = Recipe cartridge: [color=cyan]{$cartridge}[/color].
+cmu-robotics-fabricator-examine-unlocked = Unlocked recipe packs: [color=cyan]{$count}[/color].
 cmu-robotics-fabricator-examine-research = Requires [color=cyan]Research {$level}[/color].
 cmu-robotics-fabricator-skill-required = You need Research {$level} to operate this fabricator.
-cmu-robotics-fabricator-cartridge-insert-fail = The recipe cartridge does not fit.
-cmu-robotics-fabricator-cartridge-inserted = You insert {$cartridge} into the fabricator.
-cmu-robotics-fabricator-cartridge-removed = You eject {$cartridge} from the fabricator.
-cmu-robotics-fabricator-cartridge-remove-verb = Eject recipe cartridge
+cmu-robotics-fabricator-cartridge-unlocked = You insert {$cartridge}; its recipes are now available in this fabricator.
+cmu-robotics-fabricator-cartridge-known = {$cartridge} was already unlocked in this fabricator.
 
 cmu-robotics-console-title = Robotics Terminal
 cmu-robotics-console-heading = ROBOTICS TERMINAL
@@ -116,10 +129,10 @@ cmu-robotics-console-subheading = Weyland-Yutani contract terminal
 cmu-robotics-tab-orders = Work orders
 cmu-robotics-tab-network = SMO network
 cmu-robotics-tab-cartridges = Recipe cartridges
-cmu-robotics-console-cooldown = Next contract
+cmu-robotics-console-cooldown = Next order
 cmu-robotics-console-cooldown-ready = Ready
 cmu-robotics-console-cooldown-value = {$seconds} s
-cmu-robotics-console-cooldown-message = The terminal is on cooldown. Next contract in {$seconds} s.
+cmu-robotics-console-cooldown-message = The order queue is on cooldown. Next order in {$seconds} s.
 cmu-robotics-console-active = Active order
 cmu-robotics-console-available = Available orders
 cmu-robotics-console-no-active = No order accepted.
@@ -172,6 +185,8 @@ cmu-robotics-slip-content = [bold]WEYLAND-YUTANI SUPPLY ORDER #{$id}[/bold]\n\nF
 
 cmu-robotics-cartridges-heading = RECIPE CARTRIDGES
 cmu-robotics-cartridge-emp-desc = Unlocks the EMP payload recipe for the modular grenade and modular mine.
+cmu-robotics-cartridge-program-system-desc = Unlocks the drone program system board recipe. It enables directive-board programs without using the skills module slot.
+cmu-robotics-cartridge-combat-system-desc = Unlocks the drone combat program system board recipe. It adds weapon commands to directive-board programs.
 cmu-robotics-cartridges-sample-data = Sample data
 cmu-robotics-cartridges-cost = Cost
 cmu-robotics-cartridges-cost-value = {$cost} sample data

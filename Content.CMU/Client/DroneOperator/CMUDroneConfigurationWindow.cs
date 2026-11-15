@@ -5,6 +5,7 @@ using Content.Shared.CMU14.DroneOperator;
 using Robust.Client.UserInterface.Controls;
 using Robust.Client.UserInterface.CustomControls;
 using Robust.Shared.Maths;
+using Robust.Shared.Utility;
 
 namespace Content.Client.CMU14.DroneOperator;
 
@@ -20,6 +21,7 @@ public sealed class CMUDroneConfigurationWindow : DefaultWindow
     private readonly Button _apply;
 
     private readonly BoxContainer _utilitySection;
+    private readonly RichTextLabel _boards;
     private readonly CheckBox _programmable;
     private readonly CheckBox _boardPortLocked;
     private readonly Label _utilityStatus;
@@ -48,6 +50,9 @@ public sealed class CMUDroneConfigurationWindow : DefaultWindow
             SeparationOverride = 6,
         };
         Contents.AddChild(root);
+
+        _boards = new RichTextLabel { HorizontalExpand = true };
+        root.AddChild(_boards);
 
         _utilitySection = new BoxContainer
         {
@@ -178,6 +183,21 @@ public sealed class CMUDroneConfigurationWindow : DefaultWindow
         _updating = true;
         try
         {
+            var none = Loc.GetString("cmu-drone-config-board-none");
+            var boards = new FormattedMessage();
+            boards.AddText(string.Join('\n',
+                Loc.GetString("cmu-drone-config-boards-heading"),
+                Loc.GetString(
+                    "cmu-drone-config-board-skills",
+                    ("name", string.IsNullOrEmpty(state.SkillsModule) ? none : state.SkillsModule)),
+                Loc.GetString(
+                    "cmu-drone-config-board-program",
+                    ("name", string.IsNullOrEmpty(state.ProgramSystem) ? none : state.ProgramSystem)),
+                Loc.GetString(
+                    "cmu-drone-config-board-combat",
+                    ("name", string.IsNullOrEmpty(state.CombatSystem) ? none : state.CombatSystem))));
+            _boards.SetMessage(boards);
+
             _utilitySection.Visible = state.UtilityDrone;
             _programmable.Pressed = state.ProgrammableMode;
             _boardPortLocked.Pressed = state.BoardPortLocked;

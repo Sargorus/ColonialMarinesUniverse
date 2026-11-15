@@ -199,6 +199,19 @@ public sealed class CMUUtilityScriptCompilerTest : ContentUnitTest
     }
 
     [Test]
+    public void MarksCombatPrograms()
+    {
+        Assert.That(_compiler.TryCompile("main { shoot 1 }", out var combat, out var error), Is.True, error);
+        Assert.That(combat.UsesCombat, Is.True);
+
+        Assert.That(
+            _compiler.TryCompile("main { say \"hello\" }", out var peaceful, out var peacefulError),
+            Is.True,
+            peacefulError);
+        Assert.That(peaceful.UsesCombat, Is.False);
+    }
+
+    [Test]
     public void ReportsTheFailingSourceLine()
     {
         const string source = """

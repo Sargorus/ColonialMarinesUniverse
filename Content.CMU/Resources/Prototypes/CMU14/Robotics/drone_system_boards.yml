@@ -1,0 +1,55 @@
+# Drone system boards unlocked by recipe cartridges.
+#
+# The basic board enables directive-board programs. The combat board does the
+# same and additionally permits weapon commands in scripts. Both leave the
+# skills module slot available for a separate CMUDroneModule.
+
+- type: entity
+  parent: BaseElectronics
+  id: CMUUtilityDroneProgramSystemBoard
+  name: drone program system board
+  description: A Weyland-Yutani control bus board. Install it in a drone to let it run directive-board programs; the skills module slot stays free.
+  components:
+  - type: Sprite
+    state: cpuboard
+  - type: Item
+    size: Small
+  - type: CMUUtilityDroneSystemBoard
+  - type: StaticPrice
+    price: 150
+
+- type: entity
+  parent: BaseElectronics
+  id: CMUUtilityDroneCombatSystemBoard
+  name: drone combat program system board
+  description: A reinforced Weyland-Yutani control bus board. Install it in a drone to run directive-board programs and use weapon commands.
+  components:
+  - type: Sprite
+    state: cpuboard
+    color: "#d24a4a"
+  - type: Item
+    size: Small
+  - type: CMUUtilityDroneSystemBoard
+    combat: true
+  - type: StaticPrice
+    price: 300
+
+- type: latheRecipe
+  id: CMURoboticsProgramSystemBoard
+  result: CMUUtilityDroneProgramSystemBoard
+  completetime: 6
+  materials:
+    CMSteel: 2000
+    CMGlass: 1000
+    RMCPlastic: 1000
+  categories: [ CMURoboticsUnlockedRecipes ]
+
+- type: latheRecipe
+  id: CMURoboticsCombatSystemBoard
+  result: CMUUtilityDroneCombatSystemBoard
+  completetime: 10
+  materials:
+    CMSteel: 4000
+    CMGlass: 2000
+    RMCPlastic: 2000
+  categories: [ CMURoboticsUnlockedRecipes ]

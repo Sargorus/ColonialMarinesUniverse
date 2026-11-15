@@ -82,7 +82,13 @@
     cartridges:
     - cartridge: CMURoboticsCartridgeEmp
       description: cmu-robotics-cartridge-emp-desc
-      cost: 300
+      cost: 3
+    - cartridge: CMURoboticsCartridgeProgramSystem
+      description: cmu-robotics-cartridge-program-system-desc
+      cost: 5
+    - cartridge: CMURoboticsCartridgeCombatSystem
+      description: cmu-robotics-cartridge-combat-system-desc
+      cost: 10
   - type: CMUQueueNetworkConsole
   - type: ActivatableUI
     key: enum.CMURoboticsOrderConsoleUiKey.Key

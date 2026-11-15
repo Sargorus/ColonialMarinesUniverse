@@ -92,21 +92,3 @@
       sound:
         path: "/Audio/Effects/flash_bang.ogg"
       positional: true
-
-- type: entity
-  name: EMP payload
-  parent: [ BasePayload, BaseSecurityScienceCommandContraband ]
-  id: EmpPayload
-  description: A single-use electromagnetic payload. Disables electronics in a wide radius.
-  components:
-  - type: Sprite
-    sprite: Objects/Devices/payload.rsi
-    state: payload-flash-armed
-    color: "#4aa3ff"
-  - type: EmpOnTrigger
-    range: 5.5
-    energyConsumption: 50000
-    disableDuration: 60
-  - type: DeleteOnTrigger
-  - type: StaticPrice
-    price: 500

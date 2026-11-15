@@ -84,6 +84,7 @@ public sealed class CMUUtilityScriptCompiler
             var tokens = Tokenize(source);
             var parser = new Parser(tokens, program);
             parser.ParseProgram();
+            program.UsesCombat = CMUUtilityScriptCombat.Detect(program);
 
             if (!CMUUtilityScriptAnalyzer.TryAnalyze(program, out error, out errorLine))
                 return false;

@@ -50,7 +50,7 @@ public sealed partial class CMUMedibotConfigurationSystem : EntitySystem
             || !_hands.IsHolding(msg.Actor, key))
             return;
 
-        ent.Comp.InjectAmount = FixedPoint2.New(Math.Clamp(msg.InjectAmount, 1, 50));
+        ent.Comp.InjectAmount = FixedPoint2.New(Math.Clamp(msg.InjectAmount, 1, 20));
         ent.Comp.InjectOnBrute = msg.InjectOnBrute;
         ent.Comp.InjectOnBurn = msg.InjectOnBurn;
         ent.Comp.InjectOnCritical = msg.InjectOnCritical;
