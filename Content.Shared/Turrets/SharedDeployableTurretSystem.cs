@@ -2,6 +2,7 @@ using Content.Shared.Access.Systems;
 using Content.Shared.Damage.Components;
 using Content.Shared.Damage.Systems;
 using Content.Shared.Database;
+using Content.Shared.DoAfter;
 using Content.Shared.Interaction;
 using Content.Shared.Popups;
 using Content.Shared.Timing;
@@ -25,6 +26,7 @@ public abstract partial class SharedDeployableTurretSystem : EntitySystem
     [Dependency] private DamageableSystem _damageable = default!;
     [Dependency] private SharedPhysicsSystem _physics = default!;
     [Dependency] private SharedWiresSystem _wires = default!;
+    [Dependency] private SharedDoAfterSystem _doAfter = default!;
     [Dependency] private IGameTiming _timing = default!;
 
     public override void Initialize()
@@ -32,6 +34,7 @@ public abstract partial class SharedDeployableTurretSystem : EntitySystem
         base.Initialize();
 
         SubscribeLocalEvent<DeployableTurretComponent, ActivateInWorldEvent>(OnActivate);
+        SubscribeLocalEvent<DeployableTurretComponent, DeployableTurretToggleDoAfterEvent>(OnToggleDoAfter);
         SubscribeLocalEvent<DeployableTurretComponent, AttemptChangePanelEvent>(OnAttemptChangeWirePanelWire);
         SubscribeLocalEvent<DeployableTurretComponent, GetVerbsEvent<Verb>>(OnGetVerb);
     }
@@ -53,7 +56,7 @@ public abstract partial class SharedDeployableTurretSystem : EntitySystem
             Icon = new SpriteSpecifier.Texture(new("/Textures/Interface/VerbIcons/Spare/poweronoff.svg.192dpi.png")),
             Disabled = !HasAmmo(ent),
             Impact = LogImpact.Low,
-            Act = () => { TryToggleState(ent, user); }
+            Act = () => { TryStartToggle(ent, user); }
         };
 
         args.Verbs.Add(verb);
@@ -72,7 +75,25 @@ public abstract partial class SharedDeployableTurretSystem : EntitySystem
             return;
         }
 
-        TryToggleState(ent, args.User);
+        TryStartToggle(ent, args.User);
+    }
+
+    private void OnToggleDoAfter(Entity<DeployableTurretComponent> ent, ref DeployableTurretToggleDoAfterEvent args)
+    {
+        if (args.Cancelled || args.Handled)
+            return;
+
+        args.Handled = true;
+
+        if (!_accessReader.IsAllowed(args.User, ent))
+        {
+            _popup.PopupEntity(Loc.GetString("deployable-turret-component-access-denied"), ent, args.User);
+            _audio.PlayPredicted(ent.Comp.AccessDeniedSound, ent, args.User);
+
+            return;
+        }
+
+        TrySetState(ent, args.Enabled, args.User);
     }
 
     private void OnAttemptChangeWirePanelWire(Entity<DeployableTurretComponent> ent, ref AttemptChangePanelEvent args)
@@ -90,7 +111,55 @@ public abstract partial class SharedDeployableTurretSystem : EntitySystem
         return TrySetState(ent, !ent.Comp.Enabled, user);
     }
 
+    /// <summary>
+    /// Starts the timed action required to toggle a turret by hand.
+    /// Device-network control still uses <see cref="TrySetState"/> directly.
+    /// </summary>
+    public bool TryStartToggle(Entity<DeployableTurretComponent> ent, EntityUid user)
+    {
+        if (ent.Comp == null)
+        {
+            if (!TryComp(ent.Owner, out DeployableTurretComponent? comp))
+                return false;
+
+            ent.Comp = comp!;
+        }
+
+        var enabled = !ent.Comp.Enabled;
+
+        if (!CanSetState(ent, enabled, user))
+            return false;
+
+        if (ent.Comp.ToggleDelay <= TimeSpan.Zero)
+            return TrySetState(ent, enabled, user);
+
+        var doAfter = new DoAfterArgs(
+            EntityManager,
+            user,
+            ent.Comp.ToggleDelay,
+            new DeployableTurretToggleDoAfterEvent { Enabled = enabled },
+            ent,
+            target: ent)
+        {
+            BreakOnDamage = true,
+            BreakOnMove = false,
+            DistanceThreshold = 1.5f,
+        };
+
+        return _doAfter.TryStartDoAfter(doAfter);
+    }
+
     public bool TrySetState(Entity<DeployableTurretComponent> ent, bool enabled, EntityUid? user = null)
+    {
+        if (!CanSetState(ent, enabled, user))
+            return false;
+
+        SetState(ent, enabled, user);
+
+        return true;
+    }
+
+    private bool CanSetState(Entity<DeployableTurretComponent> ent, bool enabled, EntityUid? user = null)
     {
         if (enabled && ent.Comp.CurrentState == DeployableTurretState.Broken)
         {
@@ -107,8 +176,6 @@ public abstract partial class SharedDeployableTurretSystem : EntitySystem
 
             return false;
         }
-
-        SetState(ent, enabled, user);
 
         return true;
     }

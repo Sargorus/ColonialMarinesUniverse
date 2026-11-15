@@ -1,0 +1,103 @@
+# CMU14: a signal-controlled gas vent. Holds a gas tank or canister and vents it
+# into the surrounding atmosphere when opened by a device link.
+- type: entity
+  parent: [ BaseStructureDynamic, StructureHealthMachineFlimsy ]
+  id: CMUSignalGasVent
+  name: signal gas vent
+  description: A ventilation grate with a gas tank socket. Releases the inserted tank's contents when it receives a signal.
+  placement:
+    mode: SnapgridCenter
+  components:
+  - type: Transform
+    anchored: true
+  - type: Physics
+    bodyType: Static
+    canCollide: false
+  - type: Fixtures
+    fixtures:
+      fix1:
+        shape:
+          !type:PhysShapeCircle
+          radius: 0.4
+        density: 60
+        hard: false
+        mask: []
+        layer: []
+  - type: Sprite
+    drawdepth: FloorObjects
+    sprite: Structures/Piping/Atmospherics/vent.rsi
+    layers:
+    - state: vent_off
+      map: [ "base" ]
+  - type: Appearance
+  - type: GenericVisualizer
+    visuals:
+      enum.VentPumpVisuals.State:
+        base:
+          Off: { state: vent_off }
+          Out: { state: vent_out }
+  - type: AtmosDevice
+    joinSystem: true
+  - type: ItemSlots
+    slots:
+      tank:
+        name: cmu-signal-gas-vent-slot
+        whitelist:
+          components:
+          - GasTank
+          - GasCanister
+        insertSound: /Audio/Weapons/Guns/MagIn/revolver_magin.ogg
+        ejectSound: /Audio/Weapons/Guns/MagOut/revolver_magout.ogg
+  - type: SignalGasVent
+  - type: DeviceNetwork
+    deviceNetId: Wireless
+    receiveFrequencyId: BasicDevice
+  - type: WirelessNetworkConnection
+    range: 200
+  - type: DeviceLinkSink
+    ports:
+    - Open
+    - Close
+    - Toggle
+  - type: Construction
+    graph: CMUSignalGasVentGraph
+    node: vent
+  - type: StaticPrice
+    price: 150
+
+- type: constructionGraph
+  id: CMUSignalGasVentGraph
+  start: start
+  graph:
+  - node: start
+    edges:
+    - to: vent
+      steps:
+      - material: CMSteel # CMU14: fork metal (CMSheetMetal), not upstream Steel
+        amount: 2
+        doAfter: 2.0
+      - material: Cable
+        amount: 1
+  - node: vent
+    entity: CMUSignalGasVent
+    edges:
+    - to: start
+      steps:
+      - tool: Screwing
+        doAfter: 2.0
+      completed:
+      - !type:GivePrototype
+        prototype: CMSheetMetal1 # CMU14: refund fork metal
+        amount: 2
+      - !type:GivePrototype
+        prototype: CableApcStack1
+        amount: 1
+      - !type:DeleteEntity {}
+
+- type: construction
+  parent: BaseGasDevice
+  id: CMUSignalGasVentRecipe
+  name: cmu-signal-gas-vent-recipe
+  description: cmu-signal-gas-vent-recipe-desc
+  graph: CMUSignalGasVentGraph
+  targetNode: vent
