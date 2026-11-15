@@ -225,7 +225,10 @@ public sealed partial class CMUDroneSystemBoardSystem : EntitySystem
         };
 
         if (!_doAfter.TryStartDoAfter(doAfter))
+        {
+            error = Loc.GetString("cmu-drone-system-board-install-failed");
             return false;
+        }
 
         error = string.Empty;
         return true;
