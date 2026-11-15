@@ -24,17 +24,17 @@ public sealed partial class CorporateConsoleSystem : EntitySystem
 {
     private static readonly EntProtoId CashPrototype = "RMCSpaceCash";
 
-    [Dependency] private UserInterfaceSystem _ui = default!;
-    [Dependency] private ChatSystem _chat = default!;
-    [Dependency] private ThirdPartySystem _thirdParty = default!;
+    [Dependency] private AdminConsoleSystem _adminConsole = default!;
     [Dependency] private AuRoundSystem _auRound = default!;
+    [Dependency] private ChatSystem _chat = default!;
+    [Dependency] private ColonyBudgetSystem _colonyBudget = default!;
+    [Dependency] private PopupSystem _popup = default!;
     [Dependency] private IPrototypeManager _proto = default!;
     [Dependency] private StackSystem _stack = default!;
-    [Dependency] private AdminConsoleSystem _adminConsole = default!;
-    [Dependency] private ColonyBudgetSystem _colonyBudget = default!;
     [Dependency] private TagSystem _tag = default!;
-    [Dependency] private PopupSystem _popup = default!;
+    [Dependency] private ThirdPartySystem _thirdParty = default!;
     [Dependency] private Robust.Shared.Timing.IGameTiming _timing = default!;
+    [Dependency] private UserInterfaceSystem _ui = default!;
 
     private static readonly ProtoId<TagPrototype> CurrencyTag = "Currency";
 
@@ -256,8 +256,8 @@ public sealed partial class CorporateConsoleSystem : EntitySystem
         var thirdParties = new Dictionary<string, (string DisplayName, float Cost)>();
         foreach (var (id, cost) in comp.CallableParties)
         {
-            if (_proto.TryIndex<ThirdPartyPrototype>(id, out var proto) &&
-                _auRound.IsThirdPartyAllowedForCurrentContext(proto))
+            if (_proto.TryIndex<ThirdPartyPrototype>(id, out var proto)
+                && _auRound.IsThirdPartyAllowedForCurrentContext(proto))
                 thirdParties[id] = (proto.DisplayName ?? proto.ID, cost);
         }
         _ui.SetUiState(uid, CorporateConsoleThirdPartyUi.Key,

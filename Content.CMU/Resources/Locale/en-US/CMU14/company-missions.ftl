@@ -93,7 +93,7 @@ cmu-corporate-pmc-no-value = Not enough company value for a PMC squad.
 cmu-corporate-pmc-called = PMC squad requested. Corporate security is en route.
 
 cmu-corporate-credit-heading = Corporate credit
-cmu-corporate-credit-description = Draw on the company's line of credit. The request grants $10,000 to the corporate budget and can be withdrawn from the Operations tab.
+cmu-corporate-credit-description = Draw on the company's line of credit. The request grants 10,000 dollars to the corporate budget and can be withdrawn from the Operations tab.
 cmu-corporate-credit-cost = Company value cost
 cmu-corporate-credit-amount = Credit amount
 cmu-corporate-credit-request = Request credit

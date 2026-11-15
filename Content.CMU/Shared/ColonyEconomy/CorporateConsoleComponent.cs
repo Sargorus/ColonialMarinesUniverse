@@ -50,13 +50,13 @@ public sealed partial class CorporateConsoleComponent : Component
     /// <summary>
     ///     Company value required to call a WEYU PMC squad. The requirement is not spent.
     /// </summary>
-    [DataField("pmcCostCompanyValue")]
+    [DataField]
     public int PmcCostCompanyValue = 30;
 
     /// <summary>
     ///     How many PMC squads can be called per round, shared by every corporate console.
     /// </summary>
-    [DataField("maxPmcCalls")]
+    [DataField]
     public int MaxPmcCalls = 1;
 
     /// <summary>
@@ -72,19 +72,19 @@ public sealed partial class CorporateConsoleComponent : Component
     /// <summary>
     ///     Delay between PMC squad calls, shared by every corporate console.
     /// </summary>
-    [DataField("pmcCooldown")]
+    [DataField]
     public TimeSpan PmcCooldown = TimeSpan.FromMinutes(20);
 
     /// <summary>
     ///     Company value charged for a corporate credit request.
     /// </summary>
-    [DataField("creditCostCompanyValue")]
+    [DataField]
     public int CreditCostCompanyValue = 10;
 
     /// <summary>
     ///     Corporate budget credited by one credit request.
     /// </summary>
-    [DataField("creditAmount")]
+    [DataField]
     public int CreditAmount = 10000;
 
     /// <summary>
@@ -95,25 +95,25 @@ public sealed partial class CorporateConsoleComponent : Component
     /// <summary>
     ///     Delay between credit requests.
     /// </summary>
-    [DataField("creditCooldown")]
+    [DataField]
     public TimeSpan CreditCooldown = TimeSpan.FromSeconds(10);
 
     /// <summary>
     ///     Company value charged for a Yautja technology delivery.
     /// </summary>
-    [DataField("alienTechCostCompanyValue")]
+    [DataField]
     public int AlienTechCostCompanyValue = 20;
 
     /// <summary>
     ///     Company value charged for an additional corporate guard squad.
     /// </summary>
-    [DataField("guardCostCompanyValue")]
+    [DataField]
     public int GuardCostCompanyValue = 20;
 
     /// <summary>
     ///     How many guard squads can be called per round, shared by every corporate console.
     /// </summary>
-    [DataField("maxGuardCalls")]
+    [DataField]
     public int MaxGuardCalls = 1;
 
     /// <summary>
@@ -129,7 +129,7 @@ public sealed partial class CorporateConsoleComponent : Component
     /// <summary>
     ///     Delay between guard squad calls.
     /// </summary>
-    [DataField("guardCooldown")]
+    [DataField]
     public TimeSpan GuardCooldown = TimeSpan.FromMinutes(20);
 
     /// <summary>

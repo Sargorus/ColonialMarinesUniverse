@@ -1,20 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Content.Server.CMU14.Ops.ThirdParty;
-using Content.Server._RMC14.Requisitions;
 using Content.Shared.CMU14.Chemistry.Reagent;
 using Content.Shared.CMU14.Chemistry.Reagents;
 using Content.Shared.CMU14.ColonyEconomy;
-using Content.Shared.CMU14.Threats;
 using Content.Shared.CMU14.Threats.Mobs.Wendigo.Lab;
 using Content.Shared.CMU14.Yautja;
 using Content.Shared.Mobs.Components;
 using Content.Shared.Mobs.Systems;
 using Content.Shared.NPC.Prototypes;
 using Content.Shared.NPC.Systems;
-using Content.Shared._RMC14.Requisitions;
-using Content.Shared._RMC14.Requisitions.Components;
 using Content.Shared._RMC14.Xenonids.Hive;
 using Content.Shared._RMC14.Xenonids.HiveLeader;
 using Robust.Shared.GameObjects;
@@ -25,15 +20,9 @@ namespace Content.Server.CMU14.ColonyEconomy;
 public sealed partial class CorporateConsoleSystem
 {
     private const string CorporateFaction = "corporate";
-    private const string PmcPartyId = "CMUWYPMCTeamSmall";
-    private const string GuardPartyId = "CMUWYSecurityTeam";
-    private static readonly EntProtoId YautjaTechnologyCrate = "CMUCrateSecureYautjaTechnology";
     private const int MaxActiveMissions = 3;
     private const int MaxScanMissionsPerRound = 3;
     private const int PointsMissionStep = 10;
-
-    private static readonly ProtoId<ThirdPartyPrototype> PmcParty = new(PmcPartyId);
-    private static readonly ProtoId<ThirdPartyPrototype> GuardParty = new(GuardPartyId);
 
     private enum CompanyMissionKind : byte
     {
@@ -185,10 +174,8 @@ public sealed partial class CorporateConsoleSystem
     ];
 
     [Dependency] private MobStateSystem _mobState = default!;
-    [Dependency] private SharedXenoHiveSystem _xenoHive = default!;
     [Dependency] private NpcFactionSystem _npcFaction = default!;
-    [Dependency] private RequisitionsSystem _requisitions = default!;
-    [Dependency] private SharedTransformSystem _transform = default!;
+    [Dependency] private SharedXenoHiveSystem _xenoHive = default!;
 
     private readonly Dictionary<string, FactionMissionState> _missionStates =
         new(StringComparer.OrdinalIgnoreCase);
@@ -209,7 +196,7 @@ public sealed partial class CorporateConsoleSystem
     private CMUScienceStatusQueryEvent QueryScience(string faction)
     {
         var ev = new CMUScienceStatusQueryEvent(faction);
-        RaiseLocalEvent(ev);
+        RaiseLocalEvent(ref ev);
         return ev;
     }
 
@@ -282,8 +269,8 @@ public sealed partial class CorporateConsoleSystem
         if (definition == null)
             return;
 
-        if (!definition.Repeatable &&
-            (state.CompletedIds.Contains(definition.Id) || state.FailedIds.Contains(definition.Id)))
+        if (!definition.Repeatable
+            && (state.CompletedIds.Contains(definition.Id) || state.FailedIds.Contains(definition.Id)))
         {
             state.Status = Loc.GetString("cmu-company-mission-already-done");
             UpdateAllUi();
@@ -341,170 +328,7 @@ public sealed partial class CorporateConsoleSystem
         UpdateAllUi();
     }
 
-    private void OnCallPmc(EntityUid uid, CorporateConsoleComponent comp, CorporateConsoleCallPmcBuiMsg msg)
-    {
-        if (comp.PmcCalls >= comp.MaxPmcCalls || _timing.CurTime < comp.NextPmcCallAt)
-            return;
-
-        var faction = GetConsoleFaction(uid);
-        var state = GetMissionState(faction);
-        if (state.CompanyValue < comp.PmcCostCompanyValue)
-        {
-            SetSupportStatus(comp, "cmu-corporate-pmc-no-value");
-            UpdateAllUi();
-            return;
-        }
-
-        if (!_proto.TryIndex<ThirdPartyPrototype>(PmcParty, out var partyProto)
-            || !_auRound.IsThirdPartyAllowedForCurrentContext(partyProto)
-            || !_proto.TryIndex(partyProto.PartySpawn, out var spawnProto))
-            return;
-
-        _thirdParty.SpawnThirdParty(partyProto, spawnProto, false,
-            caller: new ThirdPartyCaller(
-                Name(msg.Actor),
-                Loc.GetString("cmu-third-party-caller-corporate"),
-                Actor: msg.Actor,
-                Console: uid));
-
-        var nextCall = _timing.CurTime + comp.PmcCooldown;
-        var query = EntityQueryEnumerator<CorporateConsoleComponent>();
-        while (query.MoveNext(out var consoleUid, out var other))
-        {
-            other.PmcCalls++;
-            other.NextPmcCallAt = nextCall;
-            SetSupportStatus(other, "cmu-corporate-pmc-called");
-            _ui.SetUiState(consoleUid, CorporateConsoleUi.Key, BuildUiState(consoleUid, other));
-        }
-    }
-
-    private void OnCallGuard(EntityUid uid, CorporateConsoleComponent comp, CorporateConsoleCallGuardBuiMsg msg)
-    {
-        if (comp.GuardCalls >= comp.MaxGuardCalls || _timing.CurTime < comp.NextGuardCallAt)
-            return;
-
-        var faction = GetConsoleFaction(uid);
-        var state = GetMissionState(faction);
-        if (state.CompanyValue < comp.GuardCostCompanyValue)
-        {
-            SetSupportStatus(comp, "cmu-corporate-guard-no-value");
-            UpdateAllUi();
-            return;
-        }
-
-        if (!_proto.TryIndex<ThirdPartyPrototype>(GuardParty, out var partyProto)
-            || !_auRound.IsThirdPartyAllowedForCurrentContext(partyProto)
-            || !_proto.TryIndex(partyProto.PartySpawn, out var spawnProto))
-            return;
-
-        _thirdParty.SpawnThirdParty(partyProto, spawnProto, false,
-            caller: new ThirdPartyCaller(
-                Name(msg.Actor),
-                Loc.GetString("cmu-third-party-caller-corporate"),
-                Actor: msg.Actor,
-                Console: uid));
-
-        state.CompanyValue -= comp.GuardCostCompanyValue;
-
-        var nextCall = _timing.CurTime + comp.GuardCooldown;
-        var query = EntityQueryEnumerator<CorporateConsoleComponent>();
-        while (query.MoveNext(out var consoleUid, out var other))
-        {
-            other.GuardCalls++;
-            other.NextGuardCallAt = nextCall;
-            SetSupportStatus(other, "cmu-corporate-guard-called");
-            _ui.SetUiState(consoleUid, CorporateConsoleUi.Key, BuildUiState(consoleUid, other));
-        }
-    }
-
-    private void OnRequestCredit(EntityUid uid, CorporateConsoleComponent comp, CorporateConsoleRequestCreditBuiMsg msg)
-    {
-        var faction = GetConsoleFaction(uid);
-        var state = GetMissionState(faction);
-        if (_timing.CurTime < comp.NextCreditAt)
-            return;
-
-        if (state.CompanyValue < comp.CreditCostCompanyValue)
-        {
-            SetSupportStatus(comp, "cmu-corporate-credit-no-value");
-            UpdateAllUi();
-            return;
-        }
-
-        state.CompanyValue -= comp.CreditCostCompanyValue;
-        comp.NextCreditAt = _timing.CurTime + comp.CreditCooldown;
-        AddToCorporateBudget(comp.CreditAmount);
-        SetSupportStatus(comp, "cmu-corporate-credit-granted");
-        UpdateAllUi();
-    }
-
-    private void OnRequestAlienTech(EntityUid uid, CorporateConsoleComponent comp,
-        CorporateConsoleRequestAlienTechBuiMsg msg)
-    {
-        var faction = GetConsoleFaction(uid);
-        var state = GetMissionState(faction);
-        if (state.CompanyValue < comp.AlienTechCostCompanyValue)
-        {
-            SetSupportStatus(comp, "cmu-corporate-alien-tech-no-value");
-            UpdateAllUi();
-            return;
-        }
-
-        if (FindCorporateElevator(uid) is not { } elevator)
-        {
-            SetSupportStatus(comp, "cmu-corporate-alien-tech-no-cargo");
-            UpdateAllUi();
-            return;
-        }
-
-        var entry = new RequisitionsEntry
-        {
-            Crate = YautjaTechnologyCrate,
-        };
-
-        if (!_requisitions.TryAddElevatorOrders(elevator, new List<RequisitionsEntry> { entry }))
-        {
-            SetSupportStatus(comp, "cmu-corporate-alien-tech-queue-full");
-            UpdateAllUi();
-            return;
-        }
-
-        state.CompanyValue -= comp.AlienTechCostCompanyValue;
-        SetSupportStatus(comp, "cmu-corporate-alien-tech-queued");
-        UpdateAllUi();
-    }
-
-    private void SetSupportStatus(CorporateConsoleComponent comp, string locId)
-    {
-        comp.SupportStatus = Loc.GetString(locId);
-    }
-
-    private Entity<RequisitionsElevatorComponent>? FindCorporateElevator(EntityUid console)
-    {
-        var map = _transform.GetMapId(console);
-        var origin = _transform.GetWorldPosition(console);
-        Entity<RequisitionsElevatorComponent>? closest = null;
-        var closestDistance = float.MaxValue;
-
-        var query = EntityQueryEnumerator<RequisitionsElevatorComponent, TransformComponent>();
-        while (query.MoveNext(out var uid, out var elevator, out var xform))
-        {
-            if (xform.MapID != map ||
-                !string.Equals(elevator.Faction, "corporate", StringComparison.OrdinalIgnoreCase))
-                continue;
-
-            var distance = (origin - _transform.GetWorldPosition(uid)).LengthSquared();
-            if (distance >= closestDistance)
-                continue;
-
-            closest = (uid, elevator);
-            closestDistance = distance;
-        }
-
-        return closest;
-    }
-
-    private void OnChemicalScanned(CMUChemicalScannedEvent args)
+    private void OnChemicalScanned(ref CMUChemicalScannedEvent args)
     {
         if (args.Properties.Count == 0)
             return;
@@ -529,7 +353,7 @@ public sealed partial class CorporateConsoleSystem
                 continue;
 
             mission.Progress = 1;
-            CompleteMission(args.Faction, state, i);
+            CompleteMission(state, i);
             changed = true;
         }
 
@@ -577,10 +401,10 @@ public sealed partial class CorporateConsoleSystem
         return false;
     }
 
-    private void OnWendigoCreated(CMUWendigoCreatedEvent args)
+    private void OnWendigoCreated(ref CMUWendigoCreatedEvent args)
     {
         var changed = false;
-        foreach (var (faction, state) in _missionStates.ToArray())
+        foreach (var state in _missionStates.Values)
         {
             for (var i = state.Active.Count - 1; i >= 0; i--)
             {
@@ -599,7 +423,7 @@ public sealed partial class CorporateConsoleSystem
 
                 mission.Progress = 1;
                 mission.Reward = reward;
-                CompleteMission(faction, state, i);
+                CompleteMission(state, i);
                 changed = true;
             }
         }
@@ -612,7 +436,7 @@ public sealed partial class CorporateConsoleSystem
         ref CMUYautjaBracerUnlockedEvent args)
     {
         var changed = false;
-        foreach (var (faction, state) in _missionStates.ToArray())
+        foreach (var state in _missionStates.Values)
         {
             for (var i = state.Active.Count - 1; i >= 0; i--)
             {
@@ -626,7 +450,7 @@ public sealed partial class CorporateConsoleSystem
                 mission.Progress++;
                 mission.Reward = mission.Progress;
                 if (mission.Progress >= mission.Target)
-                    CompleteMission(faction, state, i);
+                    CompleteMission(state, i);
 
                 changed = true;
             }
@@ -639,7 +463,7 @@ public sealed partial class CorporateConsoleSystem
     private void UpdateMissionProgress()
     {
         var changed = false;
-        foreach (var (faction, state) in _missionStates.ToArray())
+        foreach (var (faction, state) in _missionStates)
         {
             if (state.Active.Count == 0)
                 continue;
@@ -649,7 +473,7 @@ public sealed partial class CorporateConsoleSystem
                 var mission = state.Active[i];
                 if (_timing.CurTime >= mission.Deadline)
                 {
-                    FailMission(faction, state, i);
+                    FailMission(state, i);
                     changed = true;
                     continue;
                 }
@@ -672,7 +496,7 @@ public sealed partial class CorporateConsoleSystem
                         if (current >= mission.Target)
                         {
                             mission.Progress = mission.Target;
-                            CompleteMission(faction, state, i);
+                            CompleteMission(state, i);
                             changed = true;
                         }
 
@@ -681,7 +505,7 @@ public sealed partial class CorporateConsoleSystem
                         if (HasCorruptedHiveRepresentative())
                         {
                             mission.Progress = 1;
-                            CompleteMission(faction, state, i);
+                            CompleteMission(state, i);
                             changed = true;
                         }
 
@@ -690,7 +514,7 @@ public sealed partial class CorporateConsoleSystem
                         if (HasCorruptedHiveAlliance())
                         {
                             mission.Progress = 1;
-                            CompleteMission(faction, state, i);
+                            CompleteMission(state, i);
                             changed = true;
                         }
 
@@ -728,8 +552,8 @@ public sealed partial class CorporateConsoleSystem
                     return true;
 
                 var prototype = MetaData(memberUid).EntityPrototype?.ID;
-                if (prototype != null &&
-                    prototype.Contains("Overmind", StringComparison.OrdinalIgnoreCase))
+                if (prototype != null
+                    && prototype.Contains("Overmind", StringComparison.OrdinalIgnoreCase))
                 {
                     return true;
                 }
@@ -749,11 +573,11 @@ public sealed partial class CorporateConsoleSystem
                 return true;
         }
 
-        return _npcFaction.IsFactionFriendly("AUWeYu", "CMU14PathogenWalker") ||
-               _npcFaction.IsFactionFriendly("AUWeYu", "CMUCorruptedHive");
+        return _npcFaction.IsFactionFriendly("AUWeYu", "CMU14PathogenWalker")
+               || _npcFaction.IsFactionFriendly("AUWeYu", "CMUCorruptedHive");
     }
 
-    private void CompleteMission(string faction, FactionMissionState state, int index)
+    private void CompleteMission(FactionMissionState state, int index)
     {
         var mission = state.Active[index];
         state.Active.RemoveAt(index);
@@ -782,7 +606,7 @@ public sealed partial class CorporateConsoleSystem
             ("reward", mission.Reward));
     }
 
-    private void FailMission(string faction, FactionMissionState state, int index)
+    private void FailMission(FactionMissionState state, int index)
     {
         var mission = state.Active[index];
         state.Active.RemoveAt(index);
@@ -807,8 +631,8 @@ public sealed partial class CorporateConsoleSystem
         var available = new List<CompanyMissionInfo>();
         foreach (var definition in MissionCatalog)
         {
-            if (!definition.Repeatable &&
-                (state.CompletedIds.Contains(definition.Id) || state.FailedIds.Contains(definition.Id)))
+            if (!definition.Repeatable
+                && (state.CompletedIds.Contains(definition.Id) || state.FailedIds.Contains(definition.Id)))
                 continue;
             if (state.Active.Any(mission => mission.Definition.Id == definition.Id))
                 continue;

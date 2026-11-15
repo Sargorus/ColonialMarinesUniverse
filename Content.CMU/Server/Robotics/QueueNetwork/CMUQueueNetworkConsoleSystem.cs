@@ -22,10 +22,10 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
 {
     [Dependency] private CorporateConsoleSystem _corporateConsole = default!;
     [Dependency] private CMURoboticsOrderPoolSystem _pools = default!;
-    [Dependency] private SharedResearchDataTerminalSystem _research = default!;
     [Dependency] private IRobustRandom _random = default!;
-    [Dependency] private UserInterfaceSystem _ui = default!;
+    [Dependency] private SharedResearchDataTerminalSystem _research = default!;
     [Dependency] private IGameTiming _timing = default!;
+    [Dependency] private UserInterfaceSystem _ui = default!;
 
     public override void Initialize()
     {

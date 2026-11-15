@@ -543,7 +543,8 @@ public sealed partial class ServerResearchDataTerminalSystem : SharedResearchDat
         var scannedProperties = _generator.ProceduralReagentData.TryGetValue(proto.ID, out var scanned)
             ? new Dictionary<string, int>(scanned.Effects)
             : new Dictionary<string, int>();
-        RaiseLocalEvent(new CMUChemicalScannedEvent(faction, proto.ID, scannedProperties));
+        var scannedEvent = new CMUChemicalScannedEvent(faction, proto.ID, scannedProperties);
+        RaiseLocalEvent(ref scannedEvent);
         if (proto.Class < ReagentClass.Special)
         {
             // Simulator-made chemical: a flat sample-data reward (see SampleDataForSimulated), no credits or cash.

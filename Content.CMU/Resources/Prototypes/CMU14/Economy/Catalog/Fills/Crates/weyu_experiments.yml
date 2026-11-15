@@ -42,11 +42,11 @@
         amount: 1
 
 - type: entity
-  id: CMUCrateSecureYautjaTechnology
   parent: RMCCrateSecureWeYa
+  id: CMUCrateSecureYautjaTechnology
   name: secure Yautja technology crate
-  description: A sealed Weyland-Yutani container holding a recovered Yautja bracer for xenotechnology research.
   suffix: CMU, Yautja Technology
+  description: A sealed Weyland-Yutani container holding a recovered Yautja bracer for xenotechnology research.
   components:
   - type: StorageFill
     contents:

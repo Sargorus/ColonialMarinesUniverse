@@ -2,7 +2,7 @@ using Content.Shared.CMU14.Chemistry.Reagent;
 using Content.Shared.Chemistry.Reagent;
 using Content.Shared.DoAfter;
 using Content.Shared.FixedPoint;
-using Robust.Shared.Prototypes;
+using Robust.Shared.GameObjects;
 using Robust.Shared.Serialization;
 using System;
 using System.Collections.Generic;
@@ -82,9 +82,10 @@ public sealed class UpdateDataTerminalClearanceEvent(
 /// Synchronous query for a faction's current science balances, so consoles that cannot depend on the research
 /// system (it depends on them) can still display live points.
 /// </summary>
-public sealed class CMUScienceStatusQueryEvent(string faction) : EntityEventArgs
+[ByRefEvent]
+public struct CMUScienceStatusQueryEvent(string faction)
 {
-    public string Faction = faction;
+    public readonly string Faction = faction;
     public int ChemistryPoints;
     public int RoboticsPoints;
     public int ScienceLevel = 1;
@@ -93,15 +94,11 @@ public sealed class CMUScienceStatusQueryEvent(string faction) : EntityEventArgs
 /// <summary>
 /// Raised the first time a faction scans a chemical. The property profile is copied for mission checks.
 /// </summary>
-public sealed class CMUChemicalScannedEvent(
-    string faction,
-    string reagentId,
-    Dictionary<string, int> properties) : EntityEventArgs
-{
-    public string Faction = faction;
-    public string ReagentId = reagentId;
-    public Dictionary<string, int> Properties = properties;
-}
+[ByRefEvent]
+public readonly record struct CMUChemicalScannedEvent(
+    string Faction,
+    string ReagentId,
+    Dictionary<string, int> Properties);
 
 [Serializable, NetSerializable]
 public sealed class SyncKnownPropertiesEvent(HashSet<string> knownProperties) : EntityEventArgs

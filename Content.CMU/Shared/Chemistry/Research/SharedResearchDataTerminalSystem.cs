@@ -72,7 +72,7 @@ public abstract partial class SharedResearchDataTerminalSystem : EntitySystem
         SubscribeLocalEvent<CMUScienceStatusQueryEvent>(OnScienceStatusQuery);
     }
 
-    private void OnScienceStatusQuery(CMUScienceStatusQueryEvent args)
+    private void OnScienceStatusQuery(ref CMUScienceStatusQueryEvent args)
     {
         args.ChemistryPoints = GetSampleData(args.Faction);
         args.RoboticsPoints = GetRoboticsPoints(args.Faction);

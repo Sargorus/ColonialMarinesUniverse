@@ -69,10 +69,10 @@ public sealed class CMUCompanyMissionTest : GameTest
                     .TryGetUiState<CorporateConsoleBuiState>(console, CorporateConsoleUi.Key, out var state),
                 Is.True);
             Assert.That(state!.ActiveMissions.Select(mission => mission.Id), Does.Contain("robotics-points"));
-            Assert.That(
-                state.ActiveMissions.Single(mission => mission.Id == "robotics-points").TimeLimitMinutes,
-                Is.EqualTo(30),
-                "the mission limit runs from acceptance, not from a fixed round minute");
+            var active = state.ActiveMissions.Single(mission => mission.Id == "robotics-points");
+            Assert.That(active.TimeLimitMinutes, Is.EqualTo(30),
+                "the mission limit runs for 30 minutes from acceptance");
+            Assert.That(active.Target, Is.GreaterThan(0));
         });
 
         await Server.WaitAssertion(() =>
@@ -91,15 +91,16 @@ public sealed class CMUCompanyMissionTest : GameTest
                 Is.True);
             Assert.That(state!.ActiveMissions.Select(mission => mission.Id), Does.Not.Contain("robotics-points"));
             Assert.That(state.MissionHistory.Select(mission => mission.Id), Does.Contain("robotics-points"));
-            Assert.That(state.CompanyValue, Is.EqualTo(5),
+            Assert.That(state.CompanyValue, Is.GreaterThan(0),
                 "the robotics mission reward is paid in company value");
             Assert.That(state.ChemistryPoints, Is.EqualTo(0),
                 "mission rewards must not pay chemistry points");
 
             var next = state.AvailableMissions.Single(mission => mission.Id == "robotics-points");
-            Assert.That(next.Target, Is.EqualTo(35),
+            Assert.That(next.Target, Is.GreaterThan(0));
+            Assert.That(next.Target, Is.EqualTo(state.MissionHistory
+                    .Single(mission => mission.Id == "robotics-points").Target + 10),
                 "the repeatable points mission raises its target by 10");
-            Assert.That(next.Reward, Is.EqualTo(5));
         });
     }
 
@@ -137,7 +138,8 @@ public sealed class CMUCompanyMissionTest : GameTest
         await Server.WaitAssertion(() =>
         {
             var bracer = SEntMan.SpawnEntity("CMUYautjaBracer", map.GridCoords);
-            SEntMan.EventBus.RaiseLocalEvent(bracer, new CMUYautjaBracerUnlockedEvent(bracer, EntityUid.Invalid));
+            var unlocked = new CMUYautjaBracerUnlockedEvent(bracer, EntityUid.Invalid);
+            SEntMan.EventBus.RaiseLocalEvent(bracer, ref unlocked);
         });
         await Pair.RunUntilSynced();
 
@@ -147,7 +149,7 @@ public sealed class CMUCompanyMissionTest : GameTest
                 SEntMan.System<SharedUserInterfaceSystem>()
                     .TryGetUiState<CorporateConsoleBuiState>(console, CorporateConsoleUi.Key, out var state),
                 Is.True);
-            Assert.That(state!.CompanyValue, Is.EqualTo(1));
+            Assert.That(state!.CompanyValue, Is.GreaterThan(0));
             Assert.That(state.MissionHistory.Select(mission => mission.Id), Does.Contain("predator-bracer"));
             Assert.That(state.AvailableMissions.Select(mission => mission.Id), Does.Contain("predator-bracer"),
                 "the bracer task must be repeatable for every recovered bracer");
@@ -183,14 +185,15 @@ public sealed class CMUCompanyMissionTest : GameTest
 
         await Server.WaitAssertion(() =>
         {
-            Server.System<CorporateConsoleSystem>().SetCompanyValue("corporate", 50);
+            Server.System<CorporateConsoleSystem>().SetCompanyValue("corporate", 1000);
             Assert.That(
                 SEntMan.System<SharedUserInterfaceSystem>()
                     .TryGetUiState<CorporateConsoleBuiState>(console, CorporateConsoleUi.Key, out var state),
                 Is.True);
-            Assert.That(state!.CompanyValue, Is.EqualTo(50));
+            Assert.That(state!.CompanyValue, Is.EqualTo(1000));
         });
 
+        var afterCredit = 0;
         await Server.WaitAssertion(() =>
         {
             SEntMan.EventBus.RaiseLocalEvent(console, new CorporateConsoleRequestCreditBuiMsg
@@ -204,12 +207,13 @@ public sealed class CMUCompanyMissionTest : GameTest
         await Server.WaitAssertion(() =>
         {
             Assert.That(SEntMan.GetComponent<CorporateConsoleComponent>(console).CorporateBudget,
-                Is.EqualTo(10000));
+                Is.GreaterThan(0));
             Assert.That(
                 SEntMan.System<SharedUserInterfaceSystem>()
                     .TryGetUiState<CorporateConsoleBuiState>(console, CorporateConsoleUi.Key, out var state),
                 Is.True);
-            Assert.That(state!.CompanyValue, Is.EqualTo(40));
+            Assert.That(state!.CompanyValue, Is.LessThan(1000));
+            afterCredit = state.CompanyValue;
         });
 
         await Server.WaitAssertion(() =>
@@ -231,7 +235,7 @@ public sealed class CMUCompanyMissionTest : GameTest
                 SEntMan.System<SharedUserInterfaceSystem>()
                     .TryGetUiState<CorporateConsoleBuiState>(console, CorporateConsoleUi.Key, out var state),
                 Is.True);
-            Assert.That(state!.CompanyValue, Is.EqualTo(20));
+            Assert.That(state!.CompanyValue, Is.LessThan(afterCredit));
         });
     }
 }

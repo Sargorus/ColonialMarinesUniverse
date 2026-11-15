@@ -14,7 +14,7 @@ namespace Content.Server.CMU14.Robotics;
 public sealed partial class CMURoboticsOrderPoolSystem : EntitySystem
 {
     /// <summary>Research account shared by every WEYU robotics terminal.</summary>
-    public const string WEYUResearchFaction = "corporate";
+    private const string WEYUResearchFaction = "corporate";
 
     [Dependency] private IGameTiming _timing = default!;
 
@@ -23,11 +23,13 @@ public sealed partial class CMURoboticsOrderPoolSystem : EntitySystem
     /// <summary>Returns the shared pool for a robotics terminal.</summary>
     public CMURoboticsOrderPool GetPool(EntityUid console)
     {
+        // Every WEYU terminal draws on the corporate research account. The console argument keeps
+        // call sites self-documenting and leaves room for faction-owned terminals later.
         return GetPool(WEYUResearchFaction);
     }
 
     /// <summary>Returns the shared pool for a research faction.</summary>
-    public CMURoboticsOrderPool GetPool(string faction)
+    private CMURoboticsOrderPool GetPool(string faction)
     {
         if (_pools.TryGetValue(faction, out var pool))
             return pool;

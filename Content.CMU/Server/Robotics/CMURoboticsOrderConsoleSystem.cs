@@ -41,27 +41,27 @@ namespace Content.Server.CMU14.Robotics;
 /// </summary>
 public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
 {
-    [Dependency] private DamageableSystem _damageable = default!;
-    [Dependency] private EntityLookupSystem _lookup = default!;
-    [Dependency] private MobStateSystem _mobState = default!;
+    [Dependency] private SharedBodySystem _body = default!;
     [Dependency] private IComponentFactory _compFactory = default!;
-    [Dependency] private IPrototypeManager _prototypes = default!;
-    [Dependency] private IRobustRandom _random = default!;
-    [Dependency] private RequisitionsSystem _requisitions = default!;
     [Dependency] private CorporateConsoleSystem _corporateConsole = default!;
     [Dependency] private CMURoboticsDamagedBodySystem _damagedBody = default!;
-    [Dependency] private SharedBodySystem _body = default!;
+    [Dependency] private DamageableSystem _damageable = default!;
     [Dependency] private SharedHandsSystem _hands = default!;
     [Dependency] private InventorySystem _inventory = default!;
-    [Dependency] private SharedTransformSystem _transform = default!;
-    [Dependency] private IGameTiming _timing = default!;
-    [Dependency] private MetaDataSystem _meta = default!;
-    [Dependency] private PaperSystem _paper = default!;
-    [Dependency] private UserInterfaceSystem _ui = default!;
     [Dependency] private LabelSystem _labels = default!;
-    [Dependency] private CMUQueueNetworkConsoleSystem _queueNetwork = default!;
+    [Dependency] private EntityLookupSystem _lookup = default!;
+    [Dependency] private MetaDataSystem _meta = default!;
+    [Dependency] private MobStateSystem _mobState = default!;
+    [Dependency] private PaperSystem _paper = default!;
     [Dependency] private CMURoboticsOrderPoolSystem _pools = default!;
+    [Dependency] private IPrototypeManager _prototypes = default!;
+    [Dependency] private CMUQueueNetworkConsoleSystem _queueNetwork = default!;
+    [Dependency] private IRobustRandom _random = default!;
+    [Dependency] private RequisitionsSystem _requisitions = default!;
     [Dependency] private ServerResearchDataTerminalSystem _research = default!;
+    [Dependency] private IGameTiming _timing = default!;
+    [Dependency] private SharedTransformSystem _transform = default!;
+    [Dependency] private UserInterfaceSystem _ui = default!;
 
     private const int RepairRewardPerDamage = 1;
     private const int RepairRewardPerMissingLimb = 20;
@@ -124,8 +124,8 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
                     continue;
                 }
             }
-            else if (now > pool.NextDroneOrderAllowed + TimeSpan.FromSeconds(1) &&
-                     now > pool.NextNetworkOrderAllowed + TimeSpan.FromSeconds(1))
+            else if (now > pool.NextDroneOrderAllowed + TimeSpan.FromSeconds(1)
+                     && now > pool.NextNetworkOrderAllowed + TimeSpan.FromSeconds(1))
             {
                 continue;
             }
@@ -183,8 +183,8 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
 
         var pool = _pools.GetPool(ent.Owner);
         var faction = pool.Faction;
-        if (entry.RequiredDirection is { } requiredDirection &&
-            _corporateConsole.GetResearchDirection(faction) != requiredDirection)
+        if (entry.RequiredDirection is { } requiredDirection
+            && _corporateConsole.GetResearchDirection(faction) != requiredDirection)
         {
             ent.Comp.CartridgeStatus = Loc.GetString("cmu-robotics-cartridges-wrong-direction");
             UpdateUi(ent);
@@ -315,18 +315,21 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
 
     private void OnCrateDelivered(ref CMURequisitionsCrateDeliveredEvent args)
     {
-        var processedOrders = new HashSet<int>();
+        // Every WEYU terminal shares the same pool, so one crate event can match several console
+        // components. Track the order that was already handled instead of processing the crate twice.
+        var processedOrderId = -1;
         var query = EntityQueryEnumerator<CMURoboticsOrderConsoleComponent>();
         while (query.MoveNext(out var consoleUid, out var console))
         {
             var pool = _pools.GetPool(consoleUid);
             if (pool.ActiveOrder is not { } order
                 || order.Elevator != args.Elevator.Owner
+                || processedOrderId == order.Id
                 || !TryComp<CMURoboticsTransportCrateComponent>(args.Crate, out var crate)
-                || crate.OrderId != order.Id
-                || !processedOrders.Add(order.Id))
+                || crate.OrderId != order.Id)
                 continue;
 
+            processedOrderId = order.Id;
             MarkDeliveredCrate((consoleUid, console), order, args.Crate);
         }
     }

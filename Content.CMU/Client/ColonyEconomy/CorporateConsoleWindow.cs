@@ -553,9 +553,9 @@ public sealed class CorporateConsoleWindow : DefaultWindow
         else
             _pmcCooldown.Text = Loc.GetString("cmu-corporate-pmc-ready");
 
-        _pmcButton.Disabled = _pmcCallsLeft <= 0 ||
-                              state.CompanyValue < _pmcCostValue ||
-                              _pmcCooldownSeconds > 0;
+        _pmcButton.Disabled = _pmcCallsLeft <= 0
+                              || state.CompanyValue < _pmcCostValue
+                              || _pmcCooldownSeconds > 0;
 
         _guardCostValue = state.GuardCostCompanyValue;
         _guardCost.Text = state.GuardCostCompanyValue.ToString();
@@ -570,9 +570,9 @@ public sealed class CorporateConsoleWindow : DefaultWindow
         else
             _guardCooldown.Text = Loc.GetString("cmu-corporate-guard-ready");
 
-        _guardButton.Disabled = _guardCallsLeft <= 0 ||
-                                state.CompanyValue < _guardCostValue ||
-                                _guardCooldownSeconds > 0;
+        _guardButton.Disabled = _guardCallsLeft <= 0
+                                || state.CompanyValue < _guardCostValue
+                                || _guardCooldownSeconds > 0;
 
         _creditCostValue = state.CreditCostCompanyValue;
         _creditCost.Text = state.CreditCostCompanyValue.ToString();
@@ -624,9 +624,9 @@ public sealed class CorporateConsoleWindow : DefaultWindow
                 history.AddChild(MissionCard(mission));
         }
 
-        if (state.ActiveMissions.Count == 0 &&
-            state.AvailableMissions.Count == 0 &&
-            state.MissionHistory.Count == 0)
+        if (state.ActiveMissions.Count == 0
+            && state.AvailableMissions.Count == 0
+            && state.MissionHistory.Count == 0)
         {
             _missionBody.AddChild(CrtConsoleKit.Wrapping(
                 Loc.GetString("cmu-corporate-missions-empty"), CrtTerminalPalette.TextDim));
