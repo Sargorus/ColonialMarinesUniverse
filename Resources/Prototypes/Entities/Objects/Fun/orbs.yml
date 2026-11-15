@@ -99,8 +99,9 @@
       enum.SurveillanceCameraMonitorUiKey.Key:
         type: SurveillanceCameraMonitorBoundUserInterface
   - type: CameraNetworkReceiver
-    networks: [SurveillanceCameraEngineering, SurveillanceCameraSecurity, SurveillanceCameraScience, SurveillanceCameraSupply, SurveillanceCameraCommand, SurveillanceCameraService, SurveillanceCameraMedical, SurveillanceCameraGeneral]
+    networks: [CMUSurveillanceCameraColonyCMB, CMUSurveillanceCameraColonyGOVFOR, CMUSurveillanceCameraColonyWEYU]
     supportedSources: Standard
+    receiveAllRuntimeNetworks: true
   - type: SurveillanceCameraMonitor
 
 - type: entity

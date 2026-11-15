@@ -3,13 +3,10 @@ using Content.Server.DeviceLinking.Systems;
 using Content.Shared.Atmos;
 using Content.Shared.Atmos.Components;
 using Content.Shared.Atmos.Piping;
-using Content.Shared.Atmos.Piping.Unary.Components;
 using Content.Shared.Atmos.Visuals;
 using Content.Shared.Containers.ItemSlots;
 using Content.Shared.DeviceLinking;
 using Content.Shared.DeviceLinking.Events;
-using Content.Shared.Popups;
-using Content.Shared.Verbs;
 using Robust.Shared.Audio.Systems;
 using Robust.Shared.Containers;
 using Robust.Shared.Timing;
@@ -29,7 +26,6 @@ public sealed partial class SignalGasVentSystem : EntitySystem
     [Dependency] private SharedAudioSystem _audio = default!;
     [Dependency] private DeviceLinkSystem _signal = default!;
     [Dependency] private ItemSlotsSystem _itemSlots = default!;
-    [Dependency] private SharedPopupSystem _popup = default!;
     [Dependency] private IGameTiming _timing = default!;
 
     public override void Initialize()
@@ -41,7 +37,6 @@ public sealed partial class SignalGasVentSystem : EntitySystem
         SubscribeLocalEvent<SignalGasVentComponent, AtmosDeviceUpdateEvent>(OnAtmosUpdate);
         SubscribeLocalEvent<SignalGasVentComponent, GasAnalyzerScanEvent>(OnAnalyzed);
         SubscribeLocalEvent<SignalGasVentComponent, EntInsertedIntoContainerMessage>(OnTankInserted);
-        SubscribeLocalEvent<SignalGasVentComponent, GetVerbsEvent<AlternativeVerb>>(OnGetVerbs);
     }
 
     private void OnInit(Entity<SignalGasVentComponent> ent, ref ComponentInit args)
@@ -60,22 +55,6 @@ public sealed partial class SignalGasVentSystem : EntitySystem
             SetEnabled(ent, !ent.Comp.Enabled);
     }
 
-    private void OnGetVerbs(Entity<SignalGasVentComponent> ent, ref GetVerbsEvent<AlternativeVerb> args)
-    {
-        if (!args.CanAccess || !args.CanInteract)
-            return;
-
-        var user = args.User;
-        args.Verbs.Add(new AlternativeVerb
-        {
-            Text = Loc.GetString(ent.Comp.Enabled
-                ? "cmu-signal-gas-vent-close"
-                : "cmu-signal-gas-vent-open"),
-            Act = () => SetEnabled(ent, !ent.Comp.Enabled, user),
-            Priority = 1,
-        });
-    }
-
     private void OnTankInserted(Entity<SignalGasVentComponent> ent, ref EntInsertedIntoContainerMessage args)
     {
         if (args.Container.ID != ent.Comp.SlotId)
@@ -87,11 +66,6 @@ public sealed partial class SignalGasVentSystem : EntitySystem
         {
             gasTank.ReleaseValveOpen = false;
             Dirty(args.Entity, gasTank);
-        }
-        else if (TryComp<GasCanisterComponent>(args.Entity, out var canister))
-        {
-            canister.ReleaseValveOpen = false;
-            Dirty(args.Entity, canister);
         }
 
         UpdateVisuals(ent);
@@ -110,12 +84,12 @@ public sealed partial class SignalGasVentSystem : EntitySystem
 
         var environment = _atmosphere.GetContainingMixture(ent.Owner, false, true);
         var deltaP = environment == null
-            ? tank.Air.Pressure
-            : tank.Air.Pressure - environment.Pressure;
+            ? tank.Comp.Air.Pressure
+            : tank.Comp.Air.Pressure - environment.Pressure;
 
         deltaP = Math.Min(deltaP, ent.Comp.ReleasePressure);
 
-        var removed = _atmosphere.FlowGas(tank.Air, deltaP, args.dt, ent.Comp.ReleaseArea);
+        var removed = _atmosphere.FlowGas(tank.Comp.Air, deltaP, args.dt, ent.Comp.ReleaseArea);
 
         if (environment != null && removed != null)
             _atmosphere.Merge(environment, removed);
@@ -135,7 +109,7 @@ public sealed partial class SignalGasVentSystem : EntitySystem
         if (_timing.CurTime >= ent.Comp.NextTankDirty)
         {
             ent.Comp.NextTankDirty = _timing.CurTime + TankDirtyInterval;
-            Dirty(tank.Owner, tank.Component);
+            Dirty(tank.Owner, tank.Comp);
         }
     }
 
@@ -145,21 +119,16 @@ public sealed partial class SignalGasVentSystem : EntitySystem
             return;
 
         args.GasMixtures ??= new List<(string, GasMixture?)>();
-        args.GasMixtures.Add((Name(tank.Owner), tank.Air));
+        args.GasMixtures.Add((Name(tank.Owner), tank.Comp.Air));
     }
 
-    private void SetEnabled(Entity<SignalGasVentComponent> ent, bool enabled, EntityUid? user = null)
+    private void SetEnabled(Entity<SignalGasVentComponent> ent, bool enabled)
     {
         if (ent.Comp.Enabled == enabled)
             return;
 
         if (enabled && GetTank(ent) == null)
-        {
-            if (user != null)
-                _popup.PopupEntity(Loc.GetString("cmu-signal-gas-vent-no-tank"), ent, user.Value);
-
             return;
-        }
 
         ent.Comp.Enabled = enabled;
         ent.Comp.NextReleaseSound = TimeSpan.Zero;
@@ -175,20 +144,14 @@ public sealed partial class SignalGasVentSystem : EntitySystem
         _appearance.SetData(ent, VentPumpVisuals.State, state);
     }
 
-    private TankRef? GetTank(Entity<SignalGasVentComponent> ent)
+    private Entity<GasTankComponent>? GetTank(Entity<SignalGasVentComponent> ent)
     {
         var item = _itemSlots.GetItemOrNull(ent.Owner, ent.Comp.SlotId);
         if (item == null)
             return null;
 
-        if (TryComp<GasTankComponent>(item, out var gasTank))
-            return new TankRef(item.Value, gasTank.Air, gasTank);
-
-        if (TryComp<GasCanisterComponent>(item, out var canister))
-            return new TankRef(item.Value, canister.Air, canister);
-
-        return null;
+        return TryComp<GasTankComponent>(item, out var tank)
+            ? (item.Value, tank)
+            : null;
     }
-
-    private readonly record struct TankRef(EntityUid Owner, GasMixture Air, Component Component);
 }

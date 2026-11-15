@@ -10,5 +10,10 @@
             <OptionButton HorizontalExpand="True" Name="NetworkSelector" />
             <Button Name="NetworkConfirm" Text="{Loc 'surveillance-camera-setup-ui-set'}" />
         </BoxContainer>
+        <BoxContainer Name="NetworkCreationSection">
+            <LineEdit HorizontalExpand="True" Name="CustomNetworkName"
+                      PlaceHolder="{Loc 'surveillance-camera-setup-ui-network-name'}" />
+            <Button Name="NetworkCreate" Text="{Loc 'surveillance-camera-setup-ui-create-network'}" />
+        </BoxContainer>
     </BoxContainer>
 </DefaultWindow>

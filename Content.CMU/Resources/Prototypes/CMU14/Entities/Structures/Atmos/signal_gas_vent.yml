@@ -3,8 +3,8 @@
 - type: entity
   parent: [ BaseStructureDynamic, StructureHealthMachineFlimsy ]
   id: CMUSignalGasVent
-  name: signal gas vent
-  description: A ventilation grate with a gas tank socket. Releases the inserted tank's contents when it receives a signal.
+  name: air vent
+  description: Has a valve and a pump attached to it.
   placement:
     mode: SnapgridCenter
   components:
@@ -45,7 +45,6 @@
         whitelist:
           components:
           - GasTank
-          - GasCanister
         insertSound: /Audio/Weapons/Guns/MagIn/revolver_magin.ogg
         ejectSound: /Audio/Weapons/Guns/MagOut/revolver_magout.ogg
   - type: SignalGasVent
@@ -75,9 +74,7 @@
       steps:
       - material: CMSteel # CMU14: fork metal (CMSheetMetal), not upstream Steel
         amount: 2
-        doAfter: 2.0
-      - material: Cable
-        amount: 1
+        doAfter: 1
   - node: vent
     entity: CMUSignalGasVent
     edges:
@@ -89,15 +86,12 @@
       - !type:GivePrototype
         prototype: CMSheetMetal1 # CMU14: refund fork metal
         amount: 2
-      - !type:GivePrototype
-        prototype: CableApcStack1
-        amount: 1
       - !type:DeleteEntity {}
 
 - type: construction
   parent: BaseGasDevice
   id: CMUSignalGasVentRecipe
-  name: cmu-signal-gas-vent-recipe
-  description: cmu-signal-gas-vent-recipe-desc
+  name: air vent
+  description: Has a valve and a pump attached to it.
   graph: CMUSignalGasVentGraph
   targetNode: vent

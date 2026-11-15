@@ -236,6 +236,7 @@ public sealed partial class CameraNetworkSystem : EntitySystem
         identity.DisplayName = displayName.Trim();
         identity.CreatedBy = owner;
         identity.Runtime = true;
+        IndexRuntimeNetworkReceivers(network);
         return network;
     }
 
@@ -813,7 +814,36 @@ public sealed partial class CameraNetworkSystem : EntitySystem
         if (_runtimeGrants.TryGetValue(receiver, out var grants))
             networks.UnionWith(grants.Keys);
 
+        if (component.ReceiveAllRuntimeNetworks)
+            networks.UnionWith(GetAllRuntimeNetworkEntities());
+
         return networks;
+    }
+
+    private HashSet<EntityUid> GetAllRuntimeNetworkEntities()
+    {
+        var networks = new HashSet<EntityUid>();
+        var query = EntityQueryEnumerator<CameraNetworkIdentityComponent>();
+        while (query.MoveNext(out var uid, out var identity))
+        {
+            if (identity.Runtime)
+                networks.Add(uid);
+        }
+
+        return networks;
+    }
+
+    private void IndexRuntimeNetworkReceivers(EntityUid network)
+    {
+        var query = EntityQueryEnumerator<CameraNetworkReceiverComponent>();
+        while (query.MoveNext(out var receiver, out var component))
+        {
+            if (!component.ReceiveAllRuntimeNetworks)
+                continue;
+
+            IndexReceiver(receiver, [network]);
+            NotifyAuthorizationChanged(receiver);
+        }
     }
 
     private bool HasEffectiveNetwork(
@@ -823,6 +853,13 @@ public sealed partial class CameraNetworkSystem : EntitySystem
     {
         if (component.RuntimeNetworks.Contains(network)
             || _runtimeGrants.TryGetValue(receiver, out var grants) && grants.ContainsKey(network))
+        {
+            return true;
+        }
+
+        if (component.ReceiveAllRuntimeNetworks &&
+            TryComp(network, out CameraNetworkIdentityComponent? identity) &&
+            identity.Runtime)
         {
             return true;
         }
@@ -908,7 +945,11 @@ public sealed partial class CameraNetworkSystem : EntitySystem
             foreach (var receiver in receivers)
             {
                 if (TryComp(receiver, out CameraNetworkReceiverComponent? component))
+                {
                     component.RuntimeNetworks.Remove(network);
+                    if (component.ReceiveAllRuntimeNetworks)
+                        NotifyAuthorizationChanged(receiver);
+                }
 
                 if (!_runtimeGrants.TryGetValue(receiver, out var grants)
                     || !grants.Remove(network, out var sources))

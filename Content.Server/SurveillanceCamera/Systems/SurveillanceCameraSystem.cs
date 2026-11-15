@@ -54,6 +54,7 @@ public sealed partial class SurveillanceCameraSystem : SharedSurveillanceCameraS
     public const string CameraSubnetData = "surveillance_camera_data_subnet";
 
     public const int CameraNameLimit = 32;
+    public const int CameraNetworkNameLimit = 48;
 
     public override void Initialize()
     {
@@ -64,6 +65,7 @@ public sealed partial class SurveillanceCameraSystem : SharedSurveillanceCameraS
         SubscribeLocalEvent<SurveillanceCameraComponent, PowerChangedEvent>(OnPowerChanged);
         SubscribeLocalEvent<SurveillanceCameraComponent, SurveillanceCameraSetupSetName>(OnSetName);
         SubscribeLocalEvent<SurveillanceCameraComponent, SurveillanceCameraSetupSetNetwork>(OnSetNetwork);
+        SubscribeLocalEvent<SurveillanceCameraComponent, SurveillanceCameraSetupSetCustomNetwork>(OnSetCustomNetwork);
         SubscribeLocalEvent<SurveillanceCameraComponent, PanelChangedEvent>(OnPanelChanged);
         SubscribeLocalEvent<SurveillanceCameraComponent, CameraSessionSelectionChangedEvent>(OnSessionSelectionChanged);
     }
@@ -145,6 +147,44 @@ public sealed partial class SurveillanceCameraSystem : SharedSurveillanceCameraS
         UpdateSetupInterface(uid, component);
     }
 
+    private void OnSetCustomNetwork(EntityUid uid, SurveillanceCameraComponent component,
+        SurveillanceCameraSetupSetCustomNetwork args)
+    {
+        if (!_wires.IsPanelOpen(uid))
+            return;
+
+        var name = args.Name.Trim();
+        if (name.Length is 0 or > CameraNetworkNameLimit)
+            return;
+
+        var network = FindRuntimeNetwork(name);
+        if (network == null)
+        {
+            network = _cameraNetworks.CreateNetwork(name, uid);
+        }
+
+        if (!_cameraNetworks.SetMemberNetworkEntities(uid, [network.Value]))
+            return;
+
+        component.NetworkSet = true;
+        UpdateSetupInterface(uid, component);
+    }
+
+    private EntityUid? FindRuntimeNetwork(string name)
+    {
+        var query = EntityQueryEnumerator<CameraNetworkIdentityComponent>();
+        while (query.MoveNext(out var uid, out var identity))
+        {
+            if (identity.Runtime &&
+                string.Equals(identity.DisplayName, name, StringComparison.OrdinalIgnoreCase))
+            {
+                return uid;
+            }
+        }
+
+        return null;
+    }
+
     public bool TrySetNetwork(Entity<SurveillanceCameraComponent> camera, ProtoId<CameraNetworkPrototype> network)
     {
         if (!camera.Comp.AvailableNetworks.Contains(network)
@@ -218,6 +258,7 @@ public sealed partial class SurveillanceCameraSystem : SharedSurveillanceCameraS
         }
 
         ProtoId<CameraNetworkPrototype>? currentNetwork = null;
+        string? currentNetworkName = null;
         if (TryComp(uid, out CameraNetworkMemberComponent? currentMember))
         {
             foreach (var network in currentMember.Networks)
@@ -228,13 +269,22 @@ public sealed partial class SurveillanceCameraSystem : SharedSurveillanceCameraS
                     break;
                 }
             }
+
+            foreach (var runtime in currentMember.RuntimeNetworks)
+            {
+                if (TryComp(runtime, out CameraNetworkIdentityComponent? identity))
+                {
+                    currentNetworkName = identity.DisplayName;
+                    break;
+                }
+            }
         }
 
         // Camera setup remains editable for as long as the maintenance panel is
         // open. NameSet/NetworkSet record that a value exists; they must not
         // disable the controls or close the UI after the first assignment.
         var state = new SurveillanceCameraLogicalNetworkSetupBoundUiState(camera.CameraId, currentNetwork,
-            camera.AvailableNetworks, nameDisabled: false, networkDisabled: false);
+            camera.AvailableNetworks, nameDisabled: false, networkDisabled: false, currentNetworkName);
         _userInterface.SetUiState(uid, SurveillanceCameraSetupUiKey.Camera, state);
     }
 

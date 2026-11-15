@@ -141,13 +141,19 @@ public sealed class SurveillanceCameraLogicalNetworkSetupBoundUiState(
     ProtoId<CameraNetworkPrototype>? network,
     List<ProtoId<CameraNetworkPrototype>> networks,
     bool nameDisabled,
-    bool networkDisabled) : BoundUserInterfaceState
+    bool networkDisabled,
+    string? currentNetworkName) : BoundUserInterfaceState
 {
     public string Name { get; } = name;
     public ProtoId<CameraNetworkPrototype>? Network { get; } = network;
     public List<ProtoId<CameraNetworkPrototype>> Networks { get; } = networks;
     public bool NameDisabled { get; } = nameDisabled;
     public bool NetworkDisabled { get; } = networkDisabled;
+
+    /// <summary>
+    /// Name of the runtime network this camera is currently attached to, if any.
+    /// </summary>
+    public string? CurrentNetworkName { get; } = currentNetworkName;
 }
 
 [Serializable, NetSerializable]
@@ -169,6 +175,17 @@ public sealed class SurveillanceCameraSetupSetNetwork : BoundUserInterfaceMessag
     public SurveillanceCameraSetupSetNetwork(int network)
     {
         Network = network;
+    }
+}
+
+[Serializable, NetSerializable]
+public sealed class SurveillanceCameraSetupSetCustomNetwork : BoundUserInterfaceMessage
+{
+    public string Name { get; }
+
+    public SurveillanceCameraSetupSetCustomNetwork(string name)
+    {
+        Name = name;
     }
 }
 

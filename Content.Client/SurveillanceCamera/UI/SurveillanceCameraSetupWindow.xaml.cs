@@ -14,6 +14,7 @@ public sealed partial class SurveillanceCameraSetupWindow : DefaultWindow
 
     public Action<string>? OnNameConfirm;
     public Action<int>? OnNetworkConfirm;
+    public Action<string>? OnNetworkCreate;
 
     public SurveillanceCameraSetupWindow()
     {
@@ -23,12 +24,16 @@ public sealed partial class SurveillanceCameraSetupWindow : DefaultWindow
 
         NetworkConfirm.OnPressed += _ => OnNetworkConfirm!(NetworkSelector.SelectedId);
         NameConfirm.OnPressed += _ => OnNameConfirm!(DeviceName.Text);
+        NetworkCreate.OnPressed += _ => OnNetworkCreate!(CustomNetworkName.Text);
         NetworkSelector.OnItemSelected += args => NetworkSelector.SelectId(args.Id);
     }
 
     public void HideNameSelector() => NamingSection.Visible = false;
 
-    public void UpdateState(string name, bool disableNaming, bool disableNetworkSelector)
+    public void HideNetworkCreation() => NetworkCreationSection.Visible = false;
+
+    public void UpdateState(string name, bool disableNaming, bool disableNetworkSelector,
+        string? currentNetworkName = null)
     {
         DeviceName.Text = name;
         DeviceName.Editable = !disableNaming;
@@ -36,6 +41,10 @@ public sealed partial class SurveillanceCameraSetupWindow : DefaultWindow
 
         NetworkSelector.Disabled = disableNetworkSelector;
         NetworkConfirm.Disabled = disableNetworkSelector;
+
+        CustomNetworkName.Text = currentNetworkName ?? string.Empty;
+        CustomNetworkName.Editable = !disableNetworkSelector;
+        NetworkCreate.Disabled = disableNetworkSelector;
     }
 
     // Pass in a list of frequency prototype IDs.
