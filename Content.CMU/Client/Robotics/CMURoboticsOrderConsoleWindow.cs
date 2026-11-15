@@ -140,7 +140,7 @@ public sealed class CMURoboticsOrderConsoleWindow : DefaultWindow
 
         var signature = $"{state.SampleData}|{state.CartridgeStatus}|" +
                         string.Join(',', state.Cartridges.Select(cartridge =>
-                            $"{cartridge.Prototype.Id}:{cartridge.Cost}"));
+                            $"{cartridge.Prototype.Id}:{cartridge.Cost}:{cartridge.Description}"));
         if (signature == _cartridgeSignature)
             return;
 

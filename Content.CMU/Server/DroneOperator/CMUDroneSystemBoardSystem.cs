@@ -14,6 +14,7 @@ using Content.Shared.Tools.Components;
 using Content.Shared.Tools.Systems;
 using Content.Shared.Verbs;
 using Robust.Shared.Containers;
+using Robust.Shared.GameObjects;
 using Robust.Shared.Prototypes;
 
 namespace Content.Server.CMU14.DroneOperator;
@@ -33,6 +34,7 @@ public sealed partial class CMUDroneSystemBoardSystem : EntitySystem
     [Dependency] private SharedSynthSystem _synth = default!;
     [Dependency] private SharedToolSystem _tool = default!;
     [Dependency] private CMUUtilityDroneSystem _utilityDrones = default!;
+    [Dependency] private SharedTransformSystem _transform = default!;
 
     public override void Initialize()
     {
@@ -165,7 +167,7 @@ public sealed partial class CMUDroneSystemBoardSystem : EntitySystem
 
         CacheBaseCanUseGuns(drone, android);
 
-        if (!_mobState.IsAlive(drone) || !_mobState.IsAlive(user))
+        if (!_mobState.IsAlive(drone))
         {
             error = Loc.GetString("cmu-drone-system-board-dead");
             return false;
@@ -357,7 +359,10 @@ public sealed partial class CMUDroneSystemBoardSystem : EntitySystem
             android.InstalledProgramSystem = null;
         }
 
-        _hands.PickupOrDrop(user, board, dropNear: true);
+        if (user.IsValid() && !TerminatingOrDeleted(user))
+            _hands.PickupOrDrop(user, board, dropNear: true);
+        else
+            _transform.SetCoordinates(board, Transform(drone).Coordinates);
         if (TryComp<ToolComponent>(tool, out var toolComp))
             _tool.PlayToolSound(tool, toolComp, user);
 
@@ -391,7 +396,7 @@ public sealed partial class CMUDroneSystemBoardSystem : EntitySystem
 
         CacheBaseCanUseGuns(drone, android);
 
-        if (!_mobState.IsAlive(drone) || !_mobState.IsAlive(user))
+        if (!_mobState.IsAlive(drone))
         {
             error = Loc.GetString("cmu-drone-system-board-dead");
             return false;

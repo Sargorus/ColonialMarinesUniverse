@@ -322,12 +322,10 @@ public sealed partial class CMUUtilityDroneSystem : EntitySystem
 
         if (!string.IsNullOrWhiteSpace(boardComp.Script))
         {
-            if (!ValidateBoardScript(boardComp, out error))
+            if (!ValidateBoardScript(boardComp, out error, out var compiled))
                 return false;
 
-            if (!CanProgramCombat(drone) &&
-                _scriptCompiler.TryCompile(boardComp.Script, out var compiled, out _) &&
-                compiled.UsesCombat)
+            if (!CanProgramCombat(drone) && compiled!.UsesCombat)
             {
                 error = Loc.GetString("cmu-utility-drone-error-combat-board-required");
                 return false;

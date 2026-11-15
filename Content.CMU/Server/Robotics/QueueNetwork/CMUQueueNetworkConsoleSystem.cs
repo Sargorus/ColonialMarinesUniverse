@@ -565,10 +565,10 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
 
     private int CooldownSeconds(CMURoboticsOrderConsoleComponent terminal)
     {
-        if (terminal.OrderCooldown <= TimeSpan.Zero)
-            return 0;
-
-        return Math.Max(0, (int) Math.Ceiling((terminal.NextNetworkOrderAllowed - _timing.CurTime).TotalSeconds));
+        return CMURoboticsOrderCooldown.RemainingSeconds(
+            terminal.OrderCooldown,
+            terminal.NextNetworkOrderAllowed,
+            _timing.CurTime);
     }
 
     private bool TryGetActive(

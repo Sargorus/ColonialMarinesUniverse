@@ -888,10 +888,10 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
 
     private int CooldownSeconds(CMURoboticsOrderConsoleComponent comp, TimeSpan nextAllowed)
     {
-        if (comp.OrderCooldown <= TimeSpan.Zero)
-            return 0;
-
-        return Math.Max(0, (int) Math.Ceiling((nextAllowed - _timing.CurTime).TotalSeconds));
+        return CMURoboticsOrderCooldown.RemainingSeconds(
+            comp.OrderCooldown,
+            nextAllowed,
+            _timing.CurTime);
     }
 
     private CMURoboticsOrderInfo ToInfo(CMURoboticsOrder order)
