@@ -61,10 +61,8 @@
       #  crate: CMUCrateXRF
       - cost: 4000
         crate: CMUCrateRoboticsFabricator
-      - cost: 1500
+      - cost: 100
         crate: CMUCrateRoboticsOrderConsole
-      - cost: 1500
-        crate: CMUCrateProductionDiagnosticConsole
       - cost: 100
         crate: CMUCrateSyntheticTransport
       - cost: 2500

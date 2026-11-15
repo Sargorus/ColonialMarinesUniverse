@@ -1,3 +1,6 @@
+# Standalone production diagnostic terminal kept for existing maps and tests.
+# New installations use the robotics terminal (CMURoboticsOrderConsole), which
+# embeds this network as a tab and is the only console sold in cargo.
 - type: entity
   parent: RMCCommunicationsConsoleBase
   id: CMUProductionDiagnosticConsole

@@ -180,7 +180,7 @@ internal static class CMUUtilityScriptLexer
         for (var i = 0; i < args.Length; i++)
             arguments[i + 1] = args[i];
 
-        return new ScriptCompileException(Loc.GetString(key, arguments));
+        return new ScriptCompileException(Loc.GetString(key, arguments), line);
     }
 
     public enum ScriptTokenKind
@@ -198,6 +198,9 @@ internal static class CMUUtilityScriptLexer
         double Number,
         int Line);
 
-    public sealed class ScriptCompileException(string message) : Exception(message);
+    public sealed class ScriptCompileException(string message, int line) : Exception(message)
+    {
+        public int Line { get; } = line;
+    }
 
 }

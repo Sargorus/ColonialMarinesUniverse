@@ -1,8 +1,8 @@
 - type: entity
   parent: RMCCommunicationsConsoleBase
   id: CMURoboticsOrderConsole
-  name: robotics order console
-  description: A Weyland-Yutani contract terminal for robotics work. Accept a build or repair order, receive its synthetic transport crates in cargo, attach the printed order slip to a loaded crate, then lower the platform. Orders expire after fifteen minutes.
+  name: robotics terminal
+  description: A Weyland-Yutani robotics terminal. Accept build or repair orders, run SMO production-network contracts, or spend sample data on recipe cartridges. Orders expire after fifteen minutes.
   components:
   - type: Transform
     anchored: false
@@ -79,6 +79,11 @@
           jumpsuit: CMJumpsuitSyntheticOutdated
           shoes: RMCShoesBlack
           gloves: CMHandsBlackInsulated
+    cartridges:
+    - cartridge: CMURoboticsCartridgeEmp
+      description: cmu-robotics-cartridge-emp-desc
+      cost: 300
+  - type: CMUQueueNetworkConsole
   - type: ActivatableUI
     key: enum.CMURoboticsOrderConsoleUiKey.Key
   - type: ActivatableUIRequiresAccess
@@ -89,4 +94,4 @@
       enum.CMURoboticsOrderConsoleUiKey.Key:
         type: CMURoboticsOrderConsoleBoundUserInterface
   - type: StaticPrice
-    price: 800
+    price: 100

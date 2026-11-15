@@ -38,9 +38,21 @@ public sealed partial class CMUUtilityDroneSystem
         out List<EntityUid> markers,
         out string error)
     {
+        return ValidateScript(console, source, out program, out markers, out error, out _);
+    }
+
+    public bool ValidateScript(
+        EntityUid console,
+        string? source,
+        out CMUUtilityScriptProgram program,
+        out List<EntityUid> markers,
+        out string error,
+        out int errorLine)
+    {
         program = new CMUUtilityScriptProgram();
         markers = new List<EntityUid>();
         error = string.Empty;
+        errorLine = 0;
 
         if (!TryComp<CMUUtilityDroneConsoleComponent>(console, out var consoleComp))
         {
@@ -54,7 +66,7 @@ public sealed partial class CMUUtilityDroneSystem
             return false;
         }
 
-        if (!_scriptCompiler.TryCompile(source, out var compiled, out error))
+        if (!_scriptCompiler.TryCompile(source, out var compiled, out error, out errorLine))
             return false;
 
         program = compiled;

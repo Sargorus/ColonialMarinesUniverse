@@ -1,3 +1,4 @@
+using Content.Shared.CMU14.Robotics.QueueNetwork;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Serialization;
 
@@ -47,6 +48,21 @@ public sealed class CMURoboticsOrderInfo
 }
 
 [Serializable, NetSerializable]
+public sealed class CMURoboticsCartridgeInfo
+{
+    public EntProtoId Prototype { get; }
+    public string Description { get; }
+    public int Cost { get; }
+
+    public CMURoboticsCartridgeInfo(EntProtoId prototype, string description, int cost)
+    {
+        Prototype = prototype;
+        Description = description;
+        Cost = cost;
+    }
+}
+
+[Serializable, NetSerializable]
 public sealed class CMURoboticsOrderConsoleState : BoundUserInterfaceState
 {
     public List<CMURoboticsOrderInfo> Available { get; }
@@ -54,19 +70,34 @@ public sealed class CMURoboticsOrderConsoleState : BoundUserInterfaceState
     public string Status { get; }
     public int LastPenalty { get; }
     public int LastMissingElements { get; }
+    public int CooldownSeconds { get; }
+    public CMUQueueNetworkConsoleState? Queue { get; }
+    public List<CMURoboticsCartridgeInfo> Cartridges { get; }
+    public int SampleData { get; }
+    public string CartridgeStatus { get; }
 
     public CMURoboticsOrderConsoleState(
         List<CMURoboticsOrderInfo> available,
         CMURoboticsOrderInfo? active,
         string status,
         int lastPenalty,
-        int lastMissingElements)
+        int lastMissingElements,
+        int cooldownSeconds = 0,
+        CMUQueueNetworkConsoleState? queue = null,
+        List<CMURoboticsCartridgeInfo>? cartridges = null,
+        int sampleData = 0,
+        string cartridgeStatus = "")
     {
         Available = available;
         Active = active;
         Status = status;
         LastPenalty = lastPenalty;
         LastMissingElements = lastMissingElements;
+        CooldownSeconds = cooldownSeconds;
+        Queue = queue;
+        Cartridges = cartridges ?? new List<CMURoboticsCartridgeInfo>();
+        SampleData = sampleData;
+        CartridgeStatus = cartridgeStatus;
     }
 }
 
@@ -84,3 +115,15 @@ public sealed class CMURoboticsPrintSlipMessage : BoundUserInterfaceMessage;
 
 [Serializable, NetSerializable]
 public sealed class CMURoboticsRefreshOrdersMessage : BoundUserInterfaceMessage;
+
+[Serializable, NetSerializable]
+public sealed class CMURoboticsPurchaseCartridgeMessage(string prototype) : BoundUserInterfaceMessage
+{
+    public string Prototype { get; } = prototype;
+}
+
+/// <summary>
+/// Raised on a robotics terminal after the embedded queue-network state
+/// changes, so the order system can push a fresh combined UI state.
+/// </summary>
+public sealed class CMURoboticsTerminalQueueUpdatedEvent : EntityEventArgs;

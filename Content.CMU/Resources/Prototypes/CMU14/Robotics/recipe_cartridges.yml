@@ -1,0 +1,36 @@
+# Recipe cartridges sold by the robotics terminal for sample data.
+#
+# A cartridge unlocks its recipe pack only while inserted into a robotics
+# fabricator. The unlocked recipes live in their own lathe category so they do
+# not get mixed up with the fabricator's baseline drone-part list.
+
+- type: entity
+  parent: BaseItem
+  id: CMURoboticsCartridgeEmp
+  name: EMP payload recipe cartridge
+  description: A Weyland-Yutani recipe cartridge. Insert it into a robotics fabricator to unlock the modular-grenade EMP payload recipe.
+  components:
+  - type: Sprite
+    sprite: Objects/Devices/cartridge.rsi
+    state: cart-e
+  - type: Item
+    size: Small
+  - type: CMURoboticsRecipeCartridge
+    pack: CMURoboticsEmpCartridge
+  - type: StaticPrice
+    price: 150
+
+- type: latheRecipe
+  id: CMURoboticsEmpPayload
+  result: EmpPayload
+  completetime: 4
+  materials:
+    CMSteel: 3000
+    RMCPlastic: 2500
+    CMGlass: 1250
+  categories: [ CMURoboticsUnlockedRecipes ]
+
+- type: latheRecipePack
+  id: CMURoboticsEmpCartridge
+  recipes:
+  - CMURoboticsEmpPayload

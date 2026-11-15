@@ -79,6 +79,13 @@ public sealed partial class CMUQueueNetworkConsoleComponent : Component
     /// <summary>Test and admin override for the generator seed.</summary>
     [ViewVariables]
     public int? ForcedSeed;
+
+    /// <summary>
+    /// Bumped whenever queue-network state changes. The embedded panel uses it
+    /// to avoid rebuilding editable controls on unrelated terminal refreshes.
+    /// </summary>
+    [ViewVariables]
+    public int Revision;
 }
 
 public sealed class CMUQueueNodeRuntime

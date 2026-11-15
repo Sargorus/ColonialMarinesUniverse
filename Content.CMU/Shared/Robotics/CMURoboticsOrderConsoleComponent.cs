@@ -22,6 +22,19 @@ public sealed partial class CMURoboticsOrderConsoleComponent : Component
     [DataField]
     public EntProtoId SlipPrototype = "CMURoboticsOrderSlip";
 
+    /// <summary>
+    /// Minimum real-time delay between accepting a work order and starting a
+    /// production-network contract. Both tabs of the terminal share it.
+    /// </summary>
+    [DataField]
+    public TimeSpan OrderCooldown = TimeSpan.FromMinutes(3);
+
+    /// <summary>
+    /// Recipe cartridges the terminal sells for sample data.
+    /// </summary>
+    [DataField]
+    public List<CMURoboticsCartridgeEntry> Cartridges = new();
+
     [DataField]
     public List<CMURoboticsOrderTarget> BuildTargets = new();
 
@@ -51,6 +64,39 @@ public sealed partial class CMURoboticsOrderConsoleComponent : Component
 
     [ViewVariables]
     public TimeSpan NextUiUpdate;
+
+    /// <summary>
+    /// Earliest time another work order or production-network contract may be
+    /// started on this terminal.
+    /// </summary>
+    [ViewVariables]
+    public TimeSpan NextOrderAllowed;
+
+    [ViewVariables]
+    public string CartridgeStatus = string.Empty;
+
+    /// <summary>
+    /// Queue-network revision embedded in the last state sent to clients. The
+    /// network payload is large, so it is only resent when it changes.
+    /// </summary>
+    [ViewVariables]
+    public int LastQueueRevision = -1;
+
+    [ViewVariables]
+    public int LastQueueCooldown = -1;
+}
+
+[DataDefinition]
+public sealed partial class CMURoboticsCartridgeEntry
+{
+    [DataField]
+    public EntProtoId Cartridge = string.Empty;
+
+    [DataField]
+    public string Description = string.Empty;
+
+    [DataField]
+    public int Cost = 100;
 }
 
 [DataDefinition]

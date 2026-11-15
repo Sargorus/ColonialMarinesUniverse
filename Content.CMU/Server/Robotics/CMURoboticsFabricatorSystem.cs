@@ -1,5 +1,6 @@
 using Content.Server.Power.Components;
 using Content.Server.Power.EntitySystems;
+using Content.Server.Lathe;
 using Content.Shared._RMC14.Marines.Skills;
 using Content.Shared._RMC14.Power;
 using Content.Shared.CMU14.Robotics;
@@ -13,6 +14,8 @@ using Content.Shared.Tools.Systems;
 using Content.Shared.UserInterface;
 using Content.Shared.Verbs;
 using Robust.Shared.Containers;
+using Robust.Shared.GameObjects;
+using Robust.Shared.Prototypes;
 
 namespace Content.Server.CMU14.Robotics;
 
@@ -31,6 +34,9 @@ public sealed partial class CMURoboticsFabricatorSystem : EntitySystem
     [Dependency] private SharedToolSystem _tool = default!;
     [Dependency] private SkillsSystem _skills = default!;
     [Dependency] private PowerReceiverSystem _power = default!;
+    [Dependency] private LatheSystem _lathe = default!;
+    [Dependency] private IPrototypeManager _prototypes = default!;
+    [Dependency] private SharedTransformSystem _transform = default!;
 
     public override void Initialize()
     {
@@ -46,6 +52,7 @@ public sealed partial class CMURoboticsFabricatorSystem : EntitySystem
         SubscribeLocalEvent<CMURoboticsFabricatorComponent, CMURoboticsFabricatorRemoveCellDoAfterEvent>(OnRemoveCell);
         SubscribeLocalEvent<CMURoboticsFabricatorComponent, ExaminedEvent>(OnExamined);
         SubscribeLocalEvent<CMURoboticsFabricatorComponent, ActivatableUIOpenAttemptEvent>(OnUiOpenAttempt);
+        SubscribeLocalEvent<CMURoboticsFabricatorComponent, LatheGetRecipesEvent>(OnGetRecipes);
     }
 
     private void OnInit(Entity<CMURoboticsFabricatorComponent> ent, ref ComponentInit args)
@@ -72,6 +79,13 @@ public sealed partial class CMURoboticsFabricatorSystem : EntitySystem
     {
         if (args.Handled)
             return;
+
+        if (HasComp<CMURoboticsRecipeCartridgeComponent>(args.Used))
+        {
+            args.Handled = true;
+            InsertCartridge(ent, args.Used, args.User);
+            return;
+        }
 
         var container = EnsureCellContainer(ent);
 
@@ -127,16 +141,27 @@ public sealed partial class CMURoboticsFabricatorSystem : EntitySystem
         if (!args.CanAccess || !args.CanInteract || args.Hands == null)
             return;
 
-        if (!HasCell(ent))
-            return;
-
         var user = args.User;
-        args.Verbs.Add(new AlternativeVerb
+
+        if (HasCell(ent))
         {
-            Text = Loc.GetString("cmu-robotics-fabricator-cell-remove-verb"),
-            Priority = 2,
-            Act = () => StartRemoveCell(ent, user),
-        });
+            args.Verbs.Add(new AlternativeVerb
+            {
+                Text = Loc.GetString("cmu-robotics-fabricator-cell-remove-verb"),
+                Priority = 2,
+                Act = () => StartRemoveCell(ent, user),
+            });
+        }
+
+        if (EnsureCartridgeContainer(ent).ContainedEntity != null)
+        {
+            args.Verbs.Add(new AlternativeVerb
+            {
+                Text = Loc.GetString("cmu-robotics-fabricator-cartridge-remove-verb"),
+                Priority = 2,
+                Act = () => EjectCartridge(ent, user),
+            });
+        }
     }
 
     private void StartRemoveCell(
@@ -247,6 +272,14 @@ public sealed partial class CMURoboticsFabricatorSystem : EntitySystem
             args.PushMarkup(Loc.GetString(
                 "cmu-robotics-fabricator-examine-research",
                 ("level", ent.Comp.ResearchLevel)));
+
+            var cartridge = EnsureCartridgeContainer(ent).ContainedEntity;
+            if (cartridge is { } cartridgeEntity)
+            {
+                args.PushMarkup(Loc.GetString(
+                    "cmu-robotics-fabricator-examine-cartridge",
+                    ("cartridge", Name(cartridgeEntity))));
+            }
         }
     }
 
@@ -267,6 +300,84 @@ public sealed partial class CMURoboticsFabricatorSystem : EntitySystem
                 args.User,
                 PopupType.SmallCaution);
         }
+    }
+
+    private void InsertCartridge(
+        Entity<CMURoboticsFabricatorComponent> ent,
+        EntityUid cartridge,
+        EntityUid user)
+    {
+        var container = EnsureCartridgeContainer(ent);
+
+        if (container.ContainedEntity is { } previous)
+        {
+            if (!_container.Remove(previous, container))
+                return;
+
+            if (!_hands.TryPickupAnyHand(user, previous))
+                _transform.SetCoordinates(previous, Transform(ent.Owner).Coordinates);
+        }
+
+        if (!_container.Insert(cartridge, container))
+        {
+            _popup.PopupEntity(
+                Loc.GetString("cmu-robotics-fabricator-cartridge-insert-fail"),
+                ent.Owner,
+                user,
+                PopupType.SmallCaution);
+            return;
+        }
+
+        _lathe.UpdateUserInterfaceState(ent.Owner);
+        _popup.PopupEntity(
+            Loc.GetString(
+                "cmu-robotics-fabricator-cartridge-inserted",
+                ("cartridge", Name(cartridge))),
+            ent.Owner,
+            user);
+    }
+
+    private void EjectCartridge(Entity<CMURoboticsFabricatorComponent> ent, EntityUid user)
+    {
+        var container = EnsureCartridgeContainer(ent);
+        if (container.ContainedEntity is not { } cartridge)
+            return;
+
+        if (!_container.Remove(cartridge, container))
+            return;
+
+        if (!_hands.TryPickupAnyHand(user, cartridge))
+            _transform.SetCoordinates(cartridge, Transform(ent.Owner).Coordinates);
+
+        _lathe.UpdateUserInterfaceState(ent.Owner);
+        _popup.PopupEntity(
+            Loc.GetString(
+                "cmu-robotics-fabricator-cartridge-removed",
+                ("cartridge", Name(cartridge))),
+            ent.Owner,
+            user);
+    }
+
+    private void OnGetRecipes(Entity<CMURoboticsFabricatorComponent> ent, ref LatheGetRecipesEvent args)
+    {
+        if (args.Lathe != ent.Owner)
+            return;
+
+        var container = EnsureCartridgeContainer(ent);
+        if (container.ContainedEntity is not { } cartridge ||
+            !TryComp<CMURoboticsRecipeCartridgeComponent>(cartridge, out var cartridgeComp) ||
+            !_prototypes.TryIndex(cartridgeComp.Pack, out var pack))
+        {
+            return;
+        }
+
+        foreach (var recipe in pack.Recipes)
+            args.Recipes.Add(recipe);
+    }
+
+    private ContainerSlot EnsureCartridgeContainer(Entity<CMURoboticsFabricatorComponent> ent)
+    {
+        return _container.EnsureContainer<ContainerSlot>(ent.Owner, ent.Comp.CartridgeContainerSlot);
     }
 
     private ContainerSlot EnsureCellContainer(Entity<CMURoboticsFabricatorComponent> ent)

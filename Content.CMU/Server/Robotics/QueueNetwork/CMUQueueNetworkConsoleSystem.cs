@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Content.Server.CMU14.ColonyEconomy;
+using Content.Shared.CMU14.Robotics;
 using Content.Shared.CMU14.Robotics.QueueNetwork;
 using Robust.Server.GameObjects;
 using Robust.Shared.GameObjects;
 using Robust.Shared.Random;
+using Robust.Shared.Timing;
 
 namespace Content.Server.CMU14.Robotics.QueueNetwork;
 
@@ -20,6 +22,7 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
     [Dependency] private CorporateConsoleSystem _corporateConsole = default!;
     [Dependency] private IRobustRandom _random = default!;
     [Dependency] private UserInterfaceSystem _ui = default!;
+    [Dependency] private IGameTiming _timing = default!;
 
     public override void Initialize()
     {
@@ -28,17 +31,23 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         SubscribeLocalEvent<CMUQueueNetworkConsoleComponent, MapInitEvent>(OnMapInit);
         SubscribeLocalEvent<CMUQueueNetworkConsoleComponent, BoundUIOpenedEvent>(OnUiOpened);
 
-        Subs.BuiEvents<CMUQueueNetworkConsoleComponent>(CMUQueueNetworkConsoleUiKey.Key, subs =>
-        {
-            subs.Event<CMUQueueAnalyzeNodeMessage>(OnAnalyzeNode);
-            subs.Event<CMUQueueSetServiceRateMessage>(OnSetServiceRate);
-            subs.Event<CMUQueueRerouteMessage>(OnReroute);
-            subs.Event<CMUQueueReduceBypassMessage>(OnReduceBypass);
-            subs.Event<CMUQueueProjectMessage>(OnProject);
-            subs.Event<CMUQueueSubmitMessage>(OnSubmit);
-            subs.Event<CMUQueueNewContractMessage>(OnNewContract);
-            subs.Event<CMUQueueResetInterventionsMessage>(OnResetInterventions);
-        });
+        // The standalone diagnostic terminal opens the queue UI key; the
+        // robotics terminal hosts the same messages under its own key. A BUI
+        // event can only be registered once per component, so filter the key
+        // in the handlers instead of subscribing twice.
+        SubscribeLocalEvent<CMUQueueNetworkConsoleComponent, CMUQueueAnalyzeNodeMessage>(OnAnalyzeNode);
+        SubscribeLocalEvent<CMUQueueNetworkConsoleComponent, CMUQueueSetServiceRateMessage>(OnSetServiceRate);
+        SubscribeLocalEvent<CMUQueueNetworkConsoleComponent, CMUQueueRerouteMessage>(OnReroute);
+        SubscribeLocalEvent<CMUQueueNetworkConsoleComponent, CMUQueueReduceBypassMessage>(OnReduceBypass);
+        SubscribeLocalEvent<CMUQueueNetworkConsoleComponent, CMUQueueProjectMessage>(OnProject);
+        SubscribeLocalEvent<CMUQueueNetworkConsoleComponent, CMUQueueSubmitMessage>(OnSubmit);
+        SubscribeLocalEvent<CMUQueueNetworkConsoleComponent, CMUQueueNewContractMessage>(OnNewContract);
+        SubscribeLocalEvent<CMUQueueNetworkConsoleComponent, CMUQueueResetInterventionsMessage>(OnResetInterventions);
+    }
+
+    private static bool IsQueueUiKey(Enum key)
+    {
+        return key is CMUQueueNetworkConsoleUiKey or CMURoboticsOrderConsoleUiKey;
     }
 
     private void OnMapInit(Entity<CMUQueueNetworkConsoleComponent> ent, ref MapInitEvent args)
@@ -54,7 +63,24 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
 
     private void OnNewContract(Entity<CMUQueueNetworkConsoleComponent> ent, ref CMUQueueNewContractMessage args)
     {
+        if (!IsQueueUiKey(args.UiKey))
+            return;
+
         var comp = ent.Comp;
+
+        CMURoboticsOrderConsoleComponent? terminal = null;
+        if (TryComp<CMURoboticsOrderConsoleComponent>(ent.Owner, out terminal))
+        {
+            var cooldown = CooldownSeconds(terminal);
+            if (cooldown > 0)
+            {
+                comp.Status = Loc.GetString("cmu-queue-status-cooldown", ("seconds", cooldown));
+                comp.StatusKind = CMUQueueStatusKind.Bad;
+                UpdateUi(ent);
+                return;
+            }
+        }
+
         var tutorial = comp.CompletedContracts == 0 && comp.ForcedTopology == null;
         var forced = comp.ForcedTopology ?? (tutorial ? CMUQueueTopologyKind.Line : null);
         var seed = comp.ForcedSeed ?? _random.Next();
@@ -71,6 +97,8 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         comp.Reward = network.Reward;
         comp.Bonus = 0;
         comp.Elapsed = 0;
+        if (terminal != null)
+            terminal.NextOrderAllowed = _timing.CurTime + terminal.OrderCooldown;
         comp.Status = Loc.GetString(
             "cmu-queue-status-started",
             ("network", LocOrId(network.Name, Loc.GetString("cmu-queue-network-unknown"))));
@@ -99,6 +127,9 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
 
     private void OnAnalyzeNode(Entity<CMUQueueNetworkConsoleComponent> ent, ref CMUQueueAnalyzeNodeMessage args)
     {
+        if (!IsQueueUiKey(args.UiKey))
+            return;
+
         var comp = ent.Comp;
         if (!TryGetActive(ent, out var network))
         {
@@ -167,6 +198,9 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
 
     private void OnSetServiceRate(Entity<CMUQueueNetworkConsoleComponent> ent, ref CMUQueueSetServiceRateMessage args)
     {
+        if (!IsQueueUiKey(args.UiKey))
+            return;
+
         var comp = ent.Comp;
         if (!TryGetActive(ent, out var network))
         {
@@ -244,6 +278,9 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
 
     private void OnReroute(Entity<CMUQueueNetworkConsoleComponent> ent, ref CMUQueueRerouteMessage args)
     {
+        if (!IsQueueUiKey(args.UiKey))
+            return;
+
         var comp = ent.Comp;
         if (!TryGetActive(ent, out var network))
         {
@@ -295,6 +332,9 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
 
     private void OnReduceBypass(Entity<CMUQueueNetworkConsoleComponent> ent, ref CMUQueueReduceBypassMessage args)
     {
+        if (!IsQueueUiKey(args.UiKey))
+            return;
+
         var comp = ent.Comp;
         if (!TryGetActive(ent, out var network))
         {
@@ -341,6 +381,9 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         Entity<CMUQueueNetworkConsoleComponent> ent,
         ref CMUQueueResetInterventionsMessage args)
     {
+        if (!IsQueueUiKey(args.UiKey))
+            return;
+
         var comp = ent.Comp;
         if (!TryGetActive(ent, out var network))
         {
@@ -381,6 +424,9 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
 
     private void OnProject(Entity<CMUQueueNetworkConsoleComponent> ent, ref CMUQueueProjectMessage args)
     {
+        if (!IsQueueUiKey(args.UiKey))
+            return;
+
         var comp = ent.Comp;
         if (!TryGetActive(ent, out var network))
         {
@@ -457,6 +503,9 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
 
     private void OnSubmit(Entity<CMUQueueNetworkConsoleComponent> ent, ref CMUQueueSubmitMessage args)
     {
+        if (!IsQueueUiKey(args.UiKey))
+            return;
+
         var comp = ent.Comp;
         if (!TryGetActive(ent, out var network))
         {
@@ -512,6 +561,14 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         }
 
         UpdateUi(ent);
+    }
+
+    private int CooldownSeconds(CMURoboticsOrderConsoleComponent terminal)
+    {
+        if (terminal.OrderCooldown <= TimeSpan.Zero)
+            return 0;
+
+        return Math.Max(0, (int) Math.Ceiling((terminal.NextOrderAllowed - _timing.CurTime).TotalSeconds));
     }
 
     private bool TryGetActive(
@@ -625,6 +682,27 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
     }
 
     private void UpdateUi(Entity<CMUQueueNetworkConsoleComponent> ent)
+    {
+        ent.Comp.Revision++;
+        var state = BuildState(ent);
+
+        if (HasComp<CMURoboticsOrderConsoleComponent>(ent.Owner))
+        {
+            RaiseLocalEvent(ent.Owner, new CMURoboticsTerminalQueueUpdatedEvent());
+            return;
+        }
+
+        _ui.SetUiState(
+            ent.Owner,
+            CMUQueueNetworkConsoleUiKey.Key,
+            state);
+    }
+
+    /// <summary>
+    /// Builds the queue-network portion of the terminal UI. The robotics
+    /// terminal embeds this state in its combined state object.
+    /// </summary>
+    public CMUQueueNetworkConsoleState BuildState(Entity<CMUQueueNetworkConsoleComponent> ent)
     {
         var comp = ent.Comp;
         var network = comp.Network;
@@ -744,29 +822,32 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
             }
         }
 
-        _ui.SetUiState(
-            ent.Owner,
-            CMUQueueNetworkConsoleUiKey.Key,
-            new CMUQueueNetworkConsoleState(
-                comp.Active,
-                comp.Completed,
-                comp.Status,
-                comp.StatusKind,
-                network?.Name ?? string.Empty,
-                network?.Description ?? string.Empty,
-                network?.Seed ?? 0,
-                comp.Budget,
-                comp.TimeLeft,
-                comp.InitialTime,
-                comp.Reward,
-                comp.Bonus,
-                comp.Elapsed,
-                network?.AnalysisCost ?? 1,
-                network?.ProjectionCost ?? 3,
-                network?.ProjectionMinutes ?? 3,
-                nodes,
-                routes,
-                bypasses,
-                history));
+        var cooldown = TryComp<CMURoboticsOrderConsoleComponent>(ent.Owner, out var terminal)
+            ? CooldownSeconds(terminal)
+            : 0;
+
+        return new CMUQueueNetworkConsoleState(
+            comp.Active,
+            comp.Completed,
+            comp.Status,
+            comp.StatusKind,
+            network?.Name ?? string.Empty,
+            network?.Description ?? string.Empty,
+            network?.Seed ?? 0,
+            comp.Budget,
+            comp.TimeLeft,
+            comp.InitialTime,
+            comp.Reward,
+            comp.Bonus,
+            comp.Elapsed,
+            network?.AnalysisCost ?? 1,
+            network?.ProjectionCost ?? 3,
+            network?.ProjectionMinutes ?? 3,
+            nodes,
+            routes,
+            bypasses,
+            history,
+            cooldown,
+            comp.Revision);
     }
 }

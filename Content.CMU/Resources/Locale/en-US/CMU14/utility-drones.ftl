@@ -1,4 +1,4 @@
-cmu-utility-drone-console-title = Utility drone programming
+cmu-utility-drone-console-title = Utility drone programming terminal
 cmu-utility-drone-tab-program = Program
 cmu-utility-drone-tab-script = Program
 cmu-utility-drone-tab-markers = Markers
@@ -207,6 +207,7 @@ cmu-utility-drone-activity-repair-unsafe = Repair postponed: hostiles nearby
 cmu-utility-drone-activity-repair-complete = Repair complete
 
 cmu-utility-drone-script-error-empty = The script is empty.
+cmu-utility-drone-error-line = Line {$line}:
 cmu-utility-drone-script-error-event = Unknown event '{$event}'. Use 'on damaged'.
 cmu-utility-drone-script-error-event-after-main = Event handlers must be declared before main.
 cmu-utility-drone-script-error-main-duplicate = The main block is already defined.
@@ -342,8 +343,8 @@ cmu-utility-drone-config-board-hint = Board installation: enable programmable mo
 ent-CMUUtilityDrone = utility drone
     .desc = A civilian android frame configured for programmed utility work. It has hands, no combat routines, and a physical stair-capable navigation stack.
 
-ent-CMUUtilityDroneConsole = utility drone console
-    .desc = A Weyland-Yutani terminal for editing one utility drone program, registering physical task markers, and printing directive boards.
+ent-CMUUtilityDroneConsole = utility drone programming terminal
+    .desc = A Weyland-Yutani terminal for writing and validating utility drone programs, registering physical task markers, and printing directive boards.
 
 ent-CMUUtilityTaskMarker = utility task marker
     .desc = A physical task beacon. Place it, anchor it with a wrench, then use a multitool on the marker and on a utility drone console to register it.

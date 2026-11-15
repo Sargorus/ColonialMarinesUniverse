@@ -20,6 +20,9 @@ public sealed partial class CMURoboticsFabricatorComponent : Component
     public string CellContainerSlot = "cmu_robotics_fabricator_cell";
 
     [DataField]
+    public string CartridgeContainerSlot = "cmu_robotics_fabricator_cartridge";
+
+    [DataField]
     public EntProtoId<SkillDefinitionComponent> ResearchSkill = "RMCSkillResearch";
 
     [DataField]
