@@ -14,6 +14,9 @@ public sealed class CorporateConsoleBui(EntityUid owner, Enum uiKey) : BoundUser
         _window.OnWithdraw += amount => SendPredictedMessage(new CorporateConsoleWithdrawBuiMsg(amount));
         _window.OnSetTariff += percent => SendPredictedMessage(new CorporateConsoleSetTariffBuiMsg(percent));
         _window.OnOpenThirdParty += () => SendPredictedMessage(new CorporateConsoleOpenThirdPartyBuiMsg());
+        _window.OnAcceptMission += id => SendPredictedMessage(new CorporateConsoleAcceptMissionBuiMsg(id));
+        _window.OnSetDirection += direction => SendPredictedMessage(new CorporateConsoleSetDirectionBuiMsg(direction));
+        _window.OnCallPmc += () => SendPredictedMessage(new CorporateConsoleCallPmcBuiMsg());
     }
 
     protected override void UpdateState(BoundUserInterfaceState state)

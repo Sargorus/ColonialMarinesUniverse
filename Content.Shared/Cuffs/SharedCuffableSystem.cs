@@ -842,6 +842,7 @@ namespace Content.Shared.Cuffs
                 }
             }
             cuff.Removing = false;
+            RaiseLocalEvent(new CuffRemovedEvent(target, user, cuffsToRemove));
         }
 
         #region ActionBlocker

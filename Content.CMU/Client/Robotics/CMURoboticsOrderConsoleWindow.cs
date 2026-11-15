@@ -15,7 +15,7 @@ namespace Content.Client.CMU14.Robotics;
 
 /// <summary>
 /// CRT-style robotics terminal: work orders, the production-network contract
-/// tab, and the sample-data recipe cartridge shop.
+/// tab, and the robotics-point recipe cartridge shop.
 /// </summary>
 public sealed class CMURoboticsOrderConsoleWindow : DefaultWindow
 {
@@ -35,7 +35,7 @@ public sealed class CMURoboticsOrderConsoleWindow : DefaultWindow
     private readonly Label _subheading;
     private readonly BoxContainer _cartridgeBody;
     private readonly RichTextLabel _cartridgeStatus;
-    private readonly Label _sampleData;
+    private readonly Label _roboticsPoints;
 
     private string _cartridgeSignature = string.Empty;
 
@@ -74,9 +74,9 @@ public sealed class CMURoboticsOrderConsoleWindow : DefaultWindow
             out _);
         _cartridgeKit.Root.AddChild(cartridgeHeader);
         _cartridgeKit.Root.AddChild(_cartridgeKit.Readout(
-            Loc.GetString("cmu-robotics-cartridges-sample-data"),
+            Loc.GetString("cmu-robotics-cartridges-robotics-points"),
             "0",
-            out _sampleData,
+            out _roboticsPoints,
             CrtTerminalPalette.Accent));
 
         var cartridgeScroll = new ScrollContainer { VerticalExpand = true, HScrollEnabled = false };
@@ -108,6 +108,11 @@ public sealed class CMURoboticsOrderConsoleWindow : DefaultWindow
         _body.RemoveAllChildren();
 
         _body.AddChild(_kit.Field(
+            Loc.GetString("cmu-robotics-cartridges-robotics-points"),
+            state.RoboticsPoints.ToString(),
+            CrtTerminalPalette.Accent));
+
+        _body.AddChild(_kit.Field(
             Loc.GetString("cmu-robotics-console-penalty"),
             state.LastPenalty > 0
                 ? Loc.GetString(
@@ -132,13 +137,13 @@ public sealed class CMURoboticsOrderConsoleWindow : DefaultWindow
         if (state.Queue != null)
             QueuePanel.UpdateState(state.Queue);
 
-        _sampleData.Text = state.SampleData.ToString();
+        _roboticsPoints.Text = state.RoboticsPoints.ToString();
         SetRichText(
             _cartridgeStatus,
             state.CartridgeStatus,
             CrtTerminalPalette.TextDim);
 
-        var signature = $"{state.SampleData}|{state.CartridgeStatus}|" +
+        var signature = $"{state.RoboticsPoints}|{state.CartridgeStatus}|" +
                         string.Join(',', state.Cartridges.Select(cartridge =>
                             $"{cartridge.Prototype.Id}:{cartridge.Cost}:{cartridge.Description}"));
         if (signature == _cartridgeSignature)
@@ -255,7 +260,7 @@ public sealed class CMURoboticsOrderConsoleWindow : DefaultWindow
                     CrtTerminalPalette.TextDim));
             }
 
-            var affordable = state.SampleData >= cartridge.Cost;
+            var affordable = state.RoboticsPoints >= cartridge.Cost;
             column.AddChild(_cartridgeKit.Field(
                 Loc.GetString("cmu-robotics-cartridges-cost"),
                 Loc.GetString(

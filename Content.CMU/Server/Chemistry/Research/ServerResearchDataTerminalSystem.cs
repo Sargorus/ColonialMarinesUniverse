@@ -540,6 +540,10 @@ public sealed partial class ServerResearchDataTerminalSystem : SharedResearchDat
             RaiseNetworkEvent(new IdentifyChemicalEvent(proto.ID, proto.Reward));
         // ARCH-02: completing a nested contract also identifies its sub-chemical (no separate reward).
         IdentifySubContract(proto.ID);
+        var scannedProperties = _generator.ProceduralReagentData.TryGetValue(proto.ID, out var scanned)
+            ? new Dictionary<string, int>(scanned.Effects)
+            : new Dictionary<string, int>();
+        RaiseLocalEvent(new CMUChemicalScannedEvent(faction, proto.ID, scannedProperties));
         if (proto.Class < ReagentClass.Special)
         {
             // Simulator-made chemical: a flat sample-data reward (see SampleDataForSimulated), no credits or cash.

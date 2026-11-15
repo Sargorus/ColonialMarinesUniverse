@@ -2,7 +2,7 @@
   parent: RMCCommunicationsConsoleBase
   id: CMURoboticsOrderConsole
   name: robotics terminal
-  description: A Weyland-Yutani robotics terminal. Accept build or repair orders, run SMO production-network contracts, or spend sample data on recipe cartridges. Orders expire after fifteen minutes.
+  description: A Weyland-Yutani robotics terminal. Accept build or repair orders, run SMO production-network contracts, or spend robotics science points on recipe cartridges. Orders expire after fifteen minutes.
   components:
   - type: Transform
     anchored: false
@@ -82,13 +82,13 @@
     cartridges:
     - cartridge: CMURoboticsCartridgeEmp
       description: cmu-robotics-cartridge-emp-desc
-      cost: 3
+      cost: 5
     - cartridge: CMURoboticsCartridgeProgramSystem
       description: cmu-robotics-cartridge-program-system-desc
-      cost: 5
+      cost: 10
     - cartridge: CMURoboticsCartridgeCombatSystem
       description: cmu-robotics-cartridge-combat-system-desc
-      cost: 10
+      cost: 20
   - type: CMUQueueNetworkConsole
   - type: ActivatableUI
     key: enum.CMURoboticsOrderConsoleUiKey.Key

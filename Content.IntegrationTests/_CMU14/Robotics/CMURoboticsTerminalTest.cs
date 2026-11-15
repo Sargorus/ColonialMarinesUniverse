@@ -20,6 +20,9 @@ namespace Content.IntegrationTests.CMU14.Robotics;
 [TestFixture]
 public sealed class CMURoboticsTerminalTest : GameTest
 {
+    private CMURoboticsOrderPool Pool(EntityUid console)
+        => Server.System<CMURoboticsOrderPoolSystem>().GetPool(console);
+
     [Test]
     public async Task TerminalExposesOrdersNetworkAndCartridges()
     {
@@ -94,7 +97,7 @@ public sealed class CMURoboticsTerminalTest : GameTest
             {
                 Assert.That(queue.Active, Is.True);
                 Assert.That(queue.Network, Is.Not.Null);
-                Assert.That(terminal.NextNetworkOrderAllowed, Is.GreaterThan(SGameTiming.CurTime));
+                Assert.That(Pool(console).NextNetworkOrderAllowed, Is.GreaterThan(SGameTiming.CurTime));
             });
         });
 
@@ -114,7 +117,7 @@ public sealed class CMURoboticsTerminalTest : GameTest
     }
 
     [Test]
-    public async Task CartridgePurchaseSpendsSampleDataAndUnlocksRecipe()
+    public async Task CartridgePurchaseSpendsRoboticsPointsAndUnlocksRecipe()
     {
         var map = await Pair.CreateTestMap();
         NetEntity consoleNet = default;
@@ -131,7 +134,7 @@ public sealed class CMURoboticsTerminalTest : GameTest
             fabricator = SEntMan.SpawnEntity("CMURoboticsFabricator", map.GridCoords.Offset(new(-2, 0)));
             consoleNet = SEntMan.GetNetEntity(console);
 
-            SEntMan.System<ServerResearchDataTerminalSystem>().UpdateSampleData(1000, "corporate");
+            SEntMan.System<ServerResearchDataTerminalSystem>().UpdateRoboticsPoints(1000, "corporate");
             Assert.That(
                 SEntMan.System<SharedUserInterfaceSystem>().TryOpenUi(
                     console,
@@ -153,7 +156,7 @@ public sealed class CMURoboticsTerminalTest : GameTest
         await Server.WaitAssertion(() =>
         {
             var research = SEntMan.System<ServerResearchDataTerminalSystem>();
-            Assert.That(research.GetSampleData("corporate"), Is.LessThan(1000));
+            Assert.That(research.GetRoboticsPoints("corporate"), Is.LessThan(1000));
 
             var cartridges = 0;
             var query = SEntMan.EntityQueryEnumerator<CMURoboticsRecipeCartridgeComponent>();
@@ -217,27 +220,27 @@ public sealed class CMURoboticsTerminalTest : GameTest
         var secondOrder = 0;
         await Server.WaitAssertion(() =>
         {
-            var terminal = SComp<CMURoboticsOrderConsoleComponent>(console);
-            Assert.That(terminal.AvailableOrders, Is.Not.Empty);
-            firstOrder = terminal.AvailableOrders[0].Id;
+            Assert.That(Pool(console).AvailableOrders, Is.Not.Empty);
+            firstOrder = Pool(console).AvailableOrders[0].Id;
         });
 
         await Send(consoleNet, new CMURoboticsAcceptOrderMessage(firstOrder));
         await Server.WaitAssertion(() =>
         {
-            var terminal = SComp<CMURoboticsOrderConsoleComponent>(console);
-            Assert.That(terminal.ActiveOrder, Is.Not.Null);
-            Assert.That(terminal.NextDroneOrderAllowed, Is.GreaterThan(SGameTiming.CurTime));
-            Assert.That(terminal.NextNetworkOrderAllowed, Is.EqualTo(TimeSpan.Zero));
+            var pool = Pool(console);
+            Assert.That(pool.ActiveOrder, Is.Not.Null);
+            Assert.That(pool.NextDroneOrderAllowed, Is.GreaterThan(SGameTiming.CurTime));
+            Assert.That(pool.NextNetworkOrderAllowed, Is.EqualTo(TimeSpan.Zero));
         });
 
         await Send(consoleNet, new CMURoboticsCancelOrderMessage());
         await Server.WaitAssertion(() =>
         {
             var terminal = SComp<CMURoboticsOrderConsoleComponent>(console);
-            terminal.AvailableOrders.Clear();
-            var target = SComp<CMURoboticsOrderConsoleComponent>(console).BuildTargets[0];
-            terminal.AvailableOrders.Add(new CMURoboticsOrder
+            var pool = Pool(console);
+            pool.AvailableOrders.Clear();
+            var target = terminal.BuildTargets[0];
+            pool.AvailableOrders.Add(new CMURoboticsOrder
             {
                 Id = 999,
                 Type = CMURoboticsOrderType.Build,
@@ -247,15 +250,15 @@ public sealed class CMURoboticsTerminalTest : GameTest
                 Reward = 1000,
                 Amount = 1,
             });
-            secondOrder = terminal.AvailableOrders[0].Id;
+            secondOrder = pool.AvailableOrders[0].Id;
         });
 
         await Send(consoleNet, new CMURoboticsAcceptOrderMessage(secondOrder));
         await Server.WaitAssertion(() =>
         {
-            var terminal = SComp<CMURoboticsOrderConsoleComponent>(console);
-            Assert.That(terminal.ActiveOrder, Is.Null, "the cooldown blocks the second order");
-            Assert.That(terminal.Status, Is.Not.Empty);
+            var pool = Pool(console);
+            Assert.That(pool.ActiveOrder, Is.Null, "the cooldown blocks the second order");
+            Assert.That(pool.Status, Is.Not.Empty);
             Assert.That(
                 SEntMan.System<SharedUserInterfaceSystem>()
                     .TryGetUiState<CMURoboticsOrderConsoleState>(

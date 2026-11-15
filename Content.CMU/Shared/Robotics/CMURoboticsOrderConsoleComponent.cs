@@ -1,3 +1,4 @@
+using Content.Shared.CMU14.ColonyEconomy;
 using Robust.Shared.Prototypes;
 using Robust.Shared.ViewVariables;
 
@@ -30,7 +31,7 @@ public sealed partial class CMURoboticsOrderConsoleComponent : Component
     public TimeSpan OrderCooldown = TimeSpan.FromMinutes(3);
 
     /// <summary>
-    /// Recipe cartridges the terminal sells for sample data.
+    /// Recipe cartridges the terminal sells for robotics science points.
     /// </summary>
     [DataField]
     public List<CMURoboticsCartridgeEntry> Cartridges = new();
@@ -42,40 +43,7 @@ public sealed partial class CMURoboticsOrderConsoleComponent : Component
     public List<CMURoboticsOrderTarget> RepairTargets = new();
 
     [ViewVariables]
-    public List<CMURoboticsOrder> AvailableOrders = new();
-
-    [ViewVariables]
-    public CMURoboticsOrder? ActiveOrder;
-
-    [ViewVariables]
-    public string Status = string.Empty;
-
-    /// <summary>
-    /// Missing-element penalty applied to the last delivered order.
-    /// </summary>
-    [ViewVariables]
-    public int LastPenalty;
-
-    /// <summary>
-    /// Number of missing elements that produced <see cref="LastPenalty"/>.
-    /// </summary>
-    [ViewVariables]
-    public int LastMissingElements;
-
-    [ViewVariables]
     public TimeSpan NextUiUpdate;
-
-    /// <summary>
-    /// Earliest time another drone build/repair order may be started.
-    /// </summary>
-    [ViewVariables]
-    public TimeSpan NextDroneOrderAllowed;
-
-    /// <summary>
-    /// Earliest time another production-network contract may be started.
-    /// </summary>
-    [ViewVariables]
-    public TimeSpan NextNetworkOrderAllowed;
 
     [ViewVariables]
     public string CartridgeStatus = string.Empty;
@@ -102,6 +70,13 @@ public sealed partial class CMURoboticsCartridgeEntry
 
     [DataField]
     public int Cost = 100;
+
+    /// <summary>
+    /// Optional main-direction gate. When set, the cartridge can only be bought while the complex's chosen
+    /// research direction matches. Reserved for the robotics/bioengineering recipe split.
+    /// </summary>
+    [DataField]
+    public CorporateResearchDirection? RequiredDirection;
 }
 
 [DataDefinition]

@@ -60,6 +60,7 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
     [Dependency] private UserInterfaceSystem _ui = default!;
     [Dependency] private LabelSystem _labels = default!;
     [Dependency] private CMUQueueNetworkConsoleSystem _queueNetwork = default!;
+    [Dependency] private CMURoboticsOrderPoolSystem _pools = default!;
     [Dependency] private ServerResearchDataTerminalSystem _research = default!;
 
     private const int RepairRewardPerDamage = 1;
@@ -114,16 +115,17 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
         var query = EntityQueryEnumerator<CMURoboticsOrderConsoleComponent>();
         while (query.MoveNext(out var uid, out var console))
         {
-            if (console.ActiveOrder is { } order)
+            var pool = _pools.GetPool(uid);
+            if (pool.ActiveOrder is { } order)
             {
                 if (order.Deadline != default && now >= order.Deadline)
                 {
-                    FailOrder((uid, console), order, fine: true, reason: null);
+                    FailOrder((uid, console), pool, order, fine: true, reason: null);
                     continue;
                 }
             }
-            else if (now > console.NextDroneOrderAllowed + TimeSpan.FromSeconds(1) &&
-                     now > console.NextNetworkOrderAllowed + TimeSpan.FromSeconds(1))
+            else if (now > pool.NextDroneOrderAllowed + TimeSpan.FromSeconds(1) &&
+                     now > pool.NextNetworkOrderAllowed + TimeSpan.FromSeconds(1))
             {
                 continue;
             }
@@ -141,6 +143,7 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
     {
         _nextOrderId = 1;
         _nextUpdate = default;
+        _pools.Reset();
     }
 
     private void OnMapInit(Entity<CMURoboticsOrderConsoleComponent> ent, ref MapInitEvent args)
@@ -178,8 +181,17 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
             return;
         }
 
-        var faction = _research.GetFaction(ent.Owner);
-        var balance = _research.GetSampleData(faction);
+        var pool = _pools.GetPool(ent.Owner);
+        var faction = pool.Faction;
+        if (entry.RequiredDirection is { } requiredDirection &&
+            _corporateConsole.GetResearchDirection(faction) != requiredDirection)
+        {
+            ent.Comp.CartridgeStatus = Loc.GetString("cmu-robotics-cartridges-wrong-direction");
+            UpdateUi(ent);
+            return;
+        }
+
+        var balance = _research.GetRoboticsPoints(faction);
         if (balance < entry.Cost)
         {
             ent.Comp.CartridgeStatus = Loc.GetString(
@@ -202,7 +214,7 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
         if (args.Actor.IsValid() && !TerminatingOrDeleted(args.Actor))
             _hands.TryPickupAnyHand(args.Actor, cartridge);
 
-        _research.UpdateSampleData(balance - entry.Cost, faction);
+        _research.UpdateRoboticsPoints(balance - entry.Cost, faction);
         ent.Comp.CartridgeStatus = Loc.GetString(
             "cmu-robotics-cartridges-purchased",
             ("cartridge", GetPrototypeName(entry.Cartridge)));
@@ -211,29 +223,30 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
 
     private void OnAcceptOrder(Entity<CMURoboticsOrderConsoleComponent> ent, ref CMURoboticsAcceptOrderMessage args)
     {
-        if (ent.Comp.ActiveOrder != null)
+        var pool = _pools.GetPool(ent.Owner);
+        if (pool.ActiveOrder != null)
         {
-            ent.Comp.Status = Loc.GetString("cmu-robotics-console-active-exists");
+            pool.Status = Loc.GetString("cmu-robotics-console-active-exists");
             UpdateUi(ent);
             return;
         }
 
-        var cooldown = GetDroneCooldownSeconds(ent.Comp);
+        var cooldown = GetDroneCooldownSeconds(pool, ent.Comp);
         if (cooldown > 0)
         {
-            ent.Comp.Status = Loc.GetString("cmu-robotics-console-cooldown-message", ("seconds", cooldown));
+            pool.Status = Loc.GetString("cmu-robotics-console-cooldown-message", ("seconds", cooldown));
             UpdateUi(ent);
             return;
         }
 
         var requestedId = args.Id;
-        var order = ent.Comp.AvailableOrders.FirstOrDefault(o => o.Id == requestedId);
+        var order = pool.AvailableOrders.FirstOrDefault(o => o.Id == requestedId);
         if (order == null)
             return;
 
         if (FindCorporateElevator(ent.Owner) is not { } elevator)
         {
-            ent.Comp.Status = Loc.GetString("cmu-robotics-console-no-platform");
+            pool.Status = Loc.GetString("cmu-robotics-console-no-platform");
             UpdateUi(ent);
             return;
         }
@@ -242,7 +255,7 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
         var freeSlots = _requisitions.GetElevatorRemainingOrderSlots(elevator);
         if (!_requisitions.TryAddElevatorOrders(elevator, entries))
         {
-            ent.Comp.Status = Loc.GetString(
+            pool.Status = Loc.GetString(
                 "cmu-robotics-console-no-queue-space",
                 ("needed", entries.Count),
                 ("free", freeSlots));
@@ -253,12 +266,12 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
         order.Elevator = elevator.Owner;
         order.Deadline = _timing.CurTime + ent.Comp.OrderDuration;
 
-        ent.Comp.AvailableOrders.Remove(order);
-        ent.Comp.ActiveOrder = order;
-        ent.Comp.NextDroneOrderAllowed = _timing.CurTime + ent.Comp.OrderCooldown;
-        ent.Comp.LastPenalty = 0;
-        ent.Comp.LastMissingElements = 0;
-        ent.Comp.Status = Loc.GetString(
+        pool.AvailableOrders.Remove(order);
+        pool.ActiveOrder = order;
+        pool.NextDroneOrderAllowed = _timing.CurTime + ent.Comp.OrderCooldown;
+        pool.LastPenalty = 0;
+        pool.LastMissingElements = 0;
+        pool.Status = Loc.GetString(
             order.Type == CMURoboticsOrderType.Repair
                 ? "cmu-robotics-console-accepted-repair"
                 : "cmu-robotics-console-accepted-build",
@@ -302,13 +315,16 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
 
     private void OnCrateDelivered(ref CMURequisitionsCrateDeliveredEvent args)
     {
+        var processedOrders = new HashSet<int>();
         var query = EntityQueryEnumerator<CMURoboticsOrderConsoleComponent>();
         while (query.MoveNext(out var consoleUid, out var console))
         {
-            if (console.ActiveOrder is not { } order
+            var pool = _pools.GetPool(consoleUid);
+            if (pool.ActiveOrder is not { } order
                 || order.Elevator != args.Elevator.Owner
                 || !TryComp<CMURoboticsTransportCrateComponent>(args.Crate, out var crate)
-                || crate.OrderId != order.Id)
+                || crate.OrderId != order.Id
+                || !processedOrders.Add(order.Id))
                 continue;
 
             MarkDeliveredCrate((consoleUid, console), order, args.Crate);
@@ -422,7 +438,8 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
         var query = EntityQueryEnumerator<CMURoboticsOrderConsoleComponent>();
         while (query.MoveNext(out var consoleUid, out var console))
         {
-            if (console.ActiveOrder is not { } order || order.Elevator != ent.Owner)
+            var pool = _pools.GetPool(consoleUid);
+            if (pool.ActiveOrder is not { } order || order.Elevator != ent.Owner)
                 continue;
 
             var success = TryEvaluateSubmission(
@@ -437,18 +454,19 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
             var consoleEnt = (consoleUid, console);
             if (!success)
             {
-                FailOrder(consoleEnt, order, fine: false, reason: reason);
+                FailOrder(consoleEnt, pool, order, fine: false, reason: reason);
                 continue;
             }
 
             var penalty = CalculatePenalty(order.Reward, missingElements);
             var paid = order.Reward - penalty;
             PayCorporateBudget(paid);
+            AwardRoboticsPoints(paid, pool.Faction);
             DeleteOrderSlips(order.Id);
-            console.ActiveOrder = null;
-            console.LastPenalty = penalty;
-            console.LastMissingElements = missingElements;
-            console.Status = penalty > 0
+            pool.ActiveOrder = null;
+            pool.LastPenalty = penalty;
+            pool.LastMissingElements = missingElements;
+            pool.Status = penalty > 0
                 ? Loc.GetString(
                     "cmu-robotics-console-delivered-penalty",
                     ("target", order.TargetName),
@@ -588,28 +606,30 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
 
     private void OnCancelOrder(Entity<CMURoboticsOrderConsoleComponent> ent, ref CMURoboticsCancelOrderMessage args)
     {
-        if (ent.Comp.ActiveOrder is not { } order)
+        var pool = _pools.GetPool(ent.Owner);
+        if (pool.ActiveOrder is not { } order)
             return;
 
         // Cancelling a contract must not delete customer units or transport
         // crates. Only the paperwork is removed.
         DeleteOrderSlips(order.Id);
 
-        ent.Comp.ActiveOrder = null;
-        ent.Comp.LastPenalty = 0;
-        ent.Comp.LastMissingElements = 0;
-        ent.Comp.Status = Loc.GetString("cmu-robotics-console-cancelled");
+        pool.ActiveOrder = null;
+        pool.LastPenalty = 0;
+        pool.LastMissingElements = 0;
+        pool.Status = Loc.GetString("cmu-robotics-console-cancelled");
         FillOrders(ent);
         UpdateUi(ent);
     }
 
     private void OnPrintSlip(Entity<CMURoboticsOrderConsoleComponent> ent, ref CMURoboticsPrintSlipMessage args)
     {
-        if (ent.Comp.ActiveOrder is not { } order)
+        var pool = _pools.GetPool(ent.Owner);
+        if (pool.ActiveOrder is not { } order)
             return;
 
         PrintSlip(ent, order, args.Actor);
-        ent.Comp.Status = Loc.GetString("cmu-robotics-console-slip-printed");
+        pool.Status = Loc.GetString("cmu-robotics-console-slip-printed");
         UpdateUi(ent);
     }
 
@@ -635,36 +655,38 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
 
     private void OnRefreshOrders(Entity<CMURoboticsOrderConsoleComponent> ent, ref CMURoboticsRefreshOrdersMessage args)
     {
-        if (ent.Comp.ActiveOrder != null)
+        var pool = _pools.GetPool(ent.Owner);
+        if (pool.ActiveOrder != null)
         {
-            ent.Comp.Status = Loc.GetString("cmu-robotics-console-refresh-active");
+            pool.Status = Loc.GetString("cmu-robotics-console-refresh-active");
             UpdateUi(ent);
             return;
         }
 
-        ent.Comp.AvailableOrders.Clear();
+        pool.AvailableOrders.Clear();
         FillOrders(ent);
-        ent.Comp.Status = Loc.GetString("cmu-robotics-console-refreshed");
+        pool.Status = Loc.GetString("cmu-robotics-console-refreshed");
         UpdateUi(ent);
     }
 
     private void FillOrders(Entity<CMURoboticsOrderConsoleComponent> ent)
     {
-        while (ent.Comp.AvailableOrders.Count < ent.Comp.MaxAvailableOrders)
+        var pool = _pools.GetPool(ent.Owner);
+        while (pool.AvailableOrders.Count < ent.Comp.MaxAvailableOrders)
         {
-            var build = ent.Comp.AvailableOrders.Count == 0 || _random.Prob(0.5f);
-            var pool = build ? ent.Comp.BuildTargets : ent.Comp.RepairTargets;
+            var build = pool.AvailableOrders.Count == 0 || _random.Prob(0.5f);
+            var targets = build ? ent.Comp.BuildTargets : ent.Comp.RepairTargets;
 
-            if (pool.Count == 0)
+            if (targets.Count == 0)
             {
                 build = true;
-                pool = ent.Comp.BuildTargets;
+                targets = ent.Comp.BuildTargets;
             }
 
-            if (pool.Count == 0)
+            if (targets.Count == 0)
                 break;
 
-            var target = _random.Pick(pool);
+            var target = _random.Pick(targets);
             EntProtoId? requiredModule = null;
             if (target.RequiredModules.Count > 0 && (!build || _random.Prob(0.5f)))
                 requiredModule = _random.Pick(target.RequiredModules);
@@ -710,7 +732,7 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
                 RepairMissingLimbs = repairMissing,
             };
 
-            ent.Comp.AvailableOrders.Add(order);
+            pool.AvailableOrders.Add(order);
         }
     }
 
@@ -748,6 +770,7 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
 
     private void FailOrder(
         Entity<CMURoboticsOrderConsoleComponent> console,
+        CMURoboticsOrderPool pool,
         CMURoboticsOrder order,
         bool fine,
         string? reason)
@@ -761,10 +784,10 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
 
         // A failed or expired contract does not delete its customer units.
         DeleteOrderSlips(order.Id);
-        console.Comp.ActiveOrder = null;
-        console.Comp.LastPenalty = 0;
-        console.Comp.LastMissingElements = 0;
-        console.Comp.Status = reason == null
+        pool.ActiveOrder = null;
+        pool.LastPenalty = 0;
+        pool.LastMissingElements = 0;
+        pool.Status = reason == null
             ? Loc.GetString("cmu-robotics-console-failed-timeout", ("fine", fineAmount))
             : Loc.GetString("cmu-robotics-console-rejected", ("reason", reason));
         FillOrders(console);
@@ -833,15 +856,22 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
         _corporateConsole.AddToCorporateBudget(amount);
     }
 
+    private void AwardRoboticsPoints(int payout, string faction)
+    {
+        var points = CMURoboticsPoints.FromPayout(payout);
+        _research.UpdateRoboticsPoints(_research.GetRoboticsPoints(faction) + points, faction);
+    }
+
     private void UpdateUi(Entity<CMURoboticsOrderConsoleComponent> ent)
     {
-        var available = ent.Comp.AvailableOrders
+        var pool = _pools.GetPool(ent.Owner);
+        var available = pool.AvailableOrders
             .Select(ToInfo)
             .ToList();
 
-        var active = ent.Comp.ActiveOrder == null ? null : ToInfo(ent.Comp.ActiveOrder);
-        var cooldown = GetDroneCooldownSeconds(ent.Comp);
-        var networkCooldown = GetNetworkCooldownSeconds(ent.Comp);
+        var active = pool.ActiveOrder == null ? null : ToInfo(pool.ActiveOrder);
+        var cooldown = GetDroneCooldownSeconds(pool, ent.Comp);
+        var networkCooldown = GetNetworkCooldownSeconds(pool, ent.Comp);
 
         CMUQueueNetworkConsoleState? queue = null;
         if (TryComp<CMUQueueNetworkConsoleComponent>(ent.Owner, out var queueComp)
@@ -857,8 +887,7 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
             .Select(entry => new CMURoboticsCartridgeInfo(entry.Cartridge, entry.Description, entry.Cost))
             .ToList();
 
-        var faction = _research.GetFaction(ent.Owner);
-        var sampleData = _research.GetSampleData(faction);
+        var roboticsPoints = _research.GetRoboticsPoints(pool.Faction);
 
         _ui.SetUiState(
             ent.Owner,
@@ -866,32 +895,24 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
             new CMURoboticsOrderConsoleState(
                 available,
                 active,
-                ent.Comp.Status,
-                ent.Comp.LastPenalty,
-                ent.Comp.LastMissingElements,
+                pool.Status,
+                pool.LastPenalty,
+                pool.LastMissingElements,
                 cooldown,
                 queue,
                 cartridges,
-                sampleData,
+                roboticsPoints,
                 ent.Comp.CartridgeStatus));
     }
 
-    private int GetDroneCooldownSeconds(CMURoboticsOrderConsoleComponent comp)
+    private int GetDroneCooldownSeconds(CMURoboticsOrderPool pool, CMURoboticsOrderConsoleComponent comp)
     {
-        return CooldownSeconds(comp, comp.NextDroneOrderAllowed);
+        return _pools.DroneCooldownSeconds(pool, comp.OrderCooldown);
     }
 
-    private int GetNetworkCooldownSeconds(CMURoboticsOrderConsoleComponent comp)
+    private int GetNetworkCooldownSeconds(CMURoboticsOrderPool pool, CMURoboticsOrderConsoleComponent comp)
     {
-        return CooldownSeconds(comp, comp.NextNetworkOrderAllowed);
-    }
-
-    private int CooldownSeconds(CMURoboticsOrderConsoleComponent comp, TimeSpan nextAllowed)
-    {
-        return CMURoboticsOrderCooldown.RemainingSeconds(
-            comp.OrderCooldown,
-            nextAllowed,
-            _timing.CurTime);
+        return _pools.NetworkCooldownSeconds(pool, comp.OrderCooldown);
     }
 
     private CMURoboticsOrderInfo ToInfo(CMURoboticsOrder order)

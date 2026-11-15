@@ -74,7 +74,7 @@ public sealed class CMURoboticsOrderConsoleState : BoundUserInterfaceState
     public int CooldownSeconds { get; }
     public CMUQueueNetworkConsoleState? Queue { get; }
     public List<CMURoboticsCartridgeInfo> Cartridges { get; }
-    public int SampleData { get; }
+    public int RoboticsPoints { get; }
     public string CartridgeStatus { get; }
 
     public CMURoboticsOrderConsoleState(
@@ -86,7 +86,7 @@ public sealed class CMURoboticsOrderConsoleState : BoundUserInterfaceState
         int cooldownSeconds = 0,
         CMUQueueNetworkConsoleState? queue = null,
         List<CMURoboticsCartridgeInfo>? cartridges = null,
-        int sampleData = 0,
+        int roboticsPoints = 0,
         string cartridgeStatus = "")
     {
         Available = available;
@@ -97,7 +97,7 @@ public sealed class CMURoboticsOrderConsoleState : BoundUserInterfaceState
         CooldownSeconds = cooldownSeconds;
         Queue = queue;
         Cartridges = cartridges ?? new List<CMURoboticsCartridgeInfo>();
-        SampleData = sampleData;
+        RoboticsPoints = roboticsPoints;
         CartridgeStatus = cartridgeStatus;
     }
 }

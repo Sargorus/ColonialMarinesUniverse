@@ -149,3 +149,31 @@ internal sealed partial class SetSampleData : LocalizedEntityCommands
         shell.WriteLine($"{faction} sample data: {_term.GetSampleData(faction)}");
     }
 }
+
+[AdminCommand(Shared.Administration.AdminFlags.Admin)]
+internal sealed partial class SetRoboticsPoints : LocalizedEntityCommands
+{
+    [Dependency] private SharedResearchDataTerminalSystem _term = default!;
+    public override string Command => "research:setrobotics";
+    public override void Execute(IConsoleShell shell, string argStr, string[] args)
+    {
+        if (args.Length < 1 || args.Length > 2)
+        {
+            shell.WriteError("research:setrobotics <amount> [faction]");
+            return;
+        }
+        if (!int.TryParse(args[0], out var amount) || amount < 0)
+        {
+            shell.WriteError("research:setrobotics: amount must be a non-negative integer.");
+            return;
+        }
+        var faction = args.Length == 2 ? args[1].ToLowerInvariant() : "corporate";
+        if (faction is not ("corporate" or "govfor" or "opfor" or "colony"))
+        {
+            shell.WriteError("research:setrobotics: faction must be corporate, govfor, opfor or colony.");
+            return;
+        }
+        _term.UpdateRoboticsPoints(amount, faction);
+        shell.WriteLine($"{faction} robotics points: {_term.GetRoboticsPoints(faction)}");
+    }
+}

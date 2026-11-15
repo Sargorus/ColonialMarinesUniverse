@@ -27,11 +27,64 @@ public sealed class CorporateConsoleBuiState : BoundUserInterfaceState
 
     public EconomyStatusState EconomyStatus { get; }
 
-    public CorporateConsoleBuiState(float transitTariffPercent, float corporateBudget, EconomyStatusState economyStatus)
+    /// <summary>Chemistry science points (sample data) held by the corporate research account.</summary>
+    public int ChemistryPoints { get; }
+
+    /// <summary>Robotics science points held by the corporate research account.</summary>
+    public int RoboticsPoints { get; }
+
+    /// <summary>Research clearance level shown on the science tab.</summary>
+    public int ScienceLevel { get; }
+
+    public CorporateResearchDirection Direction { get; }
+
+    public List<CompanyMissionInfo> AvailableMissions { get; }
+    public List<CompanyMissionInfo> ActiveMissions { get; }
+    public List<CompanyMissionInfo> MissionHistory { get; }
+
+    public int PmcCost { get; }
+    public int PmcCallsLeft { get; }
+    public TimeSpan PmcNextCallInAt { get; }
+    public int PmcCooldownSeconds { get; }
+    public bool PmcCalled { get; }
+
+    /// <summary>Last mission action result shown on the Company Tasks tab.</summary>
+    public string MissionStatus { get; }
+
+    public CorporateConsoleBuiState(
+        float transitTariffPercent,
+        float corporateBudget,
+        EconomyStatusState economyStatus,
+        int chemistryPoints = 0,
+        int roboticsPoints = 0,
+        int scienceLevel = 1,
+        CorporateResearchDirection direction = CorporateResearchDirection.None,
+        List<CompanyMissionInfo>? availableMissions = null,
+        List<CompanyMissionInfo>? activeMissions = null,
+        List<CompanyMissionInfo>? missionHistory = null,
+        int pmcCost = 0,
+        int pmcCallsLeft = 0,
+        TimeSpan pmcNextCallInAt = default,
+        int pmcCooldownSeconds = 0,
+        bool pmcCalled = false,
+        string missionStatus = "")
     {
         TransitTariffPercent = transitTariffPercent;
         CorporateBudget = corporateBudget;
         EconomyStatus = economyStatus;
+        ChemistryPoints = chemistryPoints;
+        RoboticsPoints = roboticsPoints;
+        ScienceLevel = scienceLevel;
+        Direction = direction;
+        AvailableMissions = availableMissions ?? new List<CompanyMissionInfo>();
+        ActiveMissions = activeMissions ?? new List<CompanyMissionInfo>();
+        MissionHistory = missionHistory ?? new List<CompanyMissionInfo>();
+        PmcCost = pmcCost;
+        PmcCallsLeft = pmcCallsLeft;
+        PmcNextCallInAt = pmcNextCallInAt;
+        PmcCooldownSeconds = pmcCooldownSeconds;
+        PmcCalled = pmcCalled;
+        MissionStatus = missionStatus;
     }
 }
 

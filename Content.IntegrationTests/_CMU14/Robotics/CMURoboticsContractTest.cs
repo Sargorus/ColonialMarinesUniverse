@@ -36,6 +36,9 @@ namespace Content.IntegrationTests.CMU14.Robotics;
 [TestFixture]
 public sealed class CMURoboticsContractTest : GameTest
 {
+    private CMURoboticsOrderPool Pool(EntityUid console)
+        => Server.System<CMURoboticsOrderPoolSystem>().GetPool(console);
+
     public override PoolSettings PoolSettings => new() { Connected = false, Dirty = true };
 
     [Test]
@@ -183,8 +186,8 @@ public sealed class CMURoboticsContractTest : GameTest
                 TargetName = "test drone",
                 Reward = 1000,
             };
-            consoleComp.AvailableOrders.Clear();
-            consoleComp.AvailableOrders.Add(order);
+            Pool(console).AvailableOrders.Clear();
+            Pool(console).AvailableOrders.Add(order);
 
             var message = new CMURoboticsAcceptOrderMessage(order.Id)
             {
@@ -193,7 +196,7 @@ public sealed class CMURoboticsContractTest : GameTest
             };
             SEntMan.EventBus.RaiseLocalEvent(console, message);
 
-            Assert.That(consoleComp.ActiveOrder, Is.Not.Null);
+            Assert.That(Pool(console).ActiveOrder, Is.Not.Null);
             Assert.That(elevatorComp.Orders.Count, Is.EqualTo(3));
 
             var timing = Server.ResolveDependency<IGameTiming>();
@@ -243,7 +246,7 @@ public sealed class CMURoboticsContractTest : GameTest
             var consoleComp = SEntMan.GetComponent<CMURoboticsOrderConsoleComponent>(console);
             var timing = Server.ResolveDependency<IGameTiming>();
 
-            consoleComp.ActiveOrder = new CMURoboticsOrder
+            Pool(console).ActiveOrder = new CMURoboticsOrder
             {
                 Id = 5150,
                 Type = CMURoboticsOrderType.Build,
@@ -263,7 +266,7 @@ public sealed class CMURoboticsContractTest : GameTest
             Assert.That(corporate.MoveNext(out _, out var budget), Is.True);
             Assert.That(budget.CorporateBudget, Is.EqualTo(-1000),
                 "an expired order must charge 25% of its reward");
-            Assert.That(SEntMan.GetComponent<CMURoboticsOrderConsoleComponent>(console).ActiveOrder, Is.Null);
+            Assert.That(Pool(console).ActiveOrder, Is.Null);
         });
     }
 
@@ -275,7 +278,7 @@ public sealed class CMURoboticsContractTest : GameTest
         {
             var console = SEntMan.SpawnEntity("CMURoboticsOrderConsole", map.GridCoords);
             var consoleComp = SEntMan.GetComponent<CMURoboticsOrderConsoleComponent>(console);
-            consoleComp.ActiveOrder = new CMURoboticsOrder
+            Pool(console).ActiveOrder = new CMURoboticsOrder
             {
                 Id = 4242,
                 Type = CMURoboticsOrderType.Build,
@@ -310,7 +313,7 @@ public sealed class CMURoboticsContractTest : GameTest
             var console = SEntMan.SpawnEntity("CMURoboticsOrderConsole", map.GridCoords);
             var consoleComp = SEntMan.GetComponent<CMURoboticsOrderConsoleComponent>(console);
             consoleComp.MaxAvailableOrders = 30;
-            consoleComp.AvailableOrders.Clear();
+            Pool(console).AvailableOrders.Clear();
 
             var refresh = new CMURoboticsRefreshOrdersMessage
             {
@@ -319,7 +322,7 @@ public sealed class CMURoboticsContractTest : GameTest
             };
             SEntMan.EventBus.RaiseLocalEvent(console, refresh);
 
-            var repair = consoleComp.AvailableOrders.FirstOrDefault(
+            var repair = Pool(console).AvailableOrders.FirstOrDefault(
                 order => order.Type == CMURoboticsOrderType.Repair);
 
             Assert.That(repair, Is.Not.Null, "the console must generate repair orders");
@@ -356,7 +359,7 @@ public sealed class CMURoboticsContractTest : GameTest
                 RepairMissingLimbs = 2,
                 Elevator = elevator,
             };
-            consoleComp.ActiveOrder = order;
+            Pool(console).ActiveOrder = order;
 
             var requisitions = Server.System<RequisitionsSystem>();
             var entry = new RequisitionsEntry
@@ -453,7 +456,7 @@ public sealed class CMURoboticsContractTest : GameTest
                 Reward = 1000,
                 Elevator = elevator,
             };
-            consoleComp.ActiveOrder = order;
+            Pool(console).ActiveOrder = order;
 
             var requisitions = Server.System<RequisitionsSystem>();
             var entry = new RequisitionsEntry
@@ -527,7 +530,7 @@ public sealed class CMURoboticsContractTest : GameTest
             Assert.That(slots.TryInsert(crate, "paper_label", slip, null), Is.True);
 
             var consoleComp = SEntMan.GetComponent<CMURoboticsOrderConsoleComponent>(console);
-            consoleComp.ActiveOrder = new CMURoboticsOrder
+            Pool(console).ActiveOrder = new CMURoboticsOrder
             {
                 Id = 555,
                 Type = CMURoboticsOrderType.Repair,
@@ -544,7 +547,7 @@ public sealed class CMURoboticsContractTest : GameTest
             var attempt = new CMURequisitionsElevatorLoweringAttemptEvent(elevator);
             SEntMan.EventBus.RaiseLocalEvent(elevator, ref attempt);
 
-            Assert.That(consoleComp.ActiveOrder, Is.Null);
+            Assert.That(Pool(console).ActiveOrder, Is.Null);
             Assert.That(SEntMan.EntityExists(drone), Is.True,
                 "submitting a contract must not delete the repaired unit");
             Assert.That(budget.CorporateBudget, Is.EqualTo(before + 1000),
@@ -574,7 +577,7 @@ public sealed class CMURoboticsContractTest : GameTest
             Assert.That(Server.System<ItemSlotsSystem>().TryInsert(crate, "paper_label", slip, null), Is.True);
 
             var consoleComp = SComp<CMURoboticsOrderConsoleComponent>(console);
-            consoleComp.ActiveOrder = new CMURoboticsOrder
+            Pool(console).ActiveOrder = new CMURoboticsOrder
             {
                 Id = 556,
                 Type = CMURoboticsOrderType.Repair,
@@ -593,11 +596,11 @@ public sealed class CMURoboticsContractTest : GameTest
             var attempt = new CMURequisitionsElevatorLoweringAttemptEvent(elevator);
             SEntMan.EventBus.RaiseLocalEvent(elevator, ref attempt);
 
-            Assert.That(consoleComp.ActiveOrder, Is.Null);
+            Assert.That(Pool(console).ActiveOrder, Is.Null);
             Assert.That(budget.CorporateBudget, Is.EqualTo(before + 900),
                 "two missing outfit elements must deduct 10% of the reward");
-            Assert.That(consoleComp.LastPenalty, Is.EqualTo(100));
-            Assert.That(consoleComp.LastMissingElements, Is.EqualTo(2));
+            Assert.That(Pool(console).LastPenalty, Is.EqualTo(100));
+            Assert.That(Pool(console).LastMissingElements, Is.EqualTo(2));
         });
     }
 
@@ -623,7 +626,7 @@ public sealed class CMURoboticsContractTest : GameTest
             Assert.That(Server.System<ItemSlotsSystem>().TryInsert(crate, "paper_label", slip, null), Is.True);
 
             var consoleComp = SComp<CMURoboticsOrderConsoleComponent>(console);
-            consoleComp.ActiveOrder = new CMURoboticsOrder
+            Pool(console).ActiveOrder = new CMURoboticsOrder
             {
                 Id = 557,
                 Type = CMURoboticsOrderType.Repair,
@@ -642,11 +645,11 @@ public sealed class CMURoboticsContractTest : GameTest
             var attempt = new CMURequisitionsElevatorLoweringAttemptEvent(elevator);
             SEntMan.EventBus.RaiseLocalEvent(elevator, ref attempt);
 
-            Assert.That(consoleComp.ActiveOrder, Is.Null);
+            Assert.That(Pool(console).ActiveOrder, Is.Null);
             Assert.That(budget.CorporateBudget, Is.EqualTo(before),
                 "the penalty must be capped at the full reward");
-            Assert.That(consoleComp.LastPenalty, Is.EqualTo(1000));
-            Assert.That(consoleComp.LastMissingElements, Is.EqualTo(20));
+            Assert.That(Pool(console).LastPenalty, Is.EqualTo(1000));
+            Assert.That(Pool(console).LastMissingElements, Is.EqualTo(20));
         });
     }
 
@@ -672,7 +675,7 @@ public sealed class CMURoboticsContractTest : GameTest
             Assert.That(slots.TryInsert(crate, "paper_label", slip, null), Is.True);
 
             var consoleComp = SEntMan.GetComponent<CMURoboticsOrderConsoleComponent>(console);
-            consoleComp.ActiveOrder = new CMURoboticsOrder
+            Pool(console).ActiveOrder = new CMURoboticsOrder
             {
                 Id = 777,
                 Type = CMURoboticsOrderType.Build,
@@ -689,7 +692,7 @@ public sealed class CMURoboticsContractTest : GameTest
             var attempt = new CMURequisitionsElevatorLoweringAttemptEvent(elevator);
             SEntMan.EventBus.RaiseLocalEvent(elevator, ref attempt);
 
-            Assert.That(consoleComp.ActiveOrder, Is.Null);
+            Assert.That(Pool(console).ActiveOrder, Is.Null);
             Assert.That(SEntMan.EntityExists(drone), Is.True);
             Assert.That(budget.CorporateBudget, Is.EqualTo(before + 3500));
         });

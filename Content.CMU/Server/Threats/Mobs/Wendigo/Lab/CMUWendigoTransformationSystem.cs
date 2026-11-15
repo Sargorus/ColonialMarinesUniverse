@@ -567,6 +567,11 @@ public sealed partial class CMUWendigoTransformationSystem : EntitySystem
         _adminLog.Add(LogType.Action, LogImpact.High,
             $"{ToPrettyString(ent):subject} turned into {ToPrettyString(wendigo):wendigo} ({variant}, tamed: {subject.Tamed}, master: {subject.MasterName ?? "none"})");
 
+        RaiseLocalEvent(new CMUWendigoCreatedEvent(
+            wendigo,
+            variant.Id == FullWendigo.Id,
+            subject.Tamed));
+
         // Deleting the old body keeps it out of colonist counts, as if the subject left the round.
         RemCompDeferred<CMUWendigoSubjectComponent>(ent);
         QueueDel(ent);

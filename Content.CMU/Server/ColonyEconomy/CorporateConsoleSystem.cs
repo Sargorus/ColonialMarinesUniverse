@@ -4,8 +4,13 @@ using Content.Server.CMU14.Round;
 using Content.Server.Chat.Systems;
 using Content.Server.Popups;
 using Content.Server.Stack;
+using Content.Shared.CMU14.Chemistry.Reagents;
 using Content.Shared.CMU14.ColonyEconomy;
 using Content.Shared.CMU14.Threats;
+using Content.Shared.CMU14.Threats.Mobs.Wendigo.Lab;
+using Content.Shared.Cuffs;
+using Content.Shared.Cuffs.Components;
+using Content.Shared.GameTicking;
 using Content.Shared.Stacks;
 using Content.Shared.Interaction;
 using Content.Shared.Tag;
@@ -45,6 +50,18 @@ public sealed partial class CorporateConsoleSystem : EntitySystem
         SubscribeLocalEvent<CorporateConsoleComponent, CorporateConsoleOpenThirdPartyBuiMsg>(OnOpenThirdParty);
         SubscribeLocalEvent<CorporateConsoleComponent, EntInsertedIntoContainerMessage>(OnCashInserted);
         SubscribeLocalEvent<CorporateConsoleComponent, InteractUsingEvent>(OnInteractUsing);
+        SubscribeLocalEvent<CorporateConsoleComponent, CorporateConsoleAcceptMissionBuiMsg>(OnAcceptMission);
+        SubscribeLocalEvent<CorporateConsoleComponent, CorporateConsoleSetDirectionBuiMsg>(OnSetDirection);
+        SubscribeLocalEvent<CorporateConsoleComponent, CorporateConsoleCallPmcBuiMsg>(OnCallPmc);
+        SubscribeLocalEvent<CMUChemicalScannedEvent>(OnChemicalScanned);
+        SubscribeLocalEvent<CMUWendigoCreatedEvent>(OnWendigoCreated);
+        SubscribeLocalEvent<CuffRemovedEvent>(OnCuffRemoved);
+        SubscribeLocalEvent<RoundRestartCleanupEvent>(OnRoundRestartCleanup);
+    }
+
+    private void OnRoundRestartCleanup(RoundRestartCleanupEvent args)
+    {
+        ResetMissionState();
     }
 
     /// <summary>
@@ -61,6 +78,8 @@ public sealed partial class CorporateConsoleSystem : EntitySystem
 
             comp.TransitTariffPercent = other.TransitTariffPercent;
             comp.CorporateBudget = other.CorporateBudget;
+            comp.PmcCalls = other.PmcCalls;
+            comp.NextPmcCallAt = other.NextPmcCallAt;
             return;
         }
     }
@@ -226,9 +245,7 @@ public sealed partial class CorporateConsoleSystem : EntitySystem
 
     private void UpdateUiState(EntityUid uid, CorporateConsoleComponent comp)
     {
-        var econ = _adminConsole.BuildEconomyStatus();
-        _ui.SetUiState(uid, CorporateConsoleUi.Key,
-            new CorporateConsoleBuiState(comp.TransitTariffPercent, comp.CorporateBudget, econ));
+        _ui.SetUiState(uid, CorporateConsoleUi.Key, BuildUiState(uid, comp));
 
         var thirdParties = new Dictionary<string, (string DisplayName, float Cost)>();
         foreach (var (id, cost) in comp.CallableParties)
@@ -243,6 +260,34 @@ public sealed partial class CorporateConsoleSystem : EntitySystem
                 CallsLeft = Math.Max(0, comp.MaxCallIns - comp.CalledParties.Count),
                 NextCallInAt = comp.NextCallInAt,
             });
+    }
+
+    /// <summary>
+    /// Builds the main console screen, including the science balances, company mission board, PMC state and
+    /// the complex's chosen research direction.
+    /// </summary>
+    private CorporateConsoleBuiState BuildUiState(EntityUid uid, CorporateConsoleComponent comp)
+    {
+        var faction = GetConsoleFaction(uid);
+        var science = QueryScience(faction);
+        var state = GetMissionState(faction);
+        return new CorporateConsoleBuiState(
+            comp.TransitTariffPercent,
+            comp.CorporateBudget,
+            _adminConsole.BuildEconomyStatus(),
+            science.ChemistryPoints,
+            science.RoboticsPoints,
+            science.ScienceLevel,
+            state.Direction,
+            BuildAvailableMissions(state),
+            BuildActiveMissions(state),
+            BuildMissionHistory(state),
+            comp.PmcCostChemistry,
+            Math.Max(0, comp.MaxPmcCalls - comp.PmcCalls),
+            comp.NextPmcCallAt,
+            Math.Max(0, (int) Math.Ceiling((comp.NextPmcCallAt - _timing.CurTime).TotalSeconds)),
+            comp.PmcCalls > 0,
+            state.Status);
     }
 
     private void UpdateAllUi()

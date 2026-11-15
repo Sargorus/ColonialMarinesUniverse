@@ -46,4 +46,32 @@ public sealed partial class CorporateConsoleComponent : Component
     ///     When the next call-in can be made. Shared by every console of this kind.
     /// </summary>
     public TimeSpan NextCallInAt;
+
+    /// <summary>
+    ///     Chemistry science points charged for a WEYU PMC squad call.
+    /// </summary>
+    [DataField("pmcCostChemistry")]
+    public int PmcCostChemistry = 25;
+
+    /// <summary>
+    ///     How many PMC squads can be called per round, shared by every corporate console.
+    /// </summary>
+    [DataField("maxPmcCalls")]
+    public int MaxPmcCalls = 1;
+
+    /// <summary>
+    ///     PMC squads already called this round.
+    /// </summary>
+    public int PmcCalls;
+
+    /// <summary>
+    ///     Earliest time another PMC squad may be called.
+    /// </summary>
+    public TimeSpan NextPmcCallAt;
+
+    /// <summary>
+    ///     Delay between PMC squad calls, shared by every corporate console.
+    /// </summary>
+    [DataField("pmcCooldown")]
+    public TimeSpan PmcCooldown = TimeSpan.FromMinutes(20);
 }

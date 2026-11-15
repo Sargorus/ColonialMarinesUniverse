@@ -62,13 +62,57 @@ public sealed class UpdateResearchConsoleEvent(List<GeneratedReagentData> reagen
     public TimeSpan NextUpdate = nextUpdate;
 }
 [Serializable, NetSerializable]
-public sealed class UpdateDataTerminalClearanceEvent(int clearance, int credits, string faction = "corporate", int sampleData = -1) : EntityEventArgs
+public sealed class UpdateDataTerminalClearanceEvent(
+    int clearance,
+    int credits,
+    string faction = "corporate",
+    int sampleData = -1,
+    int roboticsPoints = -1) : EntityEventArgs
 {
     public int Clearance = clearance;
     public int Credits = credits;
     public string Faction = faction;
     /// <summary>Simulator currency; -1 leaves the current value unchanged.</summary>
     public int SampleData = sampleData;
+    /// <summary>Robotics research currency; -1 leaves the current value unchanged.</summary>
+    public int RoboticsPoints = roboticsPoints;
+}
+
+/// <summary>
+/// Adds or removes science currency for a faction. Handled on the server by the research account and used by
+/// the liaison console to pay mission rewards without depending on the research system directly.
+/// </summary>
+public sealed class CMUAddSciencePointsEvent(string faction, int chemistryPoints = 0, int roboticsPoints = 0)
+    : EntityEventArgs
+{
+    public string Faction = faction;
+    public int ChemistryPoints = chemistryPoints;
+    public int RoboticsPoints = roboticsPoints;
+}
+
+/// <summary>
+/// Synchronous query for a faction's current science balances, so consoles that cannot depend on the research
+/// system (it depends on them) can still display live points.
+/// </summary>
+public sealed class CMUScienceStatusQueryEvent(string faction) : EntityEventArgs
+{
+    public string Faction = faction;
+    public int ChemistryPoints;
+    public int RoboticsPoints;
+    public int ScienceLevel = 1;
+}
+
+/// <summary>
+/// Raised the first time a faction scans a chemical. The property profile is copied for mission checks.
+/// </summary>
+public sealed class CMUChemicalScannedEvent(
+    string faction,
+    string reagentId,
+    Dictionary<string, int> properties) : EntityEventArgs
+{
+    public string Faction = faction;
+    public string ReagentId = reagentId;
+    public Dictionary<string, int> Properties = properties;
 }
 
 [Serializable, NetSerializable]
