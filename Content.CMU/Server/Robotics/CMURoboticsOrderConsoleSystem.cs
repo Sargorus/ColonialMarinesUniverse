@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Content.Server.Administration.Logs;
 using Content.Server.CMU14.ColonyEconomy;
 using Content.Server.CMU14.Chemistry.Research;
 using Content.Server.CMU14.Requisitions;
@@ -18,6 +19,7 @@ using Content.Shared.CMU14.Requisitions;
 using Content.Shared.CMU14.Robotics;
 using Content.Shared.CMU14.Robotics.QueueNetwork;
 using Content.Shared.Damage.Components;
+using Content.Shared.Database;
 using Content.Shared.Damage.Systems;
 using Content.Shared.FixedPoint;
 using Content.Shared.Hands.EntitySystems;
@@ -41,6 +43,7 @@ namespace Content.Server.CMU14.Robotics;
 /// </summary>
 public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
 {
+    [Dependency] private IAdminLogManager _adminLog = default!;
     [Dependency] private SharedBodySystem _body = default!;
     [Dependency] private IComponentFactory _compFactory = default!;
     [Dependency] private CorporateConsoleSystem _corporateConsole = default!;

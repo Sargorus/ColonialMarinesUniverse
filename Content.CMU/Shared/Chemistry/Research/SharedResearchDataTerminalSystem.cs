@@ -1,9 +1,9 @@
-using Content.Shared.CMU14.Chemistry.Reagents;
-using Content.Shared.GameTicking;
-using Robust.Shared.Network;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Content.Shared.CMU14.Chemistry.Reagents;
+using Content.Shared.GameTicking;
+using Robust.Shared.Network;
 
 namespace Content.Shared.CMU14.Chemistry.Research;
 
@@ -11,7 +11,6 @@ public abstract partial class SharedResearchDataTerminalSystem : EntitySystem
 {
     [Dependency] private SharedUserInterfaceSystem _ui = default!;
     [Dependency] private INetManager _net = default!;
-
 
     // Legacy callers and admin commands use the corporate research account.
     public int Clearance { get => GetClearance("corporate"); set => _clearance["corporate"] = value; }
@@ -109,11 +108,10 @@ public abstract partial class SharedResearchDataTerminalSystem : EntitySystem
     public void UpdateRoboticsPoints(int roboticsPoints, string faction)
         => UpdateClearance(GetCredits(faction), -1, faction, -1, Math.Max(0, roboticsPoints));
 
-
     private void OnUpdateClearance(UpdateDataTerminalClearanceEvent args)
     {
         var oldClearance = GetClearance(args.Faction);
-        if(args.Clearance != -1)
+        if (args.Clearance != -1)
         {
             _clearance[args.Faction] = args.Clearance;
         }

@@ -898,76 +898,6 @@ public sealed partial class CMUWendigoTransformationSystem : EntitySystem
 
     #endregion
 
-    #region Examine and round end
-
-    private void OnSubjectExamined(Entity<CMUWendigoSubjectComponent> ent, ref ExaminedEvent args)
-    {
-        if (ent.Comp.Stage == CMUWendigoSubjectStage.Mutating)
-        {
-            args.PushMarkup(Loc.GetString("cmu-wendigo-lab-examine-mutating"));
-            return;
-        }
-
-        if (IsReadyForFinalDose(ent.Comp))
-            args.PushMarkup(Loc.GetString("cmu-wendigo-lab-examine-ready"));
-
-        if (ent.Comp.Instability >= UnstableThreshold)
-            args.PushMarkup(Loc.GetString("cmu-wendigo-lab-examine-unstable-severe"));
-        else if (ent.Comp.Instability > 0)
-            args.PushMarkup(Loc.GetString("cmu-wendigo-lab-examine-unstable"));
-    }
-
-    private void OnScannerReading(Entity<CMUWendigoSubjectComponent> ent, ref CMUHealthScannerReadingEvent args)
-    {
-        args.State.CMUWendigoReading = BuildScannerReading(ent.Comp);
-    }
-
-    /// <summary>
-    /// Health analyzer line: stage, overall progress, what the subject is waiting for, and instability.
-    /// </summary>
-    public string BuildScannerReading(CMUWendigoSubjectComponent subject)
-    {
-        var now = _timing.CurTime;
-        var stageIndex = (int) subject.Stage;
-        var stageLength = subject.StageEndsAt - subject.StageStartedAt;
-        var stageFraction = stageLength <= TimeSpan.Zero
-            ? 1f
-            : Math.Clamp((float) ((now - subject.StageStartedAt) / stageLength), 0f, 1f);
-        var stageCount = Enum.GetValues<CMUWendigoSubjectStage>().Length;
-        var progress = (int) MathF.Round((stageIndex + stageFraction) / stageCount * 100f);
-
-        string status;
-        if (subject.Stage == CMUWendigoSubjectStage.Mutating)
-            status = Loc.GetString("cmu-wendigo-lab-scanner-mutating");
-        else if (now < subject.StageEndsAt)
-            status = Loc.GetString("cmu-wendigo-lab-scanner-developing", ("time", FormatTime(subject.StageEndsAt - now)));
-        else
-            status = Loc.GetString("cmu-wendigo-lab-scanner-ready");
-
-        return Loc.GetString("cmu-wendigo-lab-scanner",
-            ("stage", Loc.GetString($"cmu-wendigo-lab-stage-{subject.Stage.ToString().ToLowerInvariant()}")),
-            ("progress", progress),
-            ("status", status),
-            ("instability", subject.Instability),
-            ("max", MaxInstability));
-    }
-
-    private static string FormatTime(TimeSpan time)
-    {
-        if (time < TimeSpan.Zero)
-            time = TimeSpan.Zero;
-
-        return $"{(int) time.TotalMinutes}:{time.Seconds:D2}";
-    }
-
-    /// <summary>
-    /// Gestation is over and the subject will take MH-32 or MH-33.
-    /// </summary>
-    public bool IsReadyForFinalDose(CMUWendigoSubjectComponent subject)
-    {
-        return subject.Stage == CMUWendigoSubjectStage.Gestation && _timing.CurTime >= subject.StageEndsAt;
-    }
-
     /// <summary>
     /// Lab-made Wendigos were human: they keep the base human languages. They are not xenos, so English
     /// is simply their prototype default.
@@ -1003,6 +933,4 @@ public sealed partial class CMUWendigoTransformationSystem : EntitySystem
         _roundEndLines.Clear();
         _pendingCollapse.Clear();
     }
-
-    #endregion
 }

@@ -1,3 +1,4 @@
+using Content.Server.Administration.Logs;
 using Content.Server.CMU14.Chat;
 using Content.Server.CMU14.Ops.ThirdParty;
 using Content.Server.CMU14.Round;
@@ -9,6 +10,7 @@ using Content.Shared.CMU14.ColonyEconomy;
 using Content.Shared.CMU14.Threats;
 using Content.Shared.CMU14.Threats.Mobs.Wendigo.Lab;
 using Content.Shared.CMU14.Yautja;
+using Content.Shared.Database;
 using Content.Shared.GameTicking;
 using Content.Shared.Stacks;
 using Content.Shared.Interaction;
@@ -25,6 +27,7 @@ public sealed partial class CorporateConsoleSystem : EntitySystem
     private static readonly EntProtoId CashPrototype = "RMCSpaceCash";
 
     [Dependency] private AdminConsoleSystem _adminConsole = default!;
+    [Dependency] private IAdminLogManager _adminLog = default!;
     [Dependency] private AuRoundSystem _auRound = default!;
     [Dependency] private ChatSystem _chat = default!;
     [Dependency] private ColonyBudgetSystem _colonyBudget = default!;
@@ -122,7 +125,10 @@ public sealed partial class CorporateConsoleSystem : EntitySystem
         UpdateUiState(uid, comp);
     }
 
-    private void OnOpenThirdParty(EntityUid uid, CorporateConsoleComponent comp, CorporateConsoleOpenThirdPartyBuiMsg msg)
+    private void OnOpenThirdParty(
+        EntityUid uid,
+        CorporateConsoleComponent comp,
+        CorporateConsoleOpenThirdPartyBuiMsg msg)
     {
         _ui.TryToggleUi(uid, CorporateConsoleThirdPartyUi.Key, msg.Actor);
     }
@@ -151,7 +157,10 @@ public sealed partial class CorporateConsoleSystem : EntitySystem
         UpdateAllUi();
     }
 
-    private void OnCallThirdParty(EntityUid uid, CorporateConsoleComponent comp, CorporateConsoleCallThirdPartyBuiMsg msg)
+    private void OnCallThirdParty(
+        EntityUid uid,
+        CorporateConsoleComponent comp,
+        CorporateConsoleCallThirdPartyBuiMsg msg)
     {
         if (!comp.CallableParties.TryGetValue(msg.ThirdPartyId, out var cost))
             return;
@@ -169,7 +178,11 @@ public sealed partial class CorporateConsoleSystem : EntitySystem
             return;
 
         _thirdParty.SpawnThirdParty(partyProto, spawnProto, false,
-            caller: new ThirdPartyCaller(Name(msg.Actor), Loc.GetString("cmu-third-party-caller-corporate"), Actor: msg.Actor, Console: uid));
+            caller: new ThirdPartyCaller(
+                Name(msg.Actor),
+                Loc.GetString("cmu-third-party-caller-corporate"),
+                Actor: msg.Actor,
+                Console: uid));
 
         // Deduct from ALL corporate consoles (they share one budget)
         var nextCallIn = _timing.CurTime + comp.CallInCooldown;

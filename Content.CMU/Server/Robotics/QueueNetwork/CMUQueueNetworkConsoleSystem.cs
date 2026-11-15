@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using Content.Server.Administration.Logs;
 using Content.Server.CMU14.ColonyEconomy;
 using Content.Shared.CMU14.Chemistry.Research;
 using Content.Shared.CMU14.Robotics;
 using Content.Shared.CMU14.Robotics.QueueNetwork;
+using Content.Shared.Database;
 using Robust.Server.GameObjects;
 using Robust.Shared.GameObjects;
 using Robust.Shared.Random;
@@ -20,6 +22,7 @@ namespace Content.Server.CMU14.Robotics.QueueNetwork;
 /// </summary>
 public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
 {
+    [Dependency] private IAdminLogManager _adminLog = default!;
     [Dependency] private CorporateConsoleSystem _corporateConsole = default!;
     [Dependency] private CMURoboticsOrderPoolSystem _pools = default!;
     [Dependency] private IRobustRandom _random = default!;
@@ -106,6 +109,8 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
             "cmu-queue-status-started",
             ("network", LocOrId(network.Name, Loc.GetString("cmu-queue-network-unknown"))));
         comp.StatusKind = CMUQueueStatusKind.Neutral;
+        _adminLog.Add(LogType.Action, LogImpact.Medium,
+            $"{ToPrettyString(args.Actor)} started an SMO production contract at {ToPrettyString(ent.Owner)}");
 
         comp.Nodes.Clear();
         comp.Analyses.Clear();
@@ -560,6 +565,9 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
                 ("reward", payout),
                 ("bonus", bonus));
             comp.StatusKind = CMUQueueStatusKind.Good;
+            _adminLog.Add(LogType.Action, LogImpact.Medium,
+                $"{ToPrettyString(args.Actor)} completed an SMO production contract at " +
+                $"{ToPrettyString(ent.Owner)} for {payout} credits");
         }
         else
         {

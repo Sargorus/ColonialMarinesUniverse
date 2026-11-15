@@ -4,8 +4,8 @@ using Content.Server.CMU14.Ops.ThirdParty;
 using Content.Server._RMC14.Requisitions;
 using Content.Shared.CMU14.ColonyEconomy;
 using Content.Shared.CMU14.Threats;
+using Content.Shared.Database;
 using Content.Shared._RMC14.Requisitions;
-using Content.Shared._RMC14.Requisitions.Components;
 using Robust.Shared.GameObjects;
 using Robust.Shared.Prototypes;
 
@@ -20,7 +20,6 @@ public sealed partial class CorporateConsoleSystem
     private static readonly ProtoId<ThirdPartyPrototype> GuardParty = new(GuardPartyId);
 
     [Dependency] private RequisitionsSystem _requisitions = default!;
-    [Dependency] private SharedTransformSystem _transform = default!;
 
     private void OnCallPmc(EntityUid uid, CorporateConsoleComponent comp, CorporateConsoleCallPmcBuiMsg msg)
     {
@@ -38,6 +37,9 @@ public sealed partial class CorporateConsoleSystem
 
         if (!TrySpawnSupportParty(PmcParty, msg.Actor, uid))
             return;
+
+        _adminLog.Add(LogType.Action, LogImpact.Medium,
+            $"{ToPrettyString(msg.Actor)} called a WEYU PMC team at {ToPrettyString(uid)}");
 
         var nextCall = _timing.CurTime + comp.PmcCooldown;
         var query = EntityQueryEnumerator<CorporateConsoleComponent>();
@@ -68,6 +70,9 @@ public sealed partial class CorporateConsoleSystem
             return;
 
         state.CompanyValue -= comp.GuardCostCompanyValue;
+        _adminLog.Add(LogType.Action, LogImpact.Medium,
+            $"{ToPrettyString(msg.Actor)} called a WEYU guard squad at {ToPrettyString(uid)} " +
+            $"for {comp.GuardCostCompanyValue} company value ({state.CompanyValue} left)");
 
         var nextCall = _timing.CurTime + comp.GuardCooldown;
         var query = EntityQueryEnumerator<CorporateConsoleComponent>();
@@ -97,6 +102,9 @@ public sealed partial class CorporateConsoleSystem
         state.CompanyValue -= comp.CreditCostCompanyValue;
         comp.NextCreditAt = _timing.CurTime + comp.CreditCooldown;
         AddToCorporateBudget(comp.CreditAmount);
+        _adminLog.Add(LogType.Action, LogImpact.Medium,
+            $"{ToPrettyString(msg.Actor)} requested {comp.CreditAmount} credits at " +
+            $"{ToPrettyString(uid)} for {comp.CreditCostCompanyValue} company value");
         SetSupportStatus(comp, "cmu-corporate-credit-granted");
         UpdateAllUi();
     }
@@ -133,6 +141,9 @@ public sealed partial class CorporateConsoleSystem
         }
 
         state.CompanyValue -= comp.AlienTechCostCompanyValue;
+        _adminLog.Add(LogType.Action, LogImpact.Medium,
+            $"{ToPrettyString(msg.Actor)} ordered alien technology at {ToPrettyString(uid)} " +
+            $"for {comp.AlienTechCostCompanyValue} company value");
         SetSupportStatus(comp, "cmu-corporate-alien-tech-queued");
         UpdateAllUi();
     }
@@ -164,32 +175,5 @@ public sealed partial class CorporateConsoleSystem
     private void SetSupportStatus(CorporateConsoleComponent comp, string locId)
     {
         comp.SupportStatus = Loc.GetString(locId);
-    }
-
-    private Entity<RequisitionsElevatorComponent>? FindCorporateElevator(EntityUid console)
-    {
-        var map = _transform.GetMapId(console);
-        var origin = _transform.GetWorldPosition(console);
-        Entity<RequisitionsElevatorComponent>? closest = null;
-        var closestDistance = float.MaxValue;
-
-        var query = EntityQueryEnumerator<RequisitionsElevatorComponent, TransformComponent>();
-        while (query.MoveNext(out var uid, out var elevator, out var xform))
-        {
-            if (xform.MapID != map
-                || !string.Equals(elevator.Faction, "corporate", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            var distance = (origin - _transform.GetWorldPosition(uid)).LengthSquared();
-            if (distance >= closestDistance)
-                continue;
-
-            closest = (uid, elevator);
-            closestDistance = distance;
-        }
-
-        return closest;
     }
 }
