@@ -16,18 +16,24 @@ using Content.Shared.CMU14.DroneOperator;
 using Content.Shared.CMU14.Medical.Anatomy.BodyParts;
 using Content.Shared.CMU14.Requisitions;
 using Content.Shared.CMU14.Robotics;
+using Content.Shared.Construction.Components;
 using Content.Shared.Containers.ItemSlots;
+using Content.Shared.Item;
 using Content.Shared.Inventory;
 using Content.Shared.Labels.EntitySystems;
 using Content.Shared.Lathe.Prototypes;
 using Content.Shared.Lock;
+using Content.Shared.Research.Prototypes;
 using Content.Shared.Mobs.Components;
 using Content.Shared.Paper;
 using Content.Shared.Materials;
+using Content.Shared.Movement.Pulling.Components;
 using Content.Shared.Storage.Components;
 using Content.Shared.Storage.EntitySystems;
 using Robust.Shared.GameObjects;
 using Robust.Shared.Map;
+using Robust.Shared.Physics;
+using Robust.Shared.Physics.Components;
 using Robust.Shared.Timing;
 using Robust.Shared.Containers;
 
@@ -854,6 +860,30 @@ public sealed class CMURoboticsContractTest : GameTest
                 SProtoMan.Index<LatheRecipePackPrototype>("CMURoboticsModularMineCartridge")
                     .Recipes.Select(recipe => recipe.Id),
                 Does.Contain("CMURoboticsModularMine"));
+        });
+    }
+
+    [Test]
+    public async Task ModularMineIsCmuMovableAndAnchorable()
+    {
+        await Server.WaitAssertion(() =>
+        {
+            var mine = SEntMan.SpawnEntity("CMUModularMine", MapCoordinates.Nullspace);
+            Assert.Multiple(() =>
+            {
+                Assert.That(SEntMan.HasComponent<ItemComponent>(mine), Is.True,
+                    "the mine must be small enough to pick up");
+                Assert.That(SEntMan.HasComponent<AnchorableComponent>(mine), Is.True,
+                    "the mine must be anchorable with a wrench");
+                Assert.That(SEntMan.HasComponent<PullableComponent>(mine), Is.True,
+                    "the mine must be draggable");
+                Assert.That(SEntMan.GetComponent<PhysicsComponent>(mine).BodyType,
+                    Is.EqualTo(BodyType.Dynamic), "the mine must not be a static prop");
+            });
+
+            var recipe = SProtoMan.Index<LatheRecipePrototype>("CMURoboticsModularMine");
+            Assert.That(recipe.Result?.Id, Is.EqualTo("CMUModularMine"));
+            SEntMan.DeleteEntity(mine);
         });
     }
 }

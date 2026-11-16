@@ -70,7 +70,7 @@
 
 - type: latheRecipe
   id: CMURoboticsModularMine
-  result: LandMineModularUnarmed
+  result: CMUModularMine
   completetime: 6
   materials:
     CMSteel: 4000
