@@ -13,6 +13,8 @@ namespace Content.Server.CMU14.Chemistry.Research;
 // Chemistry-point purchases that force a property into the next contract offer.
 public sealed partial class ServerResearchDataTerminalSystem
 {
+    [Dependency] private IAdminLogManager _adminLog = default!;
+
     private List<ResearchGuaranteeEntry>? _guaranteeEntries;
 
     private void OnBuyGuarantee(

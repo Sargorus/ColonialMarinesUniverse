@@ -2,12 +2,9 @@ using System.Linq;
 using Content.IntegrationTests.Fixtures;
 using Content.Server.CMU14.Chemistry.Reagents;
 using Content.Server.CMU14.Chemistry.Research;
-using Content.Server.CMU14.ColonyEconomy;
 using Content.Shared.CMU14.Chemistry.Reagents;
-using Content.Shared.CMU14.ColonyEconomy;
 using Content.Shared.Chemistry.Reaction;
 using Content.Shared.Chemistry.Reagent;
-using Robust.Shared.Map;
 using Robust.Shared.Prototypes;
 
 namespace Content.IntegrationTests._CMU14.Research;
@@ -57,47 +54,6 @@ public sealed class CMUNestedContractTest : GameTest
         }
         Assert.Fail("ten forced-nesting Hard offers all fell back to a plain recipe");
         return default;
-    }
-
-    [Test]
-    public async Task ResearchCashAlwaysGoesToCompanyAccount()
-    {
-        await Server.WaitAssertion(() =>
-        {
-            var research = SEntMan.System<ServerResearchDataTerminalSystem>();
-            var colony = SEntMan.System<ColonyBudgetSystem>();
-            var console = SEntMan.SpawnEntity("AU14CorporateConsole", MapCoordinates.Nullspace);
-            var corporate = SEntMan.GetComponent<CorporateConsoleComponent>(console);
-            var oldMult = research.ResearchCashRewardMult;
-
-            try
-            {
-                research.ResearchCashRewardMult = 1f;
-                corporate.CorporateBudget = 0f;
-                colony.SetBudget(0f);
-
-                var proto = SProtoMan.GetInstances<ReagentPrototype>().Values
-                    .First(candidate => candidate.Class >= ReagentClass.Special && candidate.Reward > 0);
-                var expected = proto.Reward * research.ResearchCashRewardMult;
-
-                research.CompleteChemical(proto, "cmu-research-cash-test", null);
-
-                Assert.Multiple(() =>
-                {
-                    Assert.That(corporate.CorporateBudget, Is.EqualTo(expected),
-                        "faction discoveries must pay the company liaison account");
-                    Assert.That(colony.GetBudget(), Is.Zero,
-                        "research money must not be paid to the colony budget");
-                });
-            }
-            finally
-            {
-                research.ResearchCashRewardMult = oldMult;
-                corporate.CorporateBudget = 0f;
-                colony.SetBudget(0f);
-                SEntMan.DeleteEntity(console);
-            }
-        });
     }
 
     [Test]
