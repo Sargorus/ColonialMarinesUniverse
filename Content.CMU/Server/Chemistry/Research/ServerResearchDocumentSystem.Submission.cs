@@ -18,6 +18,19 @@ public sealed partial class ServerResearchDocumentSystem
             {
                 subs.Event<ResearchKnowledgeSubmitMessage>(OnSubmitMessage);
             });
+        Subs.BuiEvents<ResearchDataTerminalComponent>(ResearchDataTerminalUI.Key,
+            subs =>
+            {
+                subs.Event<ResearchDataTerminalOpenKnowledgeBuiMsg>(OnOpenKnowledgeMessage);
+            });
+    }
+
+    private void OnOpenKnowledgeMessage(
+        Entity<ResearchDataTerminalComponent> ent,
+        ref ResearchDataTerminalOpenKnowledgeBuiMsg args)
+    {
+        _ui.CloseUi(ent.Owner, ResearchDataTerminalUI.Key, args.Actor);
+        OpenSubmitUi(args.Actor, ent.Owner);
     }
 
     private void OnTerminalVerbs(Entity<ResearchDataTerminalComponent> ent, ref GetVerbsEvent<AlternativeVerb> args)

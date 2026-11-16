@@ -52,6 +52,7 @@ public sealed partial class ServerResearchDataTerminalSystem : SharedResearchDat
 
         /// <summary>Property that must lead the next generated contract offer.</summary>
         public string? GuaranteedProperty;
+        /// <summary>Research credits paid for <see cref="GuaranteedProperty"/>.</summary>
         public int GuaranteedPropertyCost;
     }
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Content.Server.CMU14.Chemistry.Reagents;
+using Content.Shared.CMU14.Chemistry.Reagent;
 using Content.Shared.CMU14.Chemistry.Reagents;
 using Content.Shared.CMU14.Chemistry.Research;
 using Content.Shared.Chemistry.Reagent;
@@ -90,26 +91,47 @@ public sealed partial class ServerResearchDataTerminalSystem
             UpdateFactionUI(faction);
             return;
         }
-        for (int i = 0; i < ResearchChemAmount; i++)
+        var guaranteeTier = GetPendingGuaranteeTier(research);
+        for (var i = 0; i < ResearchChemAmount; i++)
         {
-            GeneratedReagentData data = new();
-            data.Recipe = [];
-            data.Effects = [];
-            data.Class = ReagentClass.Ultra;
-            _generator.GenerateName(ref data);
-            // Offers are generated before registration; reserve a unique ID across faction pools.
-            data.ID = $"{data.ID}-{faction}-{_nextContractId++}";
-            data.GenTier = _random.Next(1, 4);
-            _generator.GenerateStats(ref data);
-            _generator.RollTemperatureGate(ref data);
-            AssignContractRewardAndHint(ref data);
-            data.PropertyHint = _random.Pick(data.Effects.Keys);
-            research.Selectable.Add(data);
+            // A pending guarantee claims the first slot so its required tier is always present.
+            var tier = i == 0 && guaranteeTier is { } required
+                ? required
+                : _random.Next(1, 4);
+            research.Selectable.Add(GenerateContractOffer(faction, tier));
         }
-        ApplyGuaranteeToFirstOffer(research);
+        ApplyGuaranteeToOffers(faction, research);
         research.NextReroll = _timer.CurTime + RerollTime;
         research.LastTime = _timer.CurTime;
         UpdateFactionUI(faction, announce: true);
+    }
+
+    private int? GetPendingGuaranteeTier(FactionResearch research)
+    {
+        if (research.GuaranteedProperty is not { } propertyId
+            || !_protoman.TryIndex<ReagentPropertyPrototype>(propertyId, out var property))
+        {
+            return null;
+        }
+        return GetGuaranteeTier(property);
+    }
+
+    /// <summary>Builds one contract offer at the requested difficulty tier.</summary>
+    private GeneratedReagentData GenerateContractOffer(string faction, int tier)
+    {
+        GeneratedReagentData data = new();
+        data.Recipe = [];
+        data.Effects = [];
+        data.Class = ReagentClass.Ultra;
+        _generator.GenerateName(ref data);
+        // Offers are generated before registration; reserve a unique ID across faction pools.
+        data.ID = $"{data.ID}-{faction}-{_nextContractId++}";
+        data.GenTier = tier;
+        _generator.GenerateStats(ref data);
+        _generator.RollTemperatureGate(ref data);
+        AssignContractRewardAndHint(ref data);
+        data.PropertyHint = _random.Pick(data.Effects.Keys);
+        return data;
     }
 
     /// <summary>Sets a contract's credit reward (3/5/7) and the reagent hint pinned into its recipe, by tier.</summary>

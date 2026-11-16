@@ -1,0 +1,15 @@
+<controls:ResearchKnowledgeViewWindow xmlns="https://spacestation14.io"
+                                           xmlns:controls="clr-namespace:Content.Client.CMU14.Chemistry.Research"
+                                           Title="{Loc 'cmu-research-documents-review-title'}"
+                                           MinSize="540 460">
+    <BoxContainer Orientation="Vertical" SeparationOverride="6" Margin="10">
+        <RichTextLabel Name="Summary" Access="Public" />
+        <LineEdit Name="Search" Access="Public" HorizontalExpand="True"
+                  PlaceHolder="{Loc 'cmu-research-documents-view-search'}" />
+        <OptionButton Name="Category" Access="Public" HorizontalExpand="True" />
+        <ScrollContainer VerticalExpand="True" HScrollEnabled="False">
+            <BoxContainer Name="Choices" Access="Public" Orientation="Vertical"
+                          SeparationOverride="4" VerticalExpand="True" />
+        </ScrollContainer>
+    </BoxContainer>
+</controls:ResearchKnowledgeViewWindow>

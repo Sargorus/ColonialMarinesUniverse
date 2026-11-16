@@ -89,7 +89,7 @@ public sealed class CMUFactionResearchTest : GameTest
 
             try
             {
-                system.UpdateSampleData(20, "corporate");
+                system.UpdateClearance(20, -1, "corporate", 7);
                 research.Selectable.Clear();
                 research.Selectable.Add(new GeneratedReagentData
                 {
@@ -105,14 +105,84 @@ public sealed class CMUFactionResearchTest : GameTest
 
                 Assert.Multiple(() =>
                 {
-                    Assert.That(system.GetSampleData("corporate"), Is.EqualTo(10));
+                    Assert.That(system.GetCredits("corporate"), Is.EqualTo(5),
+                        "a legendary guarantee costs 15 research credits");
+                    Assert.That(system.GetSampleData("corporate"), Is.EqualTo(7),
+                        "guarantees must not spend sample data");
                     Assert.That(research.GuaranteedProperty, Is.Null);
+                    Assert.That(research.Selectable[0].GenTier, Is.EqualTo(3),
+                        "a legendary property requires a hard contract");
                     Assert.That(research.Selectable[0].Effects.Keys.First(), Is.EqualTo("Boosting"));
                 });
             }
             finally
             {
-                system.UpdateSampleData(0, "corporate");
+                system.UpdateClearance(0, -1, "corporate", 0);
+                research.Selectable.Clear();
+                research.GuaranteedProperty = null;
+                research.GuaranteedPropertyCost = 0;
+                SEntMan.DeleteEntity(terminal);
+            }
+        });
+    }
+
+    [Test]
+    public async Task GuaranteeTierFollowsPropertyRarity()
+    {
+        await Server.WaitAssertion(() =>
+        {
+            var system = SEntMan.System<ServerResearchDataTerminalSystem>();
+            var research = system.GetResearch("corporate");
+            var terminal = SEntMan.SpawnEntity(
+                "CMUResearchDataTerminalCorporate",
+                MapCoordinates.Nullspace);
+
+            try
+            {
+                system.UpdateClearance(40, -1, "corporate", 7);
+                research.Selectable.Clear();
+                research.Selectable.Add(new GeneratedReagentData
+                {
+                    ID = "guarantee-tier-contract",
+                    Effects = new() { ["Toxic"] = 1 },
+                });
+
+                SEntMan.EventBus.RaiseLocalEvent(terminal, new ResearchDataTerminalBuyGuaranteeBuiMsg("Toxic")
+                {
+                    Actor = EntityUid.Invalid,
+                    UiKey = ResearchDataTerminalUI.Key,
+                });
+                Assert.Multiple(() =>
+                {
+                    Assert.That(research.Selectable[0].GenTier, Is.EqualTo(1),
+                        "common properties require an easy contract");
+                    Assert.That(research.Selectable[0].Effects.Keys.First(), Is.EqualTo("Toxic"));
+                    Assert.That(system.GetCredits("corporate"), Is.EqualTo(32));
+                    Assert.That(system.GetSampleData("corporate"), Is.EqualTo(7));
+                });
+
+                research.Selectable.Clear();
+                research.Selectable.Add(new GeneratedReagentData
+                {
+                    ID = "guarantee-rare-contract",
+                    Effects = new() { ["Toxic"] = 1 },
+                });
+                SEntMan.EventBus.RaiseLocalEvent(terminal, new ResearchDataTerminalBuyGuaranteeBuiMsg("Addictive")
+                {
+                    Actor = EntityUid.Invalid,
+                    UiKey = ResearchDataTerminalUI.Key,
+                });
+                Assert.Multiple(() =>
+                {
+                    Assert.That(research.Selectable[0].GenTier, Is.EqualTo(2),
+                        "rare properties require an intermediate contract");
+                    Assert.That(research.Selectable[0].Effects.Keys.First(), Is.EqualTo("Addictive"));
+                    Assert.That(system.GetCredits("corporate"), Is.EqualTo(24));
+                });
+            }
+            finally
+            {
+                system.UpdateClearance(0, -1, "corporate", 0);
                 research.Selectable.Clear();
                 research.GuaranteedProperty = null;
                 research.GuaranteedPropertyCost = 0;

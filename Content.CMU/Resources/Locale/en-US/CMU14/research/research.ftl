@@ -74,12 +74,20 @@ research-data-ui-view = View Chemicals
 research-data-ui-tab-contracts = Contracts
 research-data-ui-tab-properties = Properties
 research-data-ui-tab-guarantee = Guaranteed Properties
+research-data-ui-tab-knowledge = Knowledge
+research-data-ui-knowledge-open = Submit knowledge
+research-data-ui-knowledge-hint = Research this faction has produced or received, including witness reports.
+research-data-ui-knowledge-empty = No research knowledge recorded yet.
+research-data-ui-knowledge-entry = {$category} | {$reward} | {$detail}
 research-data-ui-guarantee-none = [color=#ffbf00][italic]No property is currently guaranteed.[/italic][/color]
 research-data-ui-guarantee-active = [color=#ffbf00]Next contract leads with {$name}.[/color]
-research-data-ui-guarantee-hint = Spend points to force a property into the next contract's first slot. Medium 5, legendary 10, other 3.
-research-data-ui-guarantee-entry = {$name} — {$cost} points
+research-data-ui-guarantee-hint = Spend research credits to force a property into a contract of the matching tier: common/rare 8, uncommon 10, legendary 15.
+research-data-ui-guarantee-entry = {$name} - {$cost} credits - {$requirement}
+research-data-ui-guarantee-requirement-easy = Easy contract only
+research-data-ui-guarantee-requirement-medium = Medium or hard contract
+research-data-ui-guarantee-requirement-hard = Hard contract only
 research-data-ui-guarantee-buy = Guarantee
-research-data-ui-guarantee-no-points = Not enough chemistry points for that guarantee.
+research-data-ui-guarantee-no-points = Not enough research credits for that guarantee.
 
 research-data-ui-contracts-empty = [color=#ffbf00][italic]No contracts have been taken yet.[/italic][/color]
 research-data-ui-contract-name = [color=#ffbf00][head=3]{$NAME}[/head][/color]

@@ -10,7 +10,7 @@ using Robust.Shared.GameObjects;
 
 namespace Content.Server.CMU14.Chemistry.Research;
 
-// Chemistry-point purchases that force a property into the next contract offer.
+// Research-credit purchases that force a property into a contract offer of the matching tier.
 public sealed partial class ServerResearchDataTerminalSystem
 {
     [Dependency] private IAdminLogManager _adminLog = default!;
@@ -36,7 +36,7 @@ public sealed partial class ServerResearchDataTerminalSystem
         }
 
         var cost = GetGuaranteeCost(property);
-        if (GetSampleData(faction) < cost)
+        if (GetCredits(faction) < cost)
         {
             _popup.PopupEntity(
                 Loc.GetString("research-data-ui-guarantee-no-points"),
@@ -48,26 +48,51 @@ public sealed partial class ServerResearchDataTerminalSystem
         }
 
         var research = GetResearch(faction);
-        UpdateSampleData(GetSampleData(faction) - cost, faction);
+        UpdateClearance(GetCredits(faction) - cost, -1, faction, GetSampleData(faction));
         research.GuaranteedProperty = property.ID;
         research.GuaranteedPropertyCost = cost;
         if (!research.Picked)
-            ApplyGuaranteeToFirstOffer(research);
+            ApplyGuaranteeToOffers(faction, research);
 
         _adminLog.Add(LogType.Action, LogImpact.Medium,
             $"{ToPrettyString(args.Actor)} guaranteed chemistry property {property.ID} for {faction} " +
-            $"for {cost} points");
+            $"for {cost} credits");
         UpdateFactionUI(faction);
     }
 
-    private void ApplyGuaranteeToFirstOffer(FactionResearch research)
+    /// <summary>
+    /// Puts the guaranteed property into an existing offer of an allowed tier. If the pool has no such
+    /// offer, one is generated so a legendary property always has a hard contract to land on.
+    /// </summary>
+    private void ApplyGuaranteeToOffers(string faction, FactionResearch research)
     {
-        if (research.GuaranteedProperty is not { } property || research.Selectable.Count == 0)
+        if (research.GuaranteedProperty is not { } propertyId)
             return;
+        if (!_protoman.TryIndex<ReagentPropertyPrototype>(propertyId, out var property))
+        {
+            ClearGuarantee(research);
+            return;
+        }
 
-        var first = research.Selectable[0];
-        ForceFirstProperty(ref first, property);
-        research.Selectable[0] = first;
+        var index = research.Selectable.FindIndex(offer => IsGuaranteeTierAllowed(property, offer.GenTier));
+        if (index < 0)
+        {
+            if (research.Selectable.Count == 0)
+                return;
+
+            // Replace an offer rather than growing the pool: the player explicitly paid for this tier.
+            research.Selectable[0] = GenerateContractOffer(faction, GetGuaranteeTier(property));
+            index = 0;
+        }
+
+        var offer = research.Selectable[index];
+        ForceFirstProperty(ref offer, propertyId);
+        research.Selectable[index] = offer;
+        ClearGuarantee(research);
+    }
+
+    private static void ClearGuarantee(FactionResearch research)
+    {
         research.GuaranteedProperty = null;
         research.GuaranteedPropertyCost = 0;
     }
@@ -104,7 +129,8 @@ public sealed partial class ServerResearchDataTerminalSystem
             _guaranteeEntries.Add(new ResearchGuaranteeEntry(
                 property.ID,
                 property.LocalizedName,
-                GetGuaranteeCost(property)));
+                GetGuaranteeCost(property),
+                GetGuaranteeRequirement(property)));
         }
 
         _guaranteeEntries.Sort((a, b) =>
@@ -123,13 +149,47 @@ public sealed partial class ServerResearchDataTerminalSystem
                    or ReagentPropertyRarityEnum.Disabled);
     }
 
+    /// <summary>
+    /// Contract tier a guaranteed property must land on. Easy is common/uncommon only, rare properties
+    /// need at least an intermediate contract, and legendary properties require a hard contract.
+    /// </summary>
+    private static int GetGuaranteeTier(ReagentPropertyPrototype property)
+    {
+        return property.Rarity switch
+        {
+            ReagentPropertyRarityEnum.Legendary => 3,
+            ReagentPropertyRarityEnum.Rare => 2,
+            _ => 1,
+        };
+    }
+
+    private static bool IsGuaranteeTierAllowed(ReagentPropertyPrototype property, int tier)
+    {
+        return property.Rarity switch
+        {
+            ReagentPropertyRarityEnum.Legendary => tier == 3,
+            ReagentPropertyRarityEnum.Rare => tier >= 2,
+            _ => tier == 1,
+        };
+    }
+
+    private string GetGuaranteeRequirement(ReagentPropertyPrototype property)
+    {
+        return property.Rarity switch
+        {
+            ReagentPropertyRarityEnum.Legendary => Loc.GetString("research-data-ui-guarantee-requirement-hard"),
+            ReagentPropertyRarityEnum.Rare => Loc.GetString("research-data-ui-guarantee-requirement-medium"),
+            _ => Loc.GetString("research-data-ui-guarantee-requirement-easy"),
+        };
+    }
+
     private static int GetGuaranteeCost(ReagentPropertyPrototype property)
     {
         return property.Rarity switch
         {
-            ReagentPropertyRarityEnum.Uncommon => 5,
-            ReagentPropertyRarityEnum.Legendary => 10,
-            _ => 3,
+            ReagentPropertyRarityEnum.Uncommon => 10,
+            ReagentPropertyRarityEnum.Legendary => 15,
+            _ => 8,
         };
     }
 }

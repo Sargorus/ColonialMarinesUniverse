@@ -104,6 +104,7 @@ public sealed partial class ServerResearchDocumentSystem : EntitySystem
     {
         base.Initialize();
         InitializeKnowledge();
+        InitializeCatalog();
         InitializeWriting();
         InitializeSubmission();
         InitializeIntel();

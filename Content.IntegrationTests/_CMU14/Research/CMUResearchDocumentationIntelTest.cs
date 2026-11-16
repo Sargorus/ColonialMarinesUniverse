@@ -1,8 +1,10 @@
+using System.Linq;
 using Content.IntegrationTests.Fixtures;
 using Content.Server.CMU14.Chemistry.Research;
 using Content.Shared._RMC14.Intel;
 using Content.Shared.CMU14.Chemistry.Research;
 using Content.Shared.Chemistry.Reagent;
+using Content.Shared.Verbs;
 using Robust.Shared.Map;
 using Robust.Shared.Prototypes;
 
@@ -108,6 +110,51 @@ public sealed class CMUResearchDocumentationIntelTest : GameTest
             }
             var fourth = documents.SubmitIntelKnowledge(users[3], console, [fact.Id]);
             Assert.That(fourth.Accepted, Is.Zero, "the fourth witness intel submission must be rejected");
+        });
+    }
+
+    [Test]
+    public async Task ClfIntelConsoleRejectsResearchKnowledge()
+    {
+        var map = await Pair.CreateTestMap();
+        await Server.WaitAssertion(() =>
+        {
+            var documents = SEntMan.System<ServerResearchDocumentSystem>();
+            var proto = SProtoMan.Index<ReagentPrototype>(ContractReagent);
+            var contract = documents.RecordContractFact("govfor", proto);
+            var witness = documents.RecordWitnessFact(
+                "xeno:sighting:CMUTestClfWitness",
+                ServerResearchDocumentSystem.ResearchFactKind.XenoSighting,
+                "Test drone",
+                "A test drone was observed.",
+                3,
+                0.15f);
+            var user = SpawnUser(map.GridCoords, contract.Id, witness.Id);
+            var console = SEntMan.SpawnEntity("RMCComputerIntelCLF", map.GridCoords);
+
+            var result = documents.SubmitIntelKnowledge(user, console, [contract.Id, witness.Id]);
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Accepted, Is.Zero,
+                    "the CLF must not turn research into intel points");
+                Assert.That(result.IntelPoints, Is.Zero);
+                Assert.That(result.SkippedReason, Is.Not.Null);
+            });
+
+            var verbs = new GetVerbsEvent<AlternativeVerb>(
+                user,
+                console,
+                null,
+                null,
+                canInteract: true,
+                canComplexInteract: true,
+                canAccess: true,
+                extraCategories: []);
+            SEntMan.EventBus.RaiseLocalEvent(console, verbs);
+            Assert.That(
+                verbs.Verbs.Any(verb => verb.Text == Loc.GetString("cmu-research-documents-submit-intel-verb")),
+                Is.False,
+                "the CLF console must not offer a research-intel submission");
         });
     }
 }

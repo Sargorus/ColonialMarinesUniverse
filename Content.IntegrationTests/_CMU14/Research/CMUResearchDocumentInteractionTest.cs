@@ -8,6 +8,7 @@ using Content.Shared.Examine;
 using Content.Shared.Hands.Components;
 using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Paper;
+using Content.Shared.UserInterface;
 using Content.Shared.Verbs;
 using Robust.Shared.Map;
 using Robust.Shared.Player;
@@ -322,6 +323,10 @@ public sealed class CMUResearchDocumentInteractionTest : GameTest
                 Assert.That(document.Type, Is.EqualTo(ResearchDocumentType.Record));
                 Assert.That(document.FactIds, Is.EqualTo(new[] { "xeno:sighting:CMUTestWrite" }));
                 Assert.That(SEntMan.GetComponent<PaperComponent>(paper).EditingDisabled, Is.True);
+                Assert.That(SEntMan.HasComponent<ActivatableUIComponent>(paper), Is.False,
+                    "a written research paper must not open as editable text");
+                Assert.That(SEntMan.GetComponent<MetaDataComponent>(paper).EntityDescription,
+                    Does.Contain("Test drone"));
             });
         });
     }

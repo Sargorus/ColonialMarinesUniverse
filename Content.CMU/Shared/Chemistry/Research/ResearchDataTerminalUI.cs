@@ -26,7 +26,8 @@ public sealed class ResearchDataTerminalBuiState(
     string? lockedReason = null,
     List<ResearchGuaranteeEntry>? guarantees = null,
     string? guaranteedProperty = null,
-    int guaranteedPropertyCost = 0) : BoundUserInterfaceState
+    int guaranteedPropertyCost = 0,
+    List<ResearchKnowledgeCatalogEntry>? knowledge = null) : BoundUserInterfaceState
 {
     public readonly List<GeneratedReagentData> IDs = ids;
     public readonly Dictionary<int, (string, string, TimeSpan, bool, GeneratedReagentData, bool, bool)> Data = data;
@@ -44,17 +45,27 @@ public sealed class ResearchDataTerminalBuiState(
     public readonly bool Locked = locked;
     /// <summary>FLOW-24: the message shown in place of the contract offers while <see cref="Locked"/>.</summary>
     public readonly string? LockedReason = lockedReason;
-    /// <summary>Properties that can be forced into the next contract offer, with their point costs.</summary>
+    /// <summary>Properties that can be forced into the next contract offer, with their credit costs.</summary>
     public readonly List<ResearchGuaranteeEntry> Guarantees = guarantees ?? new();
     /// <summary>The property currently guaranteed for the next offer, if any.</summary>
     public readonly string? GuaranteedProperty = guaranteedProperty;
-    /// <summary>The point cost already paid for <see cref="GuaranteedProperty"/>.</summary>
+    /// <summary>The research credits already paid for <see cref="GuaranteedProperty"/>.</summary>
     public readonly int GuaranteedPropertyCost = guaranteedPropertyCost;
+    /// <summary>Research facts this faction has produced or received, with their reward summary.</summary>
+    public readonly List<ResearchKnowledgeCatalogEntry> Knowledge = knowledge ?? new();
 }
 
-/// <summary>One property that can be guaranteed as the first property of the next contract.</summary>
+/// <summary>One catalog row in the chemistry terminal's Knowledge tab.</summary>
 [Serializable, NetSerializable]
-public readonly record struct ResearchGuaranteeEntry(string PropertyId, string Name, int Cost);
+public readonly record struct ResearchKnowledgeCatalogEntry(
+    string Title,
+    string Category,
+    string Reward,
+    string Detail);
+
+/// <summary>One property that can be guaranteed into a contract of the matching difficulty tier.</summary>
+[Serializable, NetSerializable]
+public readonly record struct ResearchGuaranteeEntry(string PropertyId, string Name, int Cost, string Requirement);
 
 /// <summary>One entry of the terminal's Contracts tab: the chemical's name and its server-formatted contract text.</summary>
 [Serializable, NetSerializable]
@@ -86,3 +97,7 @@ public sealed class ResearchDataTerminalBuyGuaranteeBuiMsg(string propertyId) : 
 {
     public readonly string PropertyId = propertyId;
 }
+
+/// <summary>Switches the terminal from the orders tabs to the knowledge upload window.</summary>
+[Serializable, NetSerializable]
+public sealed class ResearchDataTerminalOpenKnowledgeBuiMsg : BoundUserInterfaceMessage;

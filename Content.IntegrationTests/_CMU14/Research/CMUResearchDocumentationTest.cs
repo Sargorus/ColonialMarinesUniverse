@@ -1,3 +1,4 @@
+using System.Linq;
 using Content.IntegrationTests.Fixtures;
 using Content.Server.CMU14.Chemistry.Research;
 using Content.Server.CMU14.ColonyEconomy;
@@ -7,6 +8,7 @@ using Content.Shared.CMU14.Chemistry.Research;
 using Content.Shared.CMU14.ColonyEconomy;
 using Content.Shared.Chemistry.Reagent;
 using Content.Shared.Paper;
+using Robust.Shared.GameObjects;
 using Robust.Shared.Map;
 using Robust.Shared.Prototypes;
 
@@ -217,6 +219,39 @@ public sealed class CMUResearchDocumentationTest : GameTest
             {
                 Assert.That(document.ScannerReport, Is.True);
                 Assert.That(document.FactIds, Does.Contain($"contract:corporate:{proto.ID}"));
+            });
+        });
+    }
+
+    [Test]
+    public async Task KnowledgeCatalogShowsFactionRewards()
+    {
+        var map = await Pair.CreateTestMap();
+        await Server.WaitAssertion(() =>
+        {
+            var documents = SEntMan.System<ServerResearchDocumentSystem>();
+            var proto = SProtoMan.Index<ReagentPrototype>(ContractReagent);
+            var contract = documents.RecordContractFact("corporate", proto);
+            var witness = documents.RecordWitnessFact(
+                "xeno:sighting:CMUTestCatalog",
+                ServerResearchDocumentSystem.ResearchFactKind.XenoSighting,
+                "Catalog test drone",
+                "A catalog test drone was observed.",
+                3,
+                0.15f);
+
+            var catalog = new ResearchKnowledgeCatalogEvent("corporate");
+            SEntMan.EventBus.RaiseEvent(EventSource.Local, catalog);
+
+            var contractEntry = catalog.Entries.Single(entry => entry.Title == contract.Title);
+            var witnessEntry = catalog.Entries.Single(entry => entry.Title == witness.Title);
+            Assert.Multiple(() =>
+            {
+                Assert.That(contractEntry.Reward, Does.Contain("2500"),
+                    "an own contract lists the cash its faction receives");
+                Assert.That(contractEntry.Detail, Does.Contain("contract"));
+                Assert.That(witnessEntry.Reward, Does.Contain("3 sample data"));
+                Assert.That(witnessEntry.Detail, Does.Contain("0 of 3"));
             });
         });
     }

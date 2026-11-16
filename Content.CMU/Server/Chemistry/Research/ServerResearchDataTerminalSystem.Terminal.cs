@@ -97,6 +97,8 @@ public sealed partial class ServerResearchDataTerminalSystem
                 contracts.Add(new ResearchContractEntry(contract.Name, FormatContract(contract, true)));
         }
         var locked = IsResearchBlocked(faction);
+        var catalog = new ResearchKnowledgeCatalogEvent(faction);
+        RaiseLocalEvent(catalog);
         var state = new ResearchDataTerminalBuiState(
             ids: locked ? new List<GeneratedReagentData>() : research.Selectable.ToList(),
             data: new(research.Reports),
@@ -113,7 +115,8 @@ public sealed partial class ServerResearchDataTerminalSystem
             lockedReason: locked ? Loc.GetString("research-locked-insurgency") : null,
             guarantees: GetGuaranteeEntries(),
             guaranteedProperty: research.GuaranteedProperty,
-            guaranteedPropertyCost: research.GuaranteedPropertyCost);
+            guaranteedPropertyCost: research.GuaranteedPropertyCost,
+            knowledge: catalog.Entries);
         _ui.SetUiState(ent.Owner, ResearchDataTerminalUI.Key, state);
     }
 

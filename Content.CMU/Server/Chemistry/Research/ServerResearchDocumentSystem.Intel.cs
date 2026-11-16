@@ -23,8 +23,13 @@ public sealed partial class ServerResearchDocumentSystem
 
     private void OnIntelVerbs(Entity<IntelConsoleComponent> ent, ref GetVerbsEvent<AlternativeVerb> args)
     {
-        if (!args.CanAccess || !args.CanInteract || HasComp<XenoComponent>(args.User))
+        if (!args.CanAccess
+            || !args.CanInteract
+            || HasComp<XenoComponent>(args.User)
+            || !IsResearchIntelTeam(ent.Comp.Team))
+        {
             return;
+        }
         var user = args.User;
         args.Verbs.Add(new AlternativeVerb
         {
@@ -35,11 +40,24 @@ public sealed partial class ServerResearchDocumentSystem
 
     private void OpenIntelUi(EntityUid user, EntityUid console)
     {
-        if (!TryComp<IntelConsoleComponent>(console, out var consoleComp))
+        if (!TryComp<IntelConsoleComponent>(console, out var consoleComp)
+            || !IsResearchIntelTeam(consoleComp.Team))
+        {
             return;
+        }
         var state = BuildIntelState(user, consoleComp.Team);
         _ui.OpenUi(console, ResearchKnowledgeSubmitUI.Key, user);
         _ui.SetUiState(console, ResearchKnowledgeSubmitUI.Key, state);
+    }
+
+    /// <summary>
+    /// Only the military intel factions process research intelligence. Insurgency factions such as the
+    /// CLF still have an intel console, but it must not turn witnesses or chemistry into intel points.
+    /// </summary>
+    private static bool IsResearchIntelTeam(string team)
+    {
+        return string.Equals(team, "govfor", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(team, "opfor", StringComparison.OrdinalIgnoreCase);
     }
 
     private ResearchKnowledgeSubmitBuiState BuildIntelState(EntityUid user, string team)
@@ -129,6 +147,17 @@ public sealed partial class ServerResearchDocumentSystem
         if (factIds.Count > 128)
             return new ResearchSubmissionResult(0, factIds.Count, 0, 0, 0, 0);
         var team = consoleComp.Team;
+        if (!IsResearchIntelTeam(team))
+        {
+            return new ResearchSubmissionResult(
+                0,
+                factIds.Count,
+                0,
+                0,
+                0,
+                0,
+                Loc.GetString("cmu-research-documents-intel-unavailable"));
+        }
         var available = GetAvailableFacts(user);
         if (!_intelClaims.TryGetValue(team, out var claims))
         {

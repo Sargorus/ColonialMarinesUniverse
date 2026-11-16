@@ -178,6 +178,13 @@
                                     <uiControls:HLine Thickness="3" Color="#FFBF00" Margin="0, 5"></uiControls:HLine>
                                     <BoxContainer Name="GuaranteeList" Access="Public" HorizontalExpand="True" Orientation="Vertical" Margin="5,0"/>
                                 </BoxContainer>
+                                <BoxContainer HorizontalExpand="True" Orientation="Vertical" Name="KnowledgeTab" Access="Public">
+                                    <uiControls:HLine Thickness="3" Color="#FFBF00" Margin="0, 5"></uiControls:HLine>
+                                    <Button Name="OpenKnowledge" Access="Public" Margin="5,5" HorizontalAlignment="Left"
+                                            Text="{Loc 'research-data-ui-knowledge-open'}"/>
+                                    <RichTextLabel Text="{Loc 'research-data-ui-knowledge-hint'}" Margin="5,0,5,8"/>
+                                    <BoxContainer Name="KnowledgeList" Access="Public" HorizontalExpand="True" Orientation="Vertical" Margin="5,0"/>
+                                </BoxContainer>
                             </TabContainer>
                         </BoxContainer>
                     </ScrollContainer>

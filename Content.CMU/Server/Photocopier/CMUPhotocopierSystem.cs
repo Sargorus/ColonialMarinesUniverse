@@ -8,6 +8,7 @@ using Content.Shared.Interaction;
 using Content.Shared.Paper;
 using Content.Shared.Photography;
 using Content.Shared.Popups;
+using Content.Shared.UserInterface;
 using Content.Shared.Verbs;
 using Robust.Shared.Containers;
 using Robust.Shared.Prototypes;
@@ -139,6 +140,10 @@ public sealed class CMUPhotocopierSystem : EntitySystem
                     copyDocument.Type = sourceDocument.Type;
                     copyDocument.CreatedAt = sourceDocument.CreatedAt;
                     copyDocument.SubmittedFactions = new HashSet<string>(sourceDocument.SubmittedFactions);
+                    // Written findings live in the description; their paper window stays closed.
+                    if (!sourceDocument.ScannerReport)
+                        RemComp<ActivatableUIComponent>(copy);
+                    _metaData.SetEntityDescription(copy, MetaData(original).EntityDescription);
                     RemComp<FaxableObjectComponent>(copy);
                 }
                 Dirty(copy, paper);

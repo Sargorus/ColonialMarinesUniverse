@@ -44,6 +44,7 @@ public sealed partial class ResearchDataTerminalBui(EntityUid owner, Enum uiKey)
         _window.ReduceCooldown.OnPressed += _ => SendPredictedMessage(new CMUResearchReduceCooldownBuiMsg());
         _window.Reprint.OnPressed += _ => SendPredictedMessage(PrintLast);
         _window.Upgrade.OnPressed += _ => SendPredictedMessage(UpgradeAttempt);
+        _window.OpenKnowledge.OnPressed += _ => SendMessage(new ResearchDataTerminalOpenKnowledgeBuiMsg());
         if (State is ResearchDataTerminalBuiState s)
         {
             RefreshState(s);
@@ -77,6 +78,7 @@ public sealed partial class ResearchDataTerminalBui(EntityUid owner, Enum uiKey)
         _window.Tabs.SetTabTitle(2, Loc.GetString("research-data-ui-tab-contracts"));
         _window.Tabs.SetTabTitle(3, Loc.GetString("research-data-ui-tab-properties"));
         _window.Tabs.SetTabTitle(4, Loc.GetString("research-data-ui-tab-guarantee"));
+        _window.Tabs.SetTabTitle(5, Loc.GetString("research-data-ui-tab-knowledge"));
         _window.NextUpdate = state.NextUpdate;
         _window.ReduceCooldown.Disabled = !state.Picked || state.Credits < 1 || state.NextUpdate <= _time.CurTime;
         _window.TimeLeftBar.MaxValue = (float)(state.NextUpdate - state.LastTime).TotalMilliseconds;
@@ -278,6 +280,7 @@ public sealed partial class ResearchDataTerminalBui(EntityUid owner, Enum uiKey)
         RefreshContracts(state, panel);
         RefreshProperties(panel);
         RefreshGuarantees(state, panel);
+        RefreshKnowledge(state, panel);
     }
 
     private string ReagentName(string? id)
@@ -381,7 +384,8 @@ public sealed partial class ResearchDataTerminalBui(EntityUid owner, Enum uiKey)
                 Text = Loc.GetString(
                     "research-data-ui-guarantee-entry",
                     ("name", entry.Name),
-                    ("cost", entry.Cost)),
+                    ("cost", entry.Cost),
+                    ("requirement", entry.Requirement)),
                 HorizontalExpand = true,
                 VerticalAlignment = Control.VAlignment.Center,
             };
@@ -390,7 +394,7 @@ public sealed partial class ResearchDataTerminalBui(EntityUid owner, Enum uiKey)
             var button = new Button
             {
                 Text = Loc.GetString("research-data-ui-guarantee-buy"),
-                Disabled = state.Locked || state.SampleData < entry.Cost,
+                Disabled = state.Locked || state.Credits < entry.Cost,
                 Margin = new Thickness(5f),
                 StyleBoxOverride = buttonStyle,
             };

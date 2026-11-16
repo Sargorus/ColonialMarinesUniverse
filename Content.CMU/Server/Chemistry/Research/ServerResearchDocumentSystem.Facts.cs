@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 using Content.Shared.CMU14.Chemistry.Reagent;
 using Content.Shared.CMU14.Chemistry.Reagents;
 using Content.Shared.CMU14.Chemistry.Research;
@@ -189,32 +188,27 @@ public sealed partial class ServerResearchDocumentSystem
         return factIds.Count;
     }
 
-    public string BuildDocumentText(
+    public string BuildDocumentDescription(
         string title,
         string author,
         ResearchDocumentType type,
         IReadOnlyCollection<string> factIds)
     {
-        var text = new StringBuilder();
-        text.AppendLine(Loc.GetString("cmu-research-document-header"));
-        text.AppendLine(Loc.GetString("cmu-research-document-title", ("title", FormattedMessage.EscapeText(title))));
-        text.AppendLine(Loc.GetString("cmu-research-document-type", ("type", DocumentTypeName(type))));
-        text.AppendLine(Loc.GetString("cmu-research-document-author", ("author", FormattedMessage.EscapeText(author))));
-        text.AppendLine(Loc.GetString("cmu-research-document-time", ("time", _timing.CurTime.ToString(@"hh\:mm"))));
-        text.AppendLine();
-        text.AppendLine(Loc.GetString("cmu-research-document-findings"));
+        var findings = new List<string>();
         foreach (var factId in factIds)
         {
-            if (!_facts.TryGetValue(factId, out var fact))
-                continue;
-            text.AppendLine(Loc.GetString(
-                "cmu-research-document-entry",
-                ("title", fact.Title),
-                ("description", fact.Description)));
+            if (_facts.TryGetValue(factId, out var fact))
+            {
+                findings.Add(
+                    $"{FormattedMessage.EscapeText(fact.Title)}: {FormattedMessage.EscapeText(fact.Description)}");
+            }
         }
-        text.AppendLine();
-        text.Append(Loc.GetString("cmu-research-document-footer"));
-        return text.ToString();
+        return Loc.GetString(
+            "cmu-research-document-description",
+            ("title", FormattedMessage.EscapeText(title)),
+            ("type", DocumentTypeName(type)),
+            ("author", FormattedMessage.EscapeText(author)),
+            ("finding", string.Join("; ", findings)));
     }
 
     private string CategoryName(ResearchFact fact)

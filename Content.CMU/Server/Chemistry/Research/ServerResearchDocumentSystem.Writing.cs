@@ -6,6 +6,7 @@ using Content.Shared.DoAfter;
 using Content.Shared.Fax.Components;
 using Content.Shared.Hands.Components;
 using Content.Shared.Paper;
+using Content.Shared.UserInterface;
 using Content.Shared.Verbs;
 using Robust.Shared.GameObjects;
 
@@ -201,11 +202,13 @@ public sealed partial class ServerResearchDocumentSystem
         document.Title = title;
         document.Type = args.Type;
         document.CreatedAt = _timing.CurTime;
-        var text = BuildDocumentText(title, document.Author, document.Type, selected);
-        _paper.SetContent(ent.Owner, text);
+        var description = BuildDocumentDescription(title, document.Author, document.Type, selected);
+        // Written findings live in the entity description, not in an editable paper window.
+        _paper.SetContent(ent.Owner, Loc.GetString("cmu-research-document-written-marker"));
         ent.Comp.EditingDisabled = true;
+        RemComp<ActivatableUIComponent>(ent.Owner);
         _meta.SetEntityName(ent.Owner, title);
-        _meta.SetEntityDescription(ent.Owner, Loc.GetString("cmu-research-documents-description"));
+        _meta.SetEntityDescription(ent.Owner, description);
         RemComp<FaxableObjectComponent>(ent.Owner);
         Dirty(ent.Owner, ent.Comp);
         PopupToUser(
