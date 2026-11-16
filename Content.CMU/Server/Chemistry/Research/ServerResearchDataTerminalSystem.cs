@@ -1,7 +1,6 @@
 using Content.Server.Administration.Logs;
 using Content.Server.CMU14.Chemistry.Reagents;
 using Content.Server.CMU14.ColonyEconomy;
-using Content.Server.Chat.Managers;
 using Content.Server.Chat.Systems;
 using Content.Server.GameTicking;
 using Content.Shared.CMU14.Chemistry.Reagents;
@@ -19,7 +18,6 @@ using Content.Shared.GameTicking;
 using Content.Shared.GameTicking.Components;
 using Content.Shared.Paper;
 using Content.Shared.Popups;
-using Discord.Rest;
 using Robust.Shared.Configuration;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Random;
@@ -27,7 +25,6 @@ using Robust.Shared.Timing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace Content.Server.CMU14.Chemistry.Research;
 
@@ -107,9 +104,7 @@ public sealed partial class ServerResearchDataTerminalSystem : SharedResearchDat
     [Dependency] private PaperSystem _paper = default!;
     [Dependency] private IPrototypeManager _protoman = default!;
     [Dependency] private MetaDataSystem _mets = default!;
-    [Dependency] private CorporateConsoleSystem _corpo = default!;
-    [Dependency] private ColonyBudgetSystem _colbud = default!;
-    [Dependency] private SharedRequisitionsSystem _reqsys = default!;
+    [Dependency] private CorporateConsoleSystem _corporateConsole = default!;
     [Dependency] private IConfigurationManager _cfg = default!;
     [Dependency] private ILogManager _logman = default!;
     [Dependency] private SharedTransformSystem _xform = default!;
@@ -119,7 +114,6 @@ public sealed partial class ServerResearchDataTerminalSystem : SharedResearchDat
 
     private Dictionary<Entity<ResearchDataTerminalComponent>, int> _printing = [];
     private HashSet<Entity<ResearchDataTerminalComponent>> _printingLast = [];
-    private List<ResearchGuaranteeEntry>? _guaranteeEntries;
 
     private ISawmill _sawmill = default!;
 
@@ -264,122 +258,6 @@ public sealed partial class ServerResearchDataTerminalSystem : SharedResearchDat
             return;
         }
         ReduceCooldown(ent.Comp.Faction);
-    }
-
-    private void OnBuyGuarantee(
-        Entity<ResearchDataTerminalComponent> ent,
-        ref ResearchDataTerminalBuyGuaranteeBuiMsg args)
-    {
-        var faction = ent.Comp.Faction;
-        if (IsResearchBlocked(faction))
-        {
-            PopupBlocked(ent.Owner, args.Actor);
-            UpdateUI(ent);
-            return;
-        }
-
-        if (!_protoman.TryIndex<ReagentPropertyPrototype>(args.PropertyId, out var property)
-            || !IsGuaranteeProperty(property))
-        {
-            return;
-        }
-
-        var cost = GetGuaranteeCost(property);
-        if (GetSampleData(faction) < cost)
-        {
-            _popup.PopupEntity(
-                Loc.GetString("research-data-ui-guarantee-no-points"),
-                ent.Owner,
-                args.Actor,
-                PopupType.SmallCaution);
-            UpdateUI(ent);
-            return;
-        }
-
-        var research = GetResearch(faction);
-        UpdateSampleData(GetSampleData(faction) - cost, faction);
-        research.GuaranteedProperty = property.ID;
-        research.GuaranteedPropertyCost = cost;
-        if (!research.Picked)
-            ApplyGuaranteeToFirstOffer(research);
-
-        _adminLog.Add(LogType.Action, LogImpact.Medium,
-            $"{ToPrettyString(args.Actor)} guaranteed chemistry property {property.ID} for {faction} " +
-            $"for {cost} points");
-        UpdateFactionUI(faction);
-    }
-
-    private void ApplyGuaranteeToFirstOffer(FactionResearch research)
-    {
-        if (research.GuaranteedProperty is not { } property || research.Selectable.Count == 0)
-            return;
-
-        var first = research.Selectable[0];
-        ForceFirstProperty(ref first, property);
-        research.Selectable[0] = first;
-        research.GuaranteedProperty = null;
-        research.GuaranteedPropertyCost = 0;
-    }
-
-    private static void ForceFirstProperty(ref GeneratedReagentData data, string property)
-    {
-        var level = data.Effects.TryGetValue(property, out var existing)
-            ? Math.Max(1, existing)
-            : 1;
-        data.Effects.Remove(property);
-
-        var reordered = new Dictionary<string, int>(data.Effects.Count + 1)
-        {
-            [property] = level,
-        };
-        foreach (var (id, propertyLevel) in data.Effects)
-            reordered[id] = propertyLevel;
-
-        data.Effects = reordered;
-        data.PropertyHint = property;
-    }
-
-    private List<ResearchGuaranteeEntry> GetGuaranteeEntries()
-    {
-        if (_guaranteeEntries is not null)
-            return _guaranteeEntries;
-
-        _guaranteeEntries = [];
-        foreach (var property in _protoman.GetInstances<ReagentPropertyPrototype>().Values)
-        {
-            if (!IsGuaranteeProperty(property))
-                continue;
-
-            _guaranteeEntries.Add(new ResearchGuaranteeEntry(
-                property.ID,
-                property.LocalizedName,
-                GetGuaranteeCost(property)));
-        }
-
-        _guaranteeEntries.Sort((a, b) =>
-        {
-            var cost = a.Cost.CompareTo(b.Cost);
-            return cost != 0 ? cost : string.CompareOrdinal(a.Name, b.Name);
-        });
-        return _guaranteeEntries;
-    }
-
-    private static bool IsGuaranteeProperty(ReagentPropertyPrototype property)
-    {
-        return !property.Abstract
-               && !string.IsNullOrEmpty(property.EffectName)
-               && property.Rarity is not (ReagentPropertyRarityEnum.Admin
-                   or ReagentPropertyRarityEnum.Disabled);
-    }
-
-    private static int GetGuaranteeCost(ReagentPropertyPrototype property)
-    {
-        return property.Rarity switch
-        {
-            ReagentPropertyRarityEnum.Uncommon => 5,
-            ReagentPropertyRarityEnum.Legendary => 10,
-            _ => 3,
-        };
     }
 
     public override void Update(float frameTime)
@@ -659,7 +537,8 @@ public sealed partial class ServerResearchDataTerminalSystem : SharedResearchDat
             return;
         if (!GetResearch(faction).CompletedChemicals.Add(proto.ID))
             return;
-        // Chemical definitions are global, but each faction earns its own first-scan reward.
+        // Chemical definitions are global, but each faction tracks its own first scan.
+        // Research cash always pays the company account; see DepositResearchCash.
         if (_generator.IdentifiedChemicals.TryAdd(proto.ID, proto.Reward))
             RaiseNetworkEvent(new IdentifyChemicalEvent(proto.ID, proto.Reward));
         // ARCH-02: completing a nested contract also identifies its sub-chemical (no separate reward).
@@ -676,54 +555,7 @@ public sealed partial class ServerResearchDataTerminalSystem : SharedResearchDat
             return;
         }
         UpdateClearance(GetCredits(faction) + proto.Reward, -1, faction, GetSampleData(faction) + SampleDataForCompleted(proto));
-        if (faction != string.Empty)
-        {
-            if (string.Equals(faction, "corporate", StringComparison.OrdinalIgnoreCase))
-            {
-                _corpo.AddToCorporateBudget(ResearchCashRewardMult * proto.Reward);
-                return;
-            }
-            if (string.Equals(faction, "colony", StringComparison.OrdinalIgnoreCase))
-            {
-                _colbud.AddToBudget(ResearchCashRewardMult * proto.Reward);
-                return;
-            }
-            if (string.Equals(faction, "govfor", StringComparison.OrdinalIgnoreCase))
-            {
-                _reqsys.ChangeBudget((int)MathF.Round(ResearchCashRewardMult * proto.Reward), "govfor");
-                return;
-            }
-            if (string.Equals(faction, "opfor", StringComparison.OrdinalIgnoreCase))
-            {
-                _reqsys.ChangeBudget((int)MathF.Round(ResearchCashRewardMult * proto.Reward), "opfor");
-                return;
-            }
-        }
-        if (scanner is null) // guess they don't *really* need that money then
-            return;
-        int amount = (int)MathF.Round(ResearchCashRewardMult * proto.Reward);
-        while (amount > 0)
-        {
-            switch (amount)
-            {
-                case >= 1000:
-                    SpawnNextToOrDrop("RMCSpaceCash1000", scanner.Value);
-                    amount -= 1000;
-                    break;
-                case >= 100:
-                    SpawnNextToOrDrop("RMCSpaceCash100", scanner.Value);
-                    amount -= 100;
-                    break;
-                case >= 10:
-                    SpawnNextToOrDrop("RMCSpaceCash10", scanner.Value);
-                    amount -= 10;
-                    break;
-                default:
-                    SpawnNextToOrDrop("RMCSpaceCash", scanner.Value);
-                    amount--;
-                    break;
-            }
-        }
+        DepositResearchCash(proto, faction, scanner);
     }
 
     private void OnUiOpen(Entity<ResearchDataTerminalComponent> ent, ref BoundUIOpenedEvent args)
@@ -830,64 +662,6 @@ public sealed partial class ServerResearchDataTerminalSystem : SharedResearchDat
         else
             PickChem(args.Pick, ent);
         UpdateUI(ent);
-    }
-
-    private bool TryGetCipherElevator(EntityUid terminal, EntityUid actor, out Entity<RequisitionsElevatorComponent> elevator)
-    {
-        if (TryComp<MarineComponent>(actor, out var marine)
-            && !string.IsNullOrEmpty(marine.Faction))
-        {
-            var actorQuery = EntityQueryEnumerator<RequisitionsElevatorComponent>();
-            while (actorQuery.MoveNext(out var elevUid, out var elevComp))
-            {
-                if (elevComp.Faction.Equals(marine.Faction, StringComparison.OrdinalIgnoreCase))
-                {
-                    elevator = (elevUid, elevComp);
-                    return true;
-                }
-            }
-        }
-
-        var xrf = GetNearestXRF(terminal);
-        if (xrf != EntityUid.Invalid)
-        {
-            var net = _scanner.GetFactionElevator(xrf, null);
-            if (net != NetEntity.Invalid
-                && TryComp<RequisitionsElevatorComponent>(GetEntity(net), out var xrfComp))
-            {
-                elevator = (GetEntity(net), xrfComp);
-                return true;
-            }
-        }
-
-        elevator = default;
-        return false;
-    }
-
-    public EntityUid GetNearestXRF(EntityUid ent)
-    {
-        if (!TryComp(ent, out TransformComponent? excomp))
-            return EntityUid.Invalid;
-        var scannersq = EntityQueryEnumerator<XRFScannerComponent>();
-        List<(EntityUid, TransformComponent)> scanners = [];
-        EntityUid closest = EntityUid.Invalid;
-        float closestDistance = float.MaxValue;
-        while (scannersq.MoveNext(out var xent, out var scanner))
-        {
-            if (!string.Equals(scanner.Faction, GetFaction(ent), StringComparison.OrdinalIgnoreCase))
-                continue;
-            if (!TryComp(xent, out TransformComponent? xcomp))
-                continue;
-            if (excomp.MapUid != xcomp.MapUid)
-                continue;
-            float dist = System.Numerics.Vector2.Distance(_xform.GetWorldPosition(ent), _xform.GetWorldPosition(xent));
-            if (closestDistance > dist)
-            {
-                closestDistance = dist;
-                closest = xent;
-            }
-        }
-        return closest;
     }
 
     private void RerollChems(string faction)
