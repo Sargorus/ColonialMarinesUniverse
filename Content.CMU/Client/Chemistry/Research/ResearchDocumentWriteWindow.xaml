@@ -7,6 +7,7 @@
         <LineEdit Name="TitleEdit" Access="Public" />
         <Label Text="{Loc 'cmu-research-documents-type-label'}" />
         <OptionButton Name="TypeOption" Access="Public" />
+        <Label Text="{Loc 'cmu-research-documents-write-hint'}" />
         <ScrollContainer VerticalExpand="True" HScrollEnabled="False">
             <BoxContainer Name="Facts" Access="Public" Orientation="Vertical"
                           SeparationOverride="4" VerticalExpand="True" />

@@ -54,8 +54,11 @@ public sealed class ResearchKnowledgeSubmitBui(EntityUid owner, Enum uiKey) : Bo
                 Pressed = !choice.Disabled,
                 Disabled = choice.Disabled,
                 ClipText = true,
+                HorizontalExpand = true,
                 ToolTip = choice.DisabledReason,
             };
+            // ClipText measures the label at zero width; expand it so the title remains visible.
+            check.Label.HorizontalExpand = true;
             if (!choice.Disabled)
                 _selected.Add(choice.FactId);
             check.OnToggled += args =>

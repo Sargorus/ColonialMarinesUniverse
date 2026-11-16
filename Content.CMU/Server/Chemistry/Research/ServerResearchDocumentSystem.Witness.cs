@@ -72,7 +72,7 @@ public sealed partial class ServerResearchDocumentSystem
                 ResearchFactKind.WendigoSighting,
                 Loc.GetString("cmu-research-fact-wendigo-sighting-title", ("name", species)),
                 Loc.GetString("cmu-research-fact-wendigo-sighting-desc", ("name", species)),
-                7,
+                WitnessSampleData,
                 0.2f);
             return true;
         }
@@ -83,7 +83,7 @@ public sealed partial class ServerResearchDocumentSystem
             ResearchFactKind.XenoSighting,
             Loc.GetString("cmu-research-fact-xeno-sighting-title", ("name", species)),
             Loc.GetString("cmu-research-fact-xeno-sighting-desc", ("name", species)),
-            5,
+            WitnessSampleData,
             0.15f);
         return true;
     }
@@ -100,7 +100,7 @@ public sealed partial class ServerResearchDocumentSystem
             ResearchFactKind.Infection,
             "cmu-research-fact-infection-title",
             "cmu-research-fact-infection-desc",
-            5,
+            WitnessSampleData,
             0.15f);
     }
 
@@ -112,7 +112,7 @@ public sealed partial class ServerResearchDocumentSystem
             ResearchFactKind.Burst,
             "cmu-research-fact-burst-title",
             "cmu-research-fact-burst-desc",
-            5,
+            WitnessSampleData,
             0.15f);
     }
 

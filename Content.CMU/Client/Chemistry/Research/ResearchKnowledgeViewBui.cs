@@ -49,21 +49,30 @@ public sealed class ResearchKnowledgeViewBui(EntityUid owner, Enum uiKey) : Boun
 
         foreach (var choice in state.Choices)
         {
-            _window.Choices.AddChild(new CheckBox
+            var check = new CheckBox
             {
                 Text = choice.Title,
                 Pressed = false,
                 Disabled = true,
                 ClipText = true,
+                HorizontalExpand = true,
                 ToolTip = choice.Title,
-            });
+            };
+            // ClipText measures the label at zero width; expand it so the title remains visible.
+            check.Label.HorizontalExpand = true;
+            _window.Choices.AddChild(check);
             _window.Choices.AddChild(new Label
             {
-                Text = Loc.GetString(
-                    "cmu-research-documents-choice-meta",
-                    ("category", choice.Category),
-                    ("source", choice.Source),
-                    ("reward", string.Empty)),
+                Text = string.IsNullOrEmpty(choice.Reward)
+                    ? Loc.GetString(
+                        "cmu-research-documents-choice-meta-compact",
+                        ("category", choice.Category),
+                        ("source", choice.Source))
+                    : Loc.GetString(
+                        "cmu-research-documents-choice-meta",
+                        ("category", choice.Category),
+                        ("source", choice.Source),
+                        ("reward", choice.Reward)),
                 ClipText = true,
                 StyleClasses = { "LabelSubText" },
             });

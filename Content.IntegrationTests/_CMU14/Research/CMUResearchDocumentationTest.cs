@@ -188,7 +188,7 @@ public sealed class CMUResearchDocumentationTest : GameTest
             Assert.Multiple(() =>
             {
                 Assert.That(count, Is.EqualTo(1));
-                Assert.That(document.FactIds, Does.Contain($"contract:{proto.ID}"));
+                Assert.That(document.FactIds, Does.Contain($"contract:corporate:{proto.ID}"));
             });
         });
     }
@@ -216,7 +216,7 @@ public sealed class CMUResearchDocumentationTest : GameTest
             Assert.Multiple(() =>
             {
                 Assert.That(document.ScannerReport, Is.True);
-                Assert.That(document.FactIds, Does.Contain($"contract:{proto.ID}"));
+                Assert.That(document.FactIds, Does.Contain($"contract:corporate:{proto.ID}"));
             });
         });
     }

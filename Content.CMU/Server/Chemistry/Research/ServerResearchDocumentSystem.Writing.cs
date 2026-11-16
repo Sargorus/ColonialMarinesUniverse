@@ -26,7 +26,7 @@ public sealed partial class ServerResearchDocumentSystem
 
     private void OnPaperVerbs(Entity<PaperComponent> ent, ref GetVerbsEvent<AlternativeVerb> args)
     {
-        if (!args.CanAccess || !args.CanInteract)
+        if (!args.CanAccess || !args.CanInteract || !IsValidWitness(args.User))
             return;
         if (HasComp<ResearchDocumentComponent>(ent) || !IsBlank(ent.Comp))
             return;
@@ -39,7 +39,7 @@ public sealed partial class ServerResearchDocumentSystem
             {
                 Text = Loc.GetString("cmu-research-documents-write-verb"),
                 Disabled = true,
-                Message = Loc.GetString("cmu-research-documents-no-source"),
+                Message = Loc.GetString("cmu-research-documents-write-no-source"),
             });
             return;
         }
@@ -100,7 +100,7 @@ public sealed partial class ServerResearchDocumentSystem
         }
         if (choices.Count == 0)
         {
-            PopupToUser(user, Loc.GetString("cmu-research-documents-no-source"), paper);
+            PopupToUser(user, Loc.GetString("cmu-research-documents-write-no-source"), paper);
             return;
         }
         _ui.OpenUi(paper, ResearchDocumentWriteUI.Key, user);
@@ -110,9 +110,10 @@ public sealed partial class ServerResearchDocumentSystem
     private void OnWriteMessage(Entity<PaperComponent> ent, ref ResearchDocumentWriteMessage args)
     {
         var user = args.Actor;
-        if (!IsBlank(ent.Comp) || HasComp<ResearchDocumentComponent>(ent))
+        if (!IsValidWitness(user) || !IsBlank(ent.Comp) || HasComp<ResearchDocumentComponent>(ent))
             return;
-        if (!Enum.IsDefined(args.Type) || args.FactIds.Count > 64)
+        // One paper carries exactly one finding; the list behaves as radio buttons on the client.
+        if (!Enum.IsDefined(args.Type) || args.FactIds.Count != 1)
             return;
         if (!TryGetPen(user, out var pen))
         {
@@ -120,9 +121,9 @@ public sealed partial class ServerResearchDocumentSystem
             return;
         }
         var selected = SelectKnownFacts(user, args.FactIds);
-        if (selected.Count == 0)
+        if (selected.Count != 1)
         {
-            PopupToUser(user, Loc.GetString("cmu-research-documents-no-source"), ent);
+            PopupToUser(user, Loc.GetString("cmu-research-documents-write-no-source"), ent);
             return;
         }
         var title = args.Title.Trim();
@@ -173,15 +174,20 @@ public sealed partial class ServerResearchDocumentSystem
         if (args.Handled || args.Cancelled)
             return;
         args.Handled = true;
-        if (!IsBlank(ent.Comp) || HasComp<ResearchDocumentComponent>(ent))
+        if (!IsValidWitness(args.User)
+            || !IsBlank(ent.Comp)
+            || HasComp<ResearchDocumentComponent>(ent)
+            || args.FactIds.Count != 1)
+        {
             return;
+        }
         if (!TryGetPen(args.User, out _))
         {
             PopupToUser(args.User, Loc.GetString("cmu-research-documents-pen-required"), ent);
             return;
         }
         var selected = SelectKnownFacts(args.User, args.FactIds);
-        if (selected.Count == 0)
+        if (selected.Count != 1)
             return;
         var title = args.Title.Trim();
         if (title.Length > 80)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Content.Shared._RMC14.Xenonids;
 using Content.Shared.CMU14.Chemistry.Research;
 using Content.Shared.Database;
 using Content.Shared.Hands.Components;
@@ -21,7 +22,7 @@ public sealed partial class ServerResearchDocumentSystem
 
     private void OnTerminalVerbs(Entity<ResearchDataTerminalComponent> ent, ref GetVerbsEvent<AlternativeVerb> args)
     {
-        if (!args.CanAccess || !args.CanInteract || HasComp<Content.Shared._RMC14.Xenonids.XenoComponent>(args.User))
+        if (!args.CanAccess || !args.CanInteract || HasComp<XenoComponent>(args.User))
             return;
         var user = args.User;
         args.Verbs.Add(new AlternativeVerb
@@ -53,10 +54,11 @@ public sealed partial class ServerResearchDocumentSystem
             var witness = IsWitnessFact(fact);
             var witnessCap = witness && _witnessClaims.GetValueOrDefault(factId) >= fact.MaxSubmissions;
             var playerClaim = witness && _playerClaims.Contains((factId, user));
-            var disabled = locked || known.Contains(factId) || witnessCap || playerClaim;
+            var alreadyKnown = !witness && known.Contains(factId);
+            var disabled = locked || alreadyKnown || witnessCap || playerClaim;
             var reason = locked
                 ? Loc.GetString("cmu-research-documents-locked")
-                : known.Contains(factId)
+                : alreadyKnown
                     ? Loc.GetString("cmu-research-documents-already-known")
                     : witnessCap
                         ? Loc.GetString("cmu-research-documents-witness-cap")
@@ -181,12 +183,6 @@ public sealed partial class ServerResearchDocumentSystem
                 skippedReason ??= Loc.GetString("cmu-research-documents-invalid");
                 continue;
             }
-            if (research.KnownFacts.Contains(factId))
-            {
-                skipped++;
-                skippedReason ??= Loc.GetString("cmu-research-documents-already-known");
-                continue;
-            }
             var witness = IsWitnessFact(fact);
             if (witness && _witnessClaims.GetValueOrDefault(factId) >= fact.MaxSubmissions)
             {
@@ -200,8 +196,17 @@ public sealed partial class ServerResearchDocumentSystem
                 skippedReason ??= Loc.GetString("cmu-research-documents-player-claimed");
                 continue;
             }
+            if (!witness && research.KnownFacts.Contains(factId))
+            {
+                skipped++;
+                skippedReason ??= Loc.GetString("cmu-research-documents-already-known");
+                continue;
+            }
 
-            research.KnownFacts.Add(factId);
+            // Witness facts stay neutral: up to three different players may submit the same sighting, so
+            // they are not added to the faction's known facts and do not block later submissions.
+            if (!witness)
+                research.KnownFacts.Add(factId);
             var factCash = 0;
             if (witness)
             {
@@ -210,9 +215,16 @@ public sealed partial class ServerResearchDocumentSystem
             }
             else if (fact.SourceFaction == faction)
             {
-                factCash = fact.Cash;
                 if (fact.Kind == ResearchFactKind.Contract && fact.ReagentId is { } reagentId)
-                    research.RewardedChemicals.Add(reagentId);
+                {
+                    // The legacy completion path may have paid this reagent already.
+                    if (research.RewardedChemicals.Add(reagentId))
+                        factCash = fact.Cash;
+                }
+                else
+                {
+                    factCash = fact.Cash;
+                }
             }
             if (fact.Credits != 0 || fact.SampleData != 0)
             {

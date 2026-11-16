@@ -52,7 +52,7 @@ public sealed partial class ServerResearchDocumentSystem
             if (!_facts.TryGetValue(factId, out var fact))
                 continue;
             var witness = IsWitnessFact(fact);
-            var teamClaim = claims?.Contains(factId) == true;
+            var teamClaim = !witness && claims?.Contains(factId) == true;
             var witnessCap = witness && _witnessClaims.GetValueOrDefault(factId) >= fact.MaxSubmissions;
             var playerClaim = witness && _playerClaims.Contains((factId, user));
             var disabled = teamClaim || witnessCap || playerClaim;
@@ -147,13 +147,13 @@ public sealed partial class ServerResearchDocumentSystem
                 skippedReason ??= Loc.GetString("cmu-research-documents-invalid");
                 continue;
             }
-            if (claims.Contains(factId))
+            var witness = IsWitnessFact(fact);
+            if (!witness && claims.Contains(factId))
             {
                 skipped++;
                 skippedReason ??= Loc.GetString("cmu-research-documents-already-known");
                 continue;
             }
-            var witness = IsWitnessFact(fact);
             if (witness && _witnessClaims.GetValueOrDefault(factId) >= fact.MaxSubmissions)
             {
                 skipped++;
@@ -167,7 +167,8 @@ public sealed partial class ServerResearchDocumentSystem
                 continue;
             }
 
-            claims.Add(factId);
+            if (!witness)
+                claims.Add(factId);
             if (witness)
             {
                 _witnessClaims[factId] = _witnessClaims.GetValueOrDefault(factId) + 1;

@@ -10,6 +10,7 @@ using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Paper;
 using Content.Shared.Verbs;
 using Robust.Shared.Map;
+using Robust.Shared.Player;
 using Robust.Shared.Utility;
 
 namespace Content.IntegrationTests._CMU14.Research;
@@ -43,7 +44,7 @@ public sealed class CMUResearchDocumentInteractionTest : GameTest
                 ServerResearchDocumentSystem.ResearchFactKind.XenoSighting,
                 "Test drone",
                 "A test drone was observed.",
-                5,
+                3,
                 0.15f);
             var corporateTerminal = SEntMan.SpawnEntity("CMUResearchDataTerminalCorporate", map.GridCoords);
             var opforTerminal = SEntMan.SpawnEntity("CMUResearchDataTerminalOpfor", map.GridCoords);
@@ -102,7 +103,7 @@ public sealed class CMUResearchDocumentInteractionTest : GameTest
             Assert.That(fact, Is.Not.Null);
             Assert.Multiple(() =>
             {
-                Assert.That(fact!.SampleData, Is.EqualTo(5));
+                Assert.That(fact!.SampleData, Is.EqualTo(3));
                 Assert.That(fact.MaxSubmissions, Is.EqualTo(3));
             });
         });
@@ -124,7 +125,44 @@ public sealed class CMUResearchDocumentInteractionTest : GameTest
                 Does.Contain(factId));
             var fact = documents.GetFactForTest(factId);
             Assert.That(fact, Is.Not.Null);
-            Assert.That(fact!.SampleData, Is.EqualTo(5));
+            Assert.That(fact!.SampleData, Is.EqualTo(3));
+        });
+    }
+
+    [Test]
+    public async Task ThreePlayersCanSubmitSameWitnessFactToSameFaction()
+    {
+        var map = await Pair.CreateTestMap();
+        await Server.WaitAssertion(() =>
+        {
+            var research = SEntMan.System<ServerResearchDataTerminalSystem>();
+            var documents = SEntMan.System<ServerResearchDocumentSystem>();
+            var fact = documents.RecordWitnessFact(
+                "xeno:sighting:CMUTestWitnessSameFaction",
+                ServerResearchDocumentSystem.ResearchFactKind.XenoSighting,
+                "Test drone",
+                "A test drone was observed.",
+                3,
+                0.15f);
+            var terminal = SEntMan.SpawnEntity("CMUResearchDataTerminalCorporate", map.GridCoords);
+            research.UpdateClearance(0, -1, "corporate", 0);
+            var users = new[]
+            {
+                SpawnUser(map.GridCoords, fact.Id),
+                SpawnUser(map.GridCoords, fact.Id),
+                SpawnUser(map.GridCoords, fact.Id),
+                SpawnUser(map.GridCoords, fact.Id),
+            };
+            for (var i = 0; i < 3; i++)
+            {
+                var result = documents.SubmitKnowledge(users[i], terminal, [fact.Id]);
+                Assert.That(result.Accepted, Is.EqualTo(1),
+                    $"witness submission {i + 1} must be accepted for the same faction");
+            }
+            var fourth = documents.SubmitKnowledge(users[3], terminal, [fact.Id]);
+            Assert.That(fourth.Accepted, Is.Zero, "the fourth witness submission must be rejected");
+            Assert.That(research.GetSampleData("corporate"), Is.EqualTo(9),
+                "three accepted sightings pay three sample data each");
         });
     }
 
@@ -141,7 +179,7 @@ public sealed class CMUResearchDocumentInteractionTest : GameTest
                 ServerResearchDocumentSystem.ResearchFactKind.XenoSighting,
                 "Test drone",
                 "A test drone was observed.",
-                5,
+                3,
                 0.15f);
             var user = SpawnUser(map.GridCoords, fact.Id);
             var pen = SEntMan.SpawnEntity("CMPen", map.GridCoords);
@@ -176,7 +214,7 @@ public sealed class CMUResearchDocumentInteractionTest : GameTest
                 ServerResearchDocumentSystem.ResearchFactKind.XenoSighting,
                 "Test drone",
                 "A test drone was observed.",
-                5,
+                3,
                 0.15f);
             var user = SpawnUser(map.GridCoords);
             var paper = SEntMan.SpawnEntity("CMPaper", map.GridCoords);
@@ -197,6 +235,30 @@ public sealed class CMUResearchDocumentInteractionTest : GameTest
                 verb => verb.Text == Loc.GetString("cmu-research-documents-remember-verb"));
             Assert.That(remember.Disabled, Is.False,
                 "a player who knows nothing must still be able to memorize a scanner report");
+
+            SEntMan.AddComponent<ActorComponent>(user);
+            try
+            {
+                var selfVerbs = new GetVerbsEvent<AlternativeVerb>(
+                    user,
+                    user,
+                    null,
+                    SEntMan.GetComponent<HandsComponent>(user),
+                    canInteract: true,
+                    canComplexInteract: true,
+                    canAccess: true,
+                    extraCategories: []);
+                SEntMan.EventBus.RaiseLocalEvent(user, selfVerbs);
+                Assert.That(
+                    selfVerbs.Verbs.Any(verb => verb.Text == Loc.GetString("cmu-research-documents-review-verb")),
+                    Is.True,
+                    "the player must be able to review personal knowledge from their own context menu");
+            }
+            finally
+            {
+                // A session-less actor would trip admin identity updates during teardown.
+                SEntMan.RemoveComponent<ActorComponent>(user);
+            }
         });
     }
 
@@ -209,21 +271,40 @@ public sealed class CMUResearchDocumentInteractionTest : GameTest
         {
             var documents = SEntMan.System<ServerResearchDocumentSystem>();
             var hands = SEntMan.System<SharedHandsSystem>();
-            var fact = documents.RecordWitnessFact(
+            var first = documents.RecordWitnessFact(
                 "xeno:sighting:CMUTestWrite",
                 ServerResearchDocumentSystem.ResearchFactKind.XenoSighting,
                 "Test drone",
                 "A test drone was observed.",
-                5,
+                3,
                 0.15f);
-            var user = SpawnUser(map.GridCoords, fact.Id);
+            var second = documents.RecordWitnessFact(
+                "xeno:sighting:CMUTestWriteTwo",
+                ServerResearchDocumentSystem.ResearchFactKind.XenoSighting,
+                "Second test drone",
+                "Another test drone was observed.",
+                3,
+                0.15f);
+            var user = SpawnUser(map.GridCoords, first.Id, second.Id);
             var pen = SEntMan.SpawnEntity("Pen", map.GridCoords);
             Assert.That(hands.TryPickupAnyHand(user, pen), Is.True);
             paper = SEntMan.SpawnEntity("Paper", map.GridCoords);
+            var tooMany = new ResearchDocumentWriteMessage(
+                "Two findings",
+                ResearchDocumentType.Record,
+                [first.Id, second.Id])
+            {
+                Actor = user,
+                UiKey = ResearchDocumentWriteUI.Key,
+            };
+            SEntMan.EventBus.RaiseLocalEvent(paper, tooMany);
+            Assert.That(SEntMan.HasComponent<ResearchDocumentComponent>(paper), Is.False,
+                "the server must reject a document with more than one finding");
+
             var message = new ResearchDocumentWriteMessage(
                 "Field report",
                 ResearchDocumentType.Record,
-                [fact.Id])
+                [first.Id])
             {
                 Actor = user,
                 UiKey = ResearchDocumentWriteUI.Key,
@@ -239,6 +320,7 @@ public sealed class CMUResearchDocumentInteractionTest : GameTest
                 Assert.That(document!.ScannerReport, Is.False);
                 Assert.That(document.Title, Is.EqualTo("Field report"));
                 Assert.That(document.Type, Is.EqualTo(ResearchDocumentType.Record));
+                Assert.That(document.FactIds, Is.EqualTo(new[] { "xeno:sighting:CMUTestWrite" }));
                 Assert.That(SEntMan.GetComponent<PaperComponent>(paper).EditingDisabled, Is.True);
             });
         });

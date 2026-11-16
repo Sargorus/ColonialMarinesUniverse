@@ -65,7 +65,7 @@ public sealed class CMUResearchDocumentationIntelTest : GameTest
                 ServerResearchDocumentSystem.ResearchFactKind.XenoSighting,
                 "Test drone",
                 "A test drone was observed.",
-                5,
+                3,
                 0.15f);
             var witnessUser = SpawnUser(map.GridCoords, witness.Id);
             var witnessResult = documents.SubmitIntelKnowledge(witnessUser, console, [witness.Id]);
@@ -75,6 +75,39 @@ public sealed class CMUResearchDocumentationIntelTest : GameTest
                 Assert.That(witnessResult.IntelPoints, Is.GreaterThan(0));
                 Assert.That(tree.Comp.Tree.Points, Is.GreaterThan(before));
             });
+        });
+    }
+
+    [Test]
+    public async Task ThreePlayersCanSubmitSameWitnessFactToSameTeam()
+    {
+        var map = await Pair.CreateTestMap();
+        await Server.WaitAssertion(() =>
+        {
+            var documents = SEntMan.System<ServerResearchDocumentSystem>();
+            var fact = documents.RecordWitnessFact(
+                "xeno:sighting:CMUTestIntelSameTeam",
+                ServerResearchDocumentSystem.ResearchFactKind.XenoSighting,
+                "Test drone",
+                "A test drone was observed.",
+                3,
+                0.15f);
+            var console = SEntMan.SpawnEntity("RMCComputerIntelGovfor", map.GridCoords);
+            var users = new[]
+            {
+                SpawnUser(map.GridCoords, fact.Id),
+                SpawnUser(map.GridCoords, fact.Id),
+                SpawnUser(map.GridCoords, fact.Id),
+                SpawnUser(map.GridCoords, fact.Id),
+            };
+            for (var i = 0; i < 3; i++)
+            {
+                var result = documents.SubmitIntelKnowledge(users[i], console, [fact.Id]);
+                Assert.That(result.Accepted, Is.EqualTo(1),
+                    $"witness intel submission {i + 1} must be accepted for the same team");
+            }
+            var fourth = documents.SubmitIntelKnowledge(users[3], console, [fact.Id]);
+            Assert.That(fourth.Accepted, Is.Zero, "the fourth witness intel submission must be rejected");
         });
     }
 }

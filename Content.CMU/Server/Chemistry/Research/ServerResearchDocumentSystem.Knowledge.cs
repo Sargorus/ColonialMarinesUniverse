@@ -62,16 +62,24 @@ public sealed partial class ServerResearchDocumentSystem
 
     private void OnDocumentVerbs(Entity<ResearchDocumentComponent> ent, ref GetVerbsEvent<AlternativeVerb> args)
     {
-        if (!ent.Comp.ScannerReport || !args.CanAccess || !args.CanInteract)
+        if (!ent.Comp.ScannerReport || !args.CanAccess || !args.CanInteract || !IsValidWitness(args.User))
             return;
         EnsureScannerReportFacts(ent.Owner, ent.Comp);
         var user = args.User;
         var newFacts = CountNewFacts(user, ent.Comp.FactIds);
+        var disabled = newFacts == 0;
+        string? message = null;
+        if (disabled)
+        {
+            message = ent.Comp.FactIds.Count == 0
+                ? Loc.GetString("cmu-research-documents-no-facts")
+                : Loc.GetString("cmu-research-documents-remember-none");
+        }
         args.Verbs.Add(new AlternativeVerb
         {
             Text = Loc.GetString("cmu-research-documents-remember-verb"),
-            Disabled = newFacts == 0,
-            Message = newFacts == 0 ? Loc.GetString("cmu-research-documents-remember-none") : null,
+            Disabled = disabled,
+            Message = message,
             Act = () => RememberDocument(user, ent.Owner),
         });
     }
@@ -139,7 +147,7 @@ public sealed partial class ServerResearchDocumentSystem
 
     private void OnReadComplete(Entity<ResearchDocumentComponent> ent, ref ResearchDocumentReadDoAfterEvent args)
     {
-        if (args.Handled || args.Cancelled)
+        if (args.Handled || args.Cancelled || !IsValidWitness(args.User))
             return;
         args.Handled = true;
         var added = AddKnowledge(args.User, ent.Comp.FactIds);

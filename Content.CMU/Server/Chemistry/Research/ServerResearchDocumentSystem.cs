@@ -89,6 +89,12 @@ public sealed partial class ServerResearchDocumentSystem : EntitySystem
     private static readonly ProtoId<TagPrototype> WendigoTag = "Wendigo";
     private static readonly ProtoId<TagPrototype> WriteTag = "Write";
 
+    /// <summary>How many different players may submit the same witness fact.</summary>
+    public const int WitnessSubmissionLimit = 3;
+
+    /// <summary>Sample data paid for one accepted witness fact.</summary>
+    public const int WitnessSampleData = 3;
+
     private readonly Dictionary<string, ResearchFact> _facts = new(StringComparer.Ordinal);
     private readonly Dictionary<string, int> _witnessClaims = new(StringComparer.Ordinal);
     private readonly HashSet<(string FactId, EntityUid Player)> _playerClaims = [];
@@ -159,6 +165,8 @@ public sealed partial class ServerResearchDocumentSystem : EntitySystem
         var count = 0;
         foreach (var factId in factIds)
         {
+            if (!_facts.ContainsKey(factId))
+                continue;
             if (knowledge is not null && knowledge.Facts.Contains(factId))
                 continue;
             count++;
@@ -183,11 +191,14 @@ public sealed partial class ServerResearchDocumentSystem : EntitySystem
     {
         if (credits == 0 && sampleData == 0 && cash == 0)
             return Loc.GetString("cmu-research-documents-reward-none");
-        return Loc.GetString(
-            "cmu-research-documents-reward",
-            ("credits", credits),
-            ("data", sampleData),
-            ("cash", cash));
+        var parts = new List<string>();
+        if (credits != 0)
+            parts.Add(Loc.GetString("cmu-research-documents-reward-credits", ("credits", credits)));
+        if (sampleData != 0)
+            parts.Add(Loc.GetString("cmu-research-documents-reward-data", ("data", sampleData)));
+        if (cash != 0)
+            parts.Add(Loc.GetString("cmu-research-documents-reward-cash", ("cash", cash)));
+        return string.Join(", ", parts);
     }
 
     private string DocumentTypeName(ResearchDocumentType type)

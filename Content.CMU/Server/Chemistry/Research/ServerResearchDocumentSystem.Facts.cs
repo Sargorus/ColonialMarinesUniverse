@@ -15,7 +15,7 @@ public sealed partial class ServerResearchDocumentSystem
 {
     public ResearchFact RecordContractFact(string faction, ReagentPrototype proto)
     {
-        var id = $"contract:{proto.ID}";
+        var id = $"contract:{faction}:{proto.ID}";
         if (_facts.TryGetValue(id, out var existing))
             return existing;
         var fact = new ResearchFact
@@ -37,7 +37,7 @@ public sealed partial class ServerResearchDocumentSystem
 
     public ResearchFact RecordPropertyFact(string faction, ReagentPropertyPrototype property)
     {
-        var id = $"property:{property.ID}";
+        var id = $"property:{faction}:{property.ID}";
         if (_facts.TryGetValue(id, out var existing))
             return existing;
         var fact = new ResearchFact
@@ -56,7 +56,7 @@ public sealed partial class ServerResearchDocumentSystem
 
     public ResearchFact RecordBotanyFact(string faction, ReagentPrototype proto)
     {
-        var id = $"botany:{proto.ID}";
+        var id = $"botany:{faction}:{proto.ID}";
         if (_facts.TryGetValue(id, out var existing))
             return existing;
         var fact = new ResearchFact
@@ -90,7 +90,7 @@ public sealed partial class ServerResearchDocumentSystem
             Kind = kind,
             SampleData = sampleData,
             IntelPoints = intelPoints,
-            MaxSubmissions = 3,
+            MaxSubmissions = WitnessSubmissionLimit,
             Title = title,
             Description = description,
         };

@@ -44,22 +44,33 @@ public sealed class ResearchDocumentWriteBui(EntityUid owner, Enum uiKey) : Boun
             return;
         _selected.Clear();
         _window.Facts.RemoveAllChildren();
+        var group = new ButtonGroup(isNoneSetAllowed: false);
+        var first = true;
         foreach (var choice in state.Facts)
         {
+            var factId = choice.FactId;
             var check = new CheckBox
             {
                 Text = choice.Title,
-                Pressed = true,
                 ClipText = true,
+                HorizontalExpand = true,
                 ToolTip = choice.Title,
+                Group = group,
             };
-            _selected.Add(choice.FactId);
+            // ClipText measures the label at zero width; expand it so the title remains visible.
+            check.Label.HorizontalExpand = true;
+            if (first)
+            {
+                _selected.Add(factId);
+                first = false;
+            }
             check.OnToggled += args =>
             {
-                if (args.Pressed)
-                    _selected.Add(choice.FactId);
-                else
-                    _selected.Remove(choice.FactId);
+                if (!args.Pressed)
+                    return;
+                // The group enforces one pressed button; mirror that in the selection.
+                _selected.Clear();
+                _selected.Add(factId);
                 UpdateWrite();
             };
             _window.Facts.AddChild(check);
