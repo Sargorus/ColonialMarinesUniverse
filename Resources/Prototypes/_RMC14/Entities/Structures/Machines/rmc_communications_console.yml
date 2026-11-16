@@ -41,6 +41,10 @@
       collection: RMCKeyboardTyping
       params:
         volume: -1
+  - type: UserInterface # CMU14: research document submission
+    interfaces:
+      enum.ResearchKnowledgeSubmitUI.Key:
+        type: ResearchKnowledgeSubmitBui
 - type: entity
   parent: RMCOverwatchConsole
   id: RMCOverwatchConsoleRotating

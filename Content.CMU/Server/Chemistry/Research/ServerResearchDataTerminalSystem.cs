@@ -34,6 +34,10 @@ public sealed partial class ServerResearchDataTerminalSystem : SharedResearchDat
     {
         public List<GeneratedReagentData> Selectable = [];
         public HashSet<string> CompletedChemicals = [];
+        /// <summary>Facts already accepted at this terminal; also prevents duplicate payouts.</summary>
+        public HashSet<string> KnownFacts = [];
+        /// <summary>Chemicals whose one-time credit/sample/cash reward has already been paid.</summary>
+        public HashSet<string> RewardedChemicals = [];
         public TimeSpan NextReroll;
         public TimeSpan LastTime;
         public bool Picked;

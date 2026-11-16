@@ -24,6 +24,8 @@
     interfaces:
       enum.PaperUiKey.Key:
         type: PaperBoundUserInterface
+      enum.ResearchDocumentWriteUI.Key: # CMU14: research document writing
+        type: ResearchDocumentWriteBui
   - type: Item
     size: Tiny
     heldPrefix: paper

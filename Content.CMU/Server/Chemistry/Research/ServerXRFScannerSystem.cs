@@ -22,6 +22,7 @@ public sealed partial class ServerXRFScannerSystem : XRFScannerSystem
     [Dependency] private MetaDataSystem _mets = default!;
     [Dependency] private PaperSystem _paper = default!;
     [Dependency] private ServerResearchDataTerminalSystem _rdat = default!;
+    [Dependency] private ServerResearchDocumentSystem _documents = default!;
     [Dependency] private IGameTiming _time = default!;
     [Dependency] private SharedRequisitionsSystem _req = default!;
     [Dependency] private SharedPopupSystem _popup = default!;
@@ -81,16 +82,28 @@ public sealed partial class ServerXRFScannerSystem : XRFScannerSystem
                     chemprops.Add(protoprop);
             }
         }
-        if (chem.Class < ReagentClass.Special || (chem.Class >= ReagentClass.Special && dat.Value.Completed))
+        var newPropertyIds = new List<string>();
+        if (chem.Class < ReagentClass.Special || dat.Value.Completed)
+        {
+            foreach (var property in chemprops)
+            {
+                if (property.Category.HasFlag(ReagentPropertyTypeEnum.Unadjustable)
+                    || property.Category.HasFlag(ReagentPropertyTypeEnum.Anomalous))
+                {
+                    continue;
+                }
+                if (!_generator.KnownProperties.Contains(property.ID))
+                    newPropertyIds.Add(property.ID);
+            }
             _generator.SaveNewProperties(chemprops);
-        // Contract and xeno chemicals pay credits plus sample data; simulator output (Generated, Class Rare)
-        // pays sample data only, so the simulator loop feeds itself without touching clearance.
+        }
+        // The scanner only records the discovery. Its report carries the facts; rewards are paid when a
+        // document is submitted at a research terminal.
+        var firstCompletion = false;
         if ((chem.Class >= ReagentClass.Special || chem.Generated) &&
             !_rdat.GetResearch(faction).CompletedChemicals.Contains(chem.ID))
         {
-            //todo: statistics
-            //todo: do something when DNA Disintegrating is discovered
-            _rdat.CompleteChemical(chem, faction, scanner);
+            firstCompletion = _rdat.DiscoverChemical(chem, faction);
         }
         if (scanner == EntityUid.Invalid) //PANIC!!!!!!
             return;
@@ -128,6 +141,7 @@ public sealed partial class ServerXRFScannerSystem : XRFScannerSystem
             (GRD.Value.ID, contents, _time.CurTime, false, GRD.Value, comp.Valid, comp.Completed));
         _mets.SetEntityName(realpaper, name);
         _paper.SetContent(realpaper, contents);
+        _documents.AttachScannerReport(realpaper, faction, chem, dat.Value, firstCompletion, newPropertyIds);
         DirtyEntity(realpaper);
         DirtyEntity(scanner);
     }

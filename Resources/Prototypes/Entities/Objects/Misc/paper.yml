@@ -69,6 +69,10 @@
       right:
       - state: paper-inhand-right
   - type: PhysicalComposition
+  - type: UserInterface # CMU14: research document writing
+    interfaces:
+      enum.ResearchDocumentWriteUI.Key:
+        type: ResearchDocumentWriteBui
 
 - type: entity
   parent: BasePaper

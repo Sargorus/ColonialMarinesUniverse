@@ -1,0 +1,13 @@
+<controls:ResearchKnowledgeSubmitWindow xmlns="https://spacestation14.io"
+                                               xmlns:controls="clr-namespace:Content.Client.CMU14.Chemistry.Research"
+                                               Title="{Loc 'cmu-research-documents-window-title'}"
+                                               MinSize="540 380">
+    <BoxContainer Orientation="Vertical" SeparationOverride="6" Margin="10">
+        <RichTextLabel Name="Summary" Access="Public" />
+        <ScrollContainer VerticalExpand="True" HScrollEnabled="False">
+            <BoxContainer Name="Choices" Access="Public" Orientation="Vertical"
+                          SeparationOverride="4" VerticalExpand="True" />
+        </ScrollContainer>
+        <Button Name="Submit" Access="Public" Text="{Loc 'cmu-research-documents-submit'}" />
+    </BoxContainer>
+</controls:ResearchKnowledgeSubmitWindow>

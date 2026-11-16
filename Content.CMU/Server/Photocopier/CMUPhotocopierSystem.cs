@@ -1,4 +1,6 @@
+using Content.Shared.CMU14.Chemistry.Research;
 using Content.Shared.CMU14.Photocopier;
+using Content.Shared.Fax.Components;
 using Content.Shared.DoAfter;
 using Content.Shared.Examine;
 using Content.Shared.Hands.EntitySystems;
@@ -126,6 +128,18 @@ public sealed class CMUPhotocopierSystem : EntitySystem
                 paper.ContentSize = source.ContentSize;
                 paper.StampedBy = new List<StampDisplayInfo>(source.StampedBy);
                 paper.StampState = source.StampState;
+                if (TryComp<ResearchDocumentComponent>(original, out var sourceDocument))
+                {
+                    var copyDocument = EnsureComp<ResearchDocumentComponent>(copy);
+                    copyDocument.FactIds = new List<string>(sourceDocument.FactIds);
+                    copyDocument.ScannerReport = sourceDocument.ScannerReport;
+                    copyDocument.Author = sourceDocument.Author;
+                    copyDocument.Title = sourceDocument.Title;
+                    copyDocument.Type = sourceDocument.Type;
+                    copyDocument.CreatedAt = sourceDocument.CreatedAt;
+                    copyDocument.SubmittedFactions = new HashSet<string>(sourceDocument.SubmittedFactions);
+                    RemComp<FaxableObjectComponent>(copy);
+                }
                 Dirty(copy, paper);
             }
         }

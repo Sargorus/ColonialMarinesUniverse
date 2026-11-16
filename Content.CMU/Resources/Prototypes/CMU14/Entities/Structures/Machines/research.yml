@@ -40,6 +40,8 @@
     interfaces:
       enum.ResearchDataTerminalUI.Key:
         type: ResearchDataTerminalBui
+      enum.ResearchKnowledgeSubmitUI.Key: # CMU14: research document submission
+        type: ResearchKnowledgeSubmitBui
 
 - type: entity
   parent: CMUResearchDataTerminal
