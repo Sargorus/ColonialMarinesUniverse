@@ -39,7 +39,8 @@ public sealed partial class CorporateConsoleSystem
         {
             var seconds = Math.Max(0, (int) Math.Ceiling((mission.Deadline - _timing.CurTime).TotalSeconds));
             active.Add(BuildMissionInfo(mission.Definition, CompanyMissionStatus.Active, mission.Progress,
-                mission.Target, mission.Reward, seconds));
+                mission.Target, mission.Reward, seconds,
+                mission.ScanPropertyA, mission.ScanPropertyB));
         }
 
         return active;
@@ -51,7 +52,8 @@ public sealed partial class CorporateConsoleSystem
         foreach (var record in state.History)
         {
             history.Add(BuildMissionInfo(record.Definition, record.Status, record.Progress,
-                record.Target, record.Reward, record.SecondsRemaining));
+                record.Target, record.Reward, record.SecondsRemaining,
+                record.ScanPropertyA, record.ScanPropertyB));
         }
 
         return history;
@@ -63,12 +65,20 @@ public sealed partial class CorporateConsoleSystem
         int progress,
         int target,
         int reward,
-        int secondsRemaining)
+        int secondsRemaining,
+        string scanPropertyA = "",
+        string scanPropertyB = "")
     {
-        var objective = Loc.GetString(
-            definition.ObjectiveLoc,
-            ("target", target),
-            ("minutes", definition.TimeLimitMinutes));
+        var objective = !string.IsNullOrEmpty(scanPropertyA) && !string.IsNullOrEmpty(scanPropertyB)
+            ? Loc.GetString(
+                "cmu-company-mission-scan-pair-objective",
+                ("first", PropertyName(scanPropertyA)),
+                ("second", PropertyName(scanPropertyB)),
+                ("minutes", definition.TimeLimitMinutes))
+            : Loc.GetString(
+                definition.ObjectiveLoc,
+                ("target", target),
+                ("minutes", definition.TimeLimitMinutes));
 
         return new CompanyMissionInfo(
             definition.Id,

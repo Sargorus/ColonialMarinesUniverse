@@ -1,0 +1,23 @@
+- type: entity
+  parent: CMUWYBlastDoor
+  id: CMUHermeticDoor
+  name: hermetic door
+  suffix: CMU14, Buildable
+  description: A heavy Weyland-Yutani hermetic door. Its control board can be printed at a colony autolathe.
+  components:
+  - type: AccessReader
+    containerAccessProvider: board
+  - type: Construction
+    graph: CMUHermeticDoorGraph
+    node: blastdoor
+    containers:
+    - board
+
+- type: entity
+  parent: BlastDoorFrame
+  id: CMUHermeticDoorFrame
+  suffix: CMU14
+  components:
+  - type: Construction
+    graph: CMUHermeticDoorGraph
+    node: frame1

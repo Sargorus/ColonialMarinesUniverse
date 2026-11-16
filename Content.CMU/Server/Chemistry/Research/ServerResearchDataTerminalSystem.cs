@@ -1,3 +1,4 @@
+using Content.Server.Administration.Logs;
 using Content.Server.CMU14.Chemistry.Reagents;
 using Content.Server.CMU14.ColonyEconomy;
 using Content.Server.Chat.Managers;
@@ -13,6 +14,7 @@ using Content.Shared.CCVar;
 using Content.Shared.CMU14.Threats;
 using Content.Shared.Chat;
 using Content.Shared.Chemistry.Reagent;
+using Content.Shared.Database;
 using Content.Shared.GameTicking;
 using Content.Shared.GameTicking.Components;
 using Content.Shared.Paper;
@@ -46,6 +48,10 @@ public sealed partial class ServerResearchDataTerminalSystem : SharedResearchDat
         /// sub-contracts. Shown on the terminal's Contracts tab.
         /// </summary>
         public List<string> PickedContracts = [];
+
+        /// <summary>Property that must lead the next generated contract offer.</summary>
+        public string? GuaranteedProperty;
+        public int GuaranteedPropertyCost;
     }
 
     /// <summary>ARCH-02: chance that a picked Hard contract nests another contract chemical as a reactant.</summary>
@@ -69,6 +75,7 @@ public sealed partial class ServerResearchDataTerminalSystem : SharedResearchDat
     /// <summary>FLOW-24: the GOVFOR research faction id, locked out of research while Insurgency runs.</summary>
     public const string GovforFaction = "govfor";
 
+    [Dependency] private IAdminLogManager _adminLog = default!;
     [Dependency] private Content.Server.CMU14.Threats.Mobs.Wendigo.Lab.CMUWendigoResearchUnlockSystem _wendigoUnlock = default!;
 
     private readonly Dictionary<string, FactionResearch> _factions = new(StringComparer.OrdinalIgnoreCase);
@@ -112,6 +119,7 @@ public sealed partial class ServerResearchDataTerminalSystem : SharedResearchDat
 
     private Dictionary<Entity<ResearchDataTerminalComponent>, int> _printing = [];
     private HashSet<Entity<ResearchDataTerminalComponent>> _printingLast = [];
+    private List<ResearchGuaranteeEntry>? _guaranteeEntries;
 
     private ISawmill _sawmill = default!;
 
@@ -130,6 +138,7 @@ public sealed partial class ServerResearchDataTerminalSystem : SharedResearchDat
             subs.Event<ResearchDataTerminalPickChemBuiMsg>(OnPickChem);
             subs.Event<ResearchDataTerminalPrintLastBuiMsg>(OnPrintLast);
             subs.Event<ResearchDataTerminalPrintChemBuiMsg>(OnPrintRequest);
+            subs.Event<ResearchDataTerminalBuyGuaranteeBuiMsg>(OnBuyGuarantee);
         });
         Subs.CVar(_cfg, CCVars.PickWaitTime, time => PickedRerollTime = TimeSpan.FromSeconds(time), true);
         Subs.CVar(_cfg, CCVars.RefreshTime, time => RerollTime = TimeSpan.FromSeconds(time), true);
@@ -255,6 +264,122 @@ public sealed partial class ServerResearchDataTerminalSystem : SharedResearchDat
             return;
         }
         ReduceCooldown(ent.Comp.Faction);
+    }
+
+    private void OnBuyGuarantee(
+        Entity<ResearchDataTerminalComponent> ent,
+        ref ResearchDataTerminalBuyGuaranteeBuiMsg args)
+    {
+        var faction = ent.Comp.Faction;
+        if (IsResearchBlocked(faction))
+        {
+            PopupBlocked(ent.Owner, args.Actor);
+            UpdateUI(ent);
+            return;
+        }
+
+        if (!_protoman.TryIndex<ReagentPropertyPrototype>(args.PropertyId, out var property)
+            || !IsGuaranteeProperty(property))
+        {
+            return;
+        }
+
+        var cost = GetGuaranteeCost(property);
+        if (GetSampleData(faction) < cost)
+        {
+            _popup.PopupEntity(
+                Loc.GetString("research-data-ui-guarantee-no-points"),
+                ent.Owner,
+                args.Actor,
+                PopupType.SmallCaution);
+            UpdateUI(ent);
+            return;
+        }
+
+        var research = GetResearch(faction);
+        UpdateSampleData(GetSampleData(faction) - cost, faction);
+        research.GuaranteedProperty = property.ID;
+        research.GuaranteedPropertyCost = cost;
+        if (!research.Picked)
+            ApplyGuaranteeToFirstOffer(research);
+
+        _adminLog.Add(LogType.Action, LogImpact.Medium,
+            $"{ToPrettyString(args.Actor)} guaranteed chemistry property {property.ID} for {faction} " +
+            $"for {cost} points");
+        UpdateFactionUI(faction);
+    }
+
+    private void ApplyGuaranteeToFirstOffer(FactionResearch research)
+    {
+        if (research.GuaranteedProperty is not { } property || research.Selectable.Count == 0)
+            return;
+
+        var first = research.Selectable[0];
+        ForceFirstProperty(ref first, property);
+        research.Selectable[0] = first;
+        research.GuaranteedProperty = null;
+        research.GuaranteedPropertyCost = 0;
+    }
+
+    private static void ForceFirstProperty(ref GeneratedReagentData data, string property)
+    {
+        var level = data.Effects.TryGetValue(property, out var existing)
+            ? Math.Max(1, existing)
+            : 1;
+        data.Effects.Remove(property);
+
+        var reordered = new Dictionary<string, int>(data.Effects.Count + 1)
+        {
+            [property] = level,
+        };
+        foreach (var (id, propertyLevel) in data.Effects)
+            reordered[id] = propertyLevel;
+
+        data.Effects = reordered;
+        data.PropertyHint = property;
+    }
+
+    private List<ResearchGuaranteeEntry> GetGuaranteeEntries()
+    {
+        if (_guaranteeEntries is not null)
+            return _guaranteeEntries;
+
+        _guaranteeEntries = [];
+        foreach (var property in _protoman.GetInstances<ReagentPropertyPrototype>().Values)
+        {
+            if (!IsGuaranteeProperty(property))
+                continue;
+
+            _guaranteeEntries.Add(new ResearchGuaranteeEntry(
+                property.ID,
+                property.LocalizedName,
+                GetGuaranteeCost(property)));
+        }
+
+        _guaranteeEntries.Sort((a, b) =>
+        {
+            var cost = a.Cost.CompareTo(b.Cost);
+            return cost != 0 ? cost : string.CompareOrdinal(a.Name, b.Name);
+        });
+        return _guaranteeEntries;
+    }
+
+    private static bool IsGuaranteeProperty(ReagentPropertyPrototype property)
+    {
+        return !property.Abstract
+               && !string.IsNullOrEmpty(property.EffectName)
+               && property.Rarity is not (ReagentPropertyRarityEnum.Admin
+                   or ReagentPropertyRarityEnum.Disabled);
+    }
+
+    private static int GetGuaranteeCost(ReagentPropertyPrototype property)
+    {
+        return property.Rarity switch
+        {
+            ReagentPropertyRarityEnum.Uncommon => 5,
+            ReagentPropertyRarityEnum.Legendary => 10,
+            _ => 3,
+        };
     }
 
     public override void Update(float frameTime)
@@ -633,7 +758,10 @@ public sealed partial class ServerResearchDataTerminalSystem : SharedResearchDat
             picked: research.Picked,
             contracts: contracts,
             locked: locked,
-            lockedReason: locked ? Loc.GetString("research-locked-insurgency") : null);
+            lockedReason: locked ? Loc.GetString("research-locked-insurgency") : null,
+            guarantees: GetGuaranteeEntries(),
+            guaranteedProperty: research.GuaranteedProperty,
+            guaranteedPropertyCost: research.GuaranteedPropertyCost);
         _ui.SetUiState(ent.Owner, ResearchDataTerminalUI.Key, state);
     }
 
@@ -791,6 +919,7 @@ public sealed partial class ServerResearchDataTerminalSystem : SharedResearchDat
             data.PropertyHint = _random.Pick(data.Effects.Keys);
             research.Selectable.Add(data);
         }
+        ApplyGuaranteeToFirstOffer(research);
         research.NextReroll = _timer.CurTime + RerollTime;
         research.LastTime = _timer.CurTime;
         UpdateFactionUI(faction, announce: true);

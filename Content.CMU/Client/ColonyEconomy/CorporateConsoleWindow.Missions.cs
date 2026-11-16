@@ -153,6 +153,6 @@ public sealed partial class CorporateConsoleWindow
     private static string MissionSignature(CompanyMissionInfo mission)
     {
         return $"{mission.Id}:{mission.Status}:{mission.Progress}:{mission.Target}:{mission.Reward}:" +
-               $"{mission.SecondsRemaining}";
+               $"{mission.SecondsRemaining}:{mission.Objective}";
     }
 }

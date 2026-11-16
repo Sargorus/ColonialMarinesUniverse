@@ -99,7 +99,8 @@ public sealed partial class CorporateConsoleWindow
 
         // Direction.
         _directionCurrent.Text = DirectionName(state.Direction);
-        _roboticsDirection.Disabled = state.Direction == CorporateResearchDirection.Robotics;
-        _bioengineeringDirection.Disabled = state.Direction == CorporateResearchDirection.Bioengineering;
+        var directionLocked = state.Direction != CorporateResearchDirection.None;
+        _roboticsDirection.Disabled = directionLocked;
+        _bioengineeringDirection.Disabled = directionLocked;
     }
 }

@@ -105,6 +105,13 @@ public sealed partial class CMUDroneOperatorSystem : EntitySystem
     [Dependency] private CMUXenoWarlockSystem _warlockParticles = default!;
     [Dependency] private CMUSharedZLevelsSystem _zLevels = default!;
 
+    private static readonly Dictionary<EntProtoId<SkillDefinitionComponent>, int> CombatBoardSkills = new()
+    {
+        { "RMCSkillFirearms", 3 },
+        { "RMCSkillCqc", 3 },
+        { "RMCSkillConstruction", 2 },
+    };
+
     private static readonly EntProtoId EndControlActionId = "CMUActionDroneEndControl";
     private static readonly TimeSpan LeashCheckInterval = TimeSpan.FromSeconds(0.5);
     private static readonly TimeSpan BodyMoveGrace = TimeSpan.FromSeconds(0.75);
@@ -2707,7 +2714,7 @@ public sealed partial class CMUDroneOperatorSystem : EntitySystem
         return true;
     }
 
-    private void RefreshDroneSkills(Entity<CMUDroneAndroidComponent> drone, bool includeOperator = true)
+    public void RefreshDroneSkills(Entity<CMUDroneAndroidComponent> drone, bool includeOperator = true)
     {
         // Keep the unmodified frame skills across module swaps and control sessions. Operator skills are
         // copied only onto frames that opt in; civilian drones rely on their module boards instead.
@@ -2725,6 +2732,9 @@ public sealed partial class CMUDroneOperatorSystem : EntitySystem
         {
             MergeSkills(skills, operatorSkills.Skills);
         }
+
+        if (drone.Comp.InstalledCombatSystem != null)
+            MergeSkills(skills, CombatBoardSkills);
 
         if (TryGetInstalledDroneModule(drone, out var module))
         {

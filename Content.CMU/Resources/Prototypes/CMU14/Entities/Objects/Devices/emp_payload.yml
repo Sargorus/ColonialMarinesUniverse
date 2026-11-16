@@ -1,6 +1,7 @@
-# CMU14: modular-grenade EMP charge unlocked by a robotics recipe cartridge.
+# CMU14: modular-grenade EMP charge unlocked by a robotics recipe cartridge. It is not contraband:
+# corporate security and colony engineers are expected to use it against hostile synthetics.
 - type: entity
-  parent: [ BasePayload, BaseSecurityScienceCommandContraband ]
+  parent: BasePayload
   id: CMUEmpPayload
   name: EMP payload
   description: A single-use electromagnetic payload. Disables electronics in a wide radius.
@@ -10,9 +11,9 @@
     state: payload-flash-armed
     color: "#4aa3ff"
   - type: EmpOnTrigger
-    range: 5.5
-    energyConsumption: 50000
-    disableDuration: 60
+    range: 9
+    energyConsumption: 80000
+    disableDuration: 90
   - type: DeleteOnTrigger
   - type: StaticPrice
     price: 500

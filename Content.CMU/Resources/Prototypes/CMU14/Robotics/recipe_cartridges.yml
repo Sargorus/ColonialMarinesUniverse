@@ -52,6 +52,31 @@
   - type: StaticPrice
     price: 150
 
+- type: entity
+  parent: BaseItem
+  id: CMURoboticsCartridgeModularMine
+  name: modular mine recipe cartridge
+  description: A Weyland-Yutani recipe cartridge. Insert it into a robotics fabricator to unlock the modular mine casing recipe.
+  components:
+  - type: Sprite
+    sprite: Objects/Devices/cartridge.rsi
+    state: cart-sec
+  - type: Item
+    size: Small
+  - type: CMURoboticsRecipeCartridge
+    pack: CMURoboticsModularMineCartridge
+  - type: StaticPrice
+    price: 150
+
+- type: latheRecipe
+  id: CMURoboticsModularMine
+  result: LandMineModularUnarmed
+  completetime: 6
+  materials:
+    CMSteel: 4000
+    RMCPlastic: 1500
+  categories: [ CMURoboticsUnlockedRecipes ]
+
 - type: latheRecipe
   id: CMURoboticsEmpPayload
   result: CMUEmpPayload
@@ -76,3 +101,8 @@
   id: CMURoboticsCombatSystemCartridge
   recipes:
   - CMURoboticsCombatSystemBoard
+
+- type: latheRecipePack
+  id: CMURoboticsModularMineCartridge
+  recipes:
+  - CMURoboticsModularMine

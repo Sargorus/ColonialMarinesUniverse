@@ -1,7 +1,9 @@
+using System.Linq;
 using Content.IntegrationTests.Fixtures;
 using Content.Server.CMU14.Chemistry.Research;
 using Content.Shared.CMU14.Chemistry.Reagents;
 using Content.Shared.CMU14.Chemistry.Research;
+using Robust.Shared.Map;
 using Robust.Shared.Timing;
 
 namespace Content.IntegrationTests._CMU14.Research;
@@ -70,6 +72,51 @@ public sealed class CMUFactionResearchTest : GameTest
                 system.UpdateClearance(0, 1, "opfor");
                 gov.Picked = op.Picked = false;
                 gov.NextReroll = op.NextReroll = TimeSpan.Zero;
+            }
+        });
+    }
+
+    [Test]
+    public async Task GuaranteedPropertyLeadsNextContract()
+    {
+        await Server.WaitAssertion(() =>
+        {
+            var system = SEntMan.System<ServerResearchDataTerminalSystem>();
+            var research = system.GetResearch("corporate");
+            var terminal = SEntMan.SpawnEntity(
+                "CMUResearchDataTerminalCorporate",
+                MapCoordinates.Nullspace);
+
+            try
+            {
+                system.UpdateSampleData(20, "corporate");
+                research.Selectable.Clear();
+                research.Selectable.Add(new GeneratedReagentData
+                {
+                    ID = "guaranteed-contract",
+                    Effects = new() { ["Toxic"] = 1 },
+                });
+
+                SEntMan.EventBus.RaiseLocalEvent(terminal, new ResearchDataTerminalBuyGuaranteeBuiMsg("Boosting")
+                {
+                    Actor = EntityUid.Invalid,
+                    UiKey = ResearchDataTerminalUI.Key,
+                });
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(system.GetSampleData("corporate"), Is.EqualTo(10));
+                    Assert.That(research.GuaranteedProperty, Is.Null);
+                    Assert.That(research.Selectable[0].Effects.Keys.First(), Is.EqualTo("Boosting"));
+                });
+            }
+            finally
+            {
+                system.UpdateSampleData(0, "corporate");
+                research.Selectable.Clear();
+                research.GuaranteedProperty = null;
+                research.GuaranteedPropertyCost = 0;
+                SEntMan.DeleteEntity(terminal);
             }
         });
     }

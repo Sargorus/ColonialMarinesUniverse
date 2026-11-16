@@ -27,6 +27,7 @@ namespace Content.Server.CMU14.DroneOperator;
 public sealed partial class CMUDroneSystemBoardSystem : EntitySystem
 {
     [Dependency] private SharedContainerSystem _containers = default!;
+    [Dependency] private CMUDroneOperatorSystem _droneOperator = default!;
     [Dependency] private SharedDoAfterSystem _doAfter = default!;
     [Dependency] private SharedHandsSystem _hands = default!;
     [Dependency] private MobStateSystem _mobState = default!;
@@ -143,6 +144,7 @@ public sealed partial class CMUDroneSystemBoardSystem : EntitySystem
             android.InstalledProgramSystem = board;
         }
 
+        _droneOperator.RefreshDroneSkills((drone, android));
         EnsureProgramAgent(drone);
 
         if (TryGetHeldTool(user, boardComp.InstallTool, board, out var tool, out var toolComp))
@@ -358,6 +360,8 @@ public sealed partial class CMUDroneSystemBoardSystem : EntitySystem
         {
             android.InstalledProgramSystem = null;
         }
+
+        _droneOperator.RefreshDroneSkills((drone, android));
 
         if (user.IsValid() && !TerminatingOrDeleted(user))
             _hands.PickupOrDrop(user, board, dropNear: true);

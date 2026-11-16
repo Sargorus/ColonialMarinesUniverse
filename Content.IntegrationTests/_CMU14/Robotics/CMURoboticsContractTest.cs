@@ -846,6 +846,14 @@ public sealed class CMURoboticsContractTest : GameTest
 
             Assert.That(recipes, Does.Not.Contain("CMURoboticsFrameCombat"),
                 "the combat drone frame must only be supplied through cargo");
+            Assert.That(recipes, Does.Contain("CMURoboticsUtilityDrone"),
+                "the robotics fabricator must print the civilian utility drone chassis");
+            Assert.That(recipes, Does.Not.Contain("CMURoboticsUtilityDroneCombat"),
+                "combat drones must be upgraded from a civilian chassis with a combat board");
+            Assert.That(
+                SProtoMan.Index<LatheRecipePackPrototype>("CMURoboticsModularMineCartridge")
+                    .Recipes.Select(recipe => recipe.Id),
+                Does.Contain("CMURoboticsModularMine"));
         });
     }
 }

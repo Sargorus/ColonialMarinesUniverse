@@ -1,5 +1,8 @@
+using System.Globalization;
+using System.Text;
 using Content.Shared._RMC14.Tools;
 using Content.Shared.CMU14.Robotics.UtilityDrones;
+using Content.Shared.GameTicking;
 using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Interaction;
 using Content.Shared.Item;
@@ -27,11 +30,15 @@ public sealed partial class CMUUtilityDroneConsoleSystem : EntitySystem
     [Dependency] private CMUUtilityDroneSystem _drones = default!;
     [Dependency] private SharedHandsSystem _hands = default!;
     [Dependency] private EntityLookupSystem _lookup = default!;
+    [Dependency] private MetaDataSystem _meta = default!;
     [Dependency] private SharedPopupSystem _popup = default!;
     [Dependency] private IGameTiming _timing = default!;
     [Dependency] private SharedUserInterfaceSystem _ui = default!;
 
     private readonly HashSet<EntityUid> _scanBuffer = new();
+    private readonly Dictionary<string, int> _programNumbers = new(StringComparer.Ordinal);
+    private int _nextProgramNumber = 1;
+    private int _nextBoardSerial = 1;
 
     public override void Initialize()
     {
@@ -46,6 +53,20 @@ public sealed partial class CMUUtilityDroneConsoleSystem : EntitySystem
         SubscribeLocalEvent<CMUUtilityDroneConsoleComponent, InteractUsingEvent>(OnConsoleInteractUsing);
         SubscribeLocalEvent<CMUUtilityDroneConsoleComponent, ComponentShutdown>(OnConsoleShutdown);
         SubscribeLocalEvent<CMUUtilityTaskMarkerComponent, InteractUsingEvent>(OnMarkerInteractUsing);
+        SubscribeLocalEvent<RoundRestartCleanupEvent>(OnRoundRestartCleanup);
+    }
+
+    private void OnRoundRestartCleanup(RoundRestartCleanupEvent args)
+    {
+        ResetProgramNumbering();
+    }
+
+    /// <summary>Clears the directive-board numbering counters. Used by round cleanup and tests.</summary>
+    public void ResetProgramNumbering()
+    {
+        _programNumbers.Clear();
+        _nextProgramNumber = 1;
+        _nextBoardSerial = 1;
     }
 
     public override void Update(float frameTime)
@@ -343,6 +364,15 @@ public sealed partial class CMUUtilityDroneConsoleSystem : EntitySystem
         boardComp.Script = script;
         boardComp.ScriptMarkers = scriptMarkers;
         boardComp.Console = console;
+        var number = GetBoardNumber(program, script, scriptMarkers);
+        boardComp.ProgramNumber = number.Program;
+        boardComp.BoardSerial = number.Serial;
+        _meta.SetEntityName(
+            board,
+            Loc.GetString(
+                "cmu-utility-drone-program-board-name",
+                ("program", number.Program),
+                ("serial", number.Serial.ToString("X4"))));
         comp.Program = program.Clone();
         comp.Script = script;
 
@@ -358,6 +388,84 @@ public sealed partial class CMUUtilityDroneConsoleSystem : EntitySystem
         }
 
         return true;
+    }
+
+    private (int Program, int Serial) GetBoardNumber(
+        CMUUtilityProgram program,
+        string script,
+        List<EntityUid> markers)
+    {
+        var signature = ProgramSignature(program, script, markers);
+        var wrapped = false;
+        if (!_programNumbers.TryGetValue(signature, out var programNumber))
+        {
+            programNumber = _nextProgramNumber++;
+            _programNumbers[signature] = programNumber;
+
+            if (_nextProgramNumber > 100)
+            {
+                _nextProgramNumber = 1;
+                wrapped = true;
+            }
+        }
+
+        var serial = _nextBoardSerial++;
+        if (_nextBoardSerial > 0xFFFF)
+            _nextBoardSerial = 1;
+        if (wrapped)
+            _nextBoardSerial = 1;
+
+        return (programNumber, serial);
+    }
+
+    private static string ProgramSignature(
+        CMUUtilityProgram program,
+        string script,
+        List<EntityUid> markers)
+    {
+        var builder = new StringBuilder();
+        if (!string.IsNullOrWhiteSpace(script))
+        {
+            builder.Append("script:").Append(script);
+        }
+        else
+        {
+            builder.Append("steps:")
+                .Append(program.Repeat)
+                .Append(':')
+                .Append(program.RepeatCooldown.ToString("R", CultureInfo.InvariantCulture));
+
+            foreach (var step in program.Steps)
+            {
+                builder.Append('|')
+                    .Append(step.Kind)
+                    .Append(':')
+                    .Append(step.Marker?.ToString() ?? "-")
+                    .Append(':')
+                    .Append(step.Target?.ToString() ?? "-")
+                    .Append(':')
+                    .Append(step.Radius.ToString("R", CultureInfo.InvariantCulture))
+                    .Append(':')
+                    .Append(step.Seconds.ToString("R", CultureInfo.InvariantCulture))
+                    .Append(':')
+                    .Append(step.Note);
+            }
+
+            foreach (var rule in program.Rules)
+            {
+                builder.Append('|')
+                    .Append(rule.Trigger)
+                    .Append(':')
+                    .Append(rule.Action)
+                    .Append(':')
+                    .Append(rule.Message);
+            }
+        }
+
+        foreach (var marker in markers)
+            builder.Append("|marker:").Append(marker);
+
+        return builder.ToString();
     }
 
     /// <summary>

@@ -85,10 +85,13 @@
       cost: 5
     - cartridge: CMURoboticsCartridgeProgramSystem
       description: cmu-robotics-cartridge-program-system-desc
-      cost: 10
+      cost: 5
     - cartridge: CMURoboticsCartridgeCombatSystem
       description: cmu-robotics-cartridge-combat-system-desc
-      cost: 20
+      cost: 8
+    - cartridge: CMURoboticsCartridgeModularMine
+      description: cmu-robotics-cartridge-modular-mine-desc
+      cost: 3
   - type: CMUQueueNetworkConsole
   - type: ActivatableUI
     key: enum.CMURoboticsOrderConsoleUiKey.Key

@@ -23,7 +23,10 @@ public sealed partial class CorporateConsoleSystem
             var mission = state.Active[i];
             var matches = mission.Definition.Kind switch
             {
-                CompanyMissionKind.ChemistryScanSimple => IsSimplePropertyScan(args.Properties),
+                CompanyMissionKind.ChemistryScanSimple => IsSimplePropertyScan(
+                    args.Properties,
+                    mission.ScanPropertyA,
+                    mission.ScanPropertyB),
                 CompanyMissionKind.ChemistryScanComplex => IsComplexPropertyScan(args.Properties),
                 _ => false,
             };
@@ -43,30 +46,15 @@ public sealed partial class CorporateConsoleSystem
             UpdateAllUi();
     }
 
-    private bool IsSimplePropertyScan(Dictionary<string, int> properties)
+    private static bool IsSimplePropertyScan(
+        Dictionary<string, int> properties,
+        string first,
+        string second)
     {
-        if (properties.Count < 2)
-            return false;
-
-        var hasPositive = false;
-        var hasNegative = false;
-        foreach (var propertyId in properties.Keys)
-        {
-            if (!_proto.TryIndex<ReagentPropertyPrototype>(propertyId, out var property))
-                return false;
-
-            if (property.Rarity >= ReagentPropertyRarityEnum.Rare)
-                return false;
-
-            if (property.Hint == ReagentPropertyHintEnum.Positive)
-                hasPositive = true;
-            else if (property.Hint == ReagentPropertyHintEnum.Negative)
-                hasNegative = true;
-        }
-
-        // The property system has no explicit antipode field. A positive/negative pair is the closest
-        // analogue and is exactly what the synthesis machine can transfer today.
-        return hasPositive && hasNegative;
+        return !string.IsNullOrEmpty(first)
+               && !string.IsNullOrEmpty(second)
+               && properties.ContainsKey(first)
+               && properties.ContainsKey(second);
     }
 
     private bool IsComplexPropertyScan(Dictionary<string, int> properties)

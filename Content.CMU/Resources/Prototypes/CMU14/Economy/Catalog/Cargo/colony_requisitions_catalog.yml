@@ -33,6 +33,8 @@
         crate: RMCCrateElectricalMaintenance
       - cost: 500
         crate: CMUCrateEngineeringWiring
+      - cost: 500
+        crate: CMUCrateWeldingFuelCanister
       - cost: 350
         crate: RMCCrateMechanicalMaintenance
       - cost: 150

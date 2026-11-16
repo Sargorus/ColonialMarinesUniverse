@@ -152,6 +152,17 @@
   categories: [ CMURoboticsComponents ]
 
 - type: latheRecipe
+  id: CMURoboticsUtilityDrone
+  result: CMUUtilityDrone
+  completetime: 10
+  materials:
+    CMSteel: 12000
+    CMPlasteel: 3000
+    CMGlass: 1500
+    RMCPlastic: 6000
+  categories: [ CMURoboticsBots ]
+
+- type: latheRecipe
   id: CMURoboticsUtilityTaskMarker
   result: CMUUtilityTaskMarker
   completetime: 3
@@ -159,17 +170,6 @@
     CMSteel: 1500
     RMCPlastic: 750
   categories: [ CMURoboticsComponents ]
-
-- type: latheRecipe
-  id: CMURoboticsUtilityDroneCombat
-  result: CMUUtilityDroneCombat
-  completetime: 12
-  materials:
-    CMSteel: 15000
-    CMPlasteel: 3750
-    CMGlass: 1875
-    RMCPlastic: 7500
-  categories: [ CMURoboticsBots ]
 
 - type: latheRecipe
   id: CMURoboticsModuleCombat
@@ -470,8 +470,8 @@
   - CMURoboticsDroneConfigurationKey
   - CMURoboticsSynthResetKey
   - CMURoboticsControlTablet
+  - CMURoboticsUtilityDrone
   - CMURoboticsUtilityTaskMarker
-  - CMURoboticsUtilityDroneCombat
   - CMURoboticsModuleCombat
   - CMURoboticsModuleMedical
   - CMURoboticsModuleEngineering

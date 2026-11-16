@@ -1,8 +1,11 @@
+using System.Collections.Generic;
 using System.Linq;
 using Content.IntegrationTests.Fixtures;
 using Content.Server.CMU14.Chemistry.Research;
 using Content.Server.CMU14.ColonyEconomy;
 using Content.Server.CMU14.Robotics;
+using Content.Shared.CMU14.Chemistry.Reagent;
+using Content.Shared.CMU14.Chemistry.Reagents;
 using Content.Shared.CMU14.ColonyEconomy;
 using Content.Shared.CMU14.Robotics;
 using Content.Shared.CMU14.Yautja;
@@ -99,8 +102,146 @@ public sealed class CMUCompanyMissionTest : GameTest
             var next = state.AvailableMissions.Single(mission => mission.Id == "robotics-points");
             Assert.That(next.Target, Is.GreaterThan(0));
             Assert.That(next.Target, Is.EqualTo(state.MissionHistory
-                    .Single(mission => mission.Id == "robotics-points").Target + 10),
-                "the repeatable points mission raises its target by 10");
+                    .Single(mission => mission.Id == "robotics-points").Target + 3),
+                "the repeatable points mission raises its target by 3");
+        });
+    }
+
+    [Test]
+    public async Task ComplexDirectionCannotBeChangedAfterSelection()
+    {
+        var map = await Pair.CreateTestMap();
+        EntityUid console = default;
+
+        await Server.WaitAssertion(() =>
+        {
+            var user = SEntMan.SpawnEntity("CMMobHuman", map.GridCoords);
+            Server.PlayerMan.SetAttachedEntity(ServerSession, user);
+            console = SEntMan.SpawnEntity("AU14CorporateConsole", map.GridCoords);
+            Assert.That(
+                SEntMan.System<SharedUserInterfaceSystem>().TryOpenUi(
+                    console,
+                    CorporateConsoleUi.Key,
+                    user),
+                Is.True);
+        });
+        await Pair.RunUntilSynced();
+
+        await Server.WaitAssertion(() =>
+        {
+            SEntMan.EventBus.RaiseLocalEvent(console, new CorporateConsoleSetDirectionBuiMsg(
+                CorporateResearchDirection.Robotics)
+            {
+                Actor = EntityUid.Invalid,
+                UiKey = CorporateConsoleUi.Key,
+            });
+        });
+        await Pair.RunUntilSynced();
+
+        await Server.WaitAssertion(() =>
+        {
+            SEntMan.EventBus.RaiseLocalEvent(console, new CorporateConsoleSetDirectionBuiMsg(
+                CorporateResearchDirection.Bioengineering)
+            {
+                Actor = EntityUid.Invalid,
+                UiKey = CorporateConsoleUi.Key,
+            });
+        });
+        await Pair.RunUntilSynced();
+
+        await Server.WaitAssertion(() =>
+        {
+            Assert.That(
+                SEntMan.System<SharedUserInterfaceSystem>()
+                    .TryGetUiState<CorporateConsoleBuiState>(console, CorporateConsoleUi.Key, out var state),
+                Is.True);
+            Assert.That(state!.Direction, Is.EqualTo(CorporateResearchDirection.Robotics),
+                "the complex specialization is fixed for the whole round");
+        });
+    }
+
+    [Test]
+    public async Task SimpleScanMissionUsesUniqueOpposingPair()
+    {
+        var map = await Pair.CreateTestMap();
+        EntityUid console = default;
+
+        await Server.WaitAssertion(() =>
+        {
+            var user = SEntMan.SpawnEntity("CMMobHuman", map.GridCoords);
+            Server.PlayerMan.SetAttachedEntity(ServerSession, user);
+
+            console = SEntMan.SpawnEntity("AU14CorporateConsole", map.GridCoords);
+            Assert.That(
+                SEntMan.System<SharedUserInterfaceSystem>().TryOpenUi(
+                    console,
+                    CorporateConsoleUi.Key,
+                    user),
+                Is.True);
+        });
+        await Pair.RunUntilSynced();
+
+        await Server.WaitAssertion(() =>
+        {
+            SEntMan.EventBus.RaiseLocalEvent(console, new CorporateConsoleAcceptMissionBuiMsg("chemistry-scan-simple")
+            {
+                Actor = EntityUid.Invalid,
+                UiKey = CorporateConsoleUi.Key,
+            });
+        });
+        await Pair.RunUntilSynced();
+
+        var firstObjective = string.Empty;
+        await Server.WaitAssertion(() =>
+        {
+            Assert.That(
+                SEntMan.System<SharedUserInterfaceSystem>()
+                    .TryGetUiState<CorporateConsoleBuiState>(console, CorporateConsoleUi.Key, out var state),
+                Is.True);
+            var active = state!.ActiveMissions.Single(mission => mission.Id == "chemistry-scan-simple");
+            firstObjective = active.Objective;
+            Assert.That(firstObjective, Does.Contain(" and "),
+                "the active scan task must name both required properties");
+
+            var properties = new Dictionary<string, int>();
+            foreach (var property in SProtoMan.GetInstances<ReagentPropertyPrototype>().Values)
+            {
+                if (firstObjective.Contains(property.LocalizedName))
+                    properties[property.ID] = 1;
+            }
+
+            Assert.That(properties.Count, Is.GreaterThanOrEqualTo(2));
+            var scanned = new CMUChemicalScannedEvent("corporate", "test", properties);
+            SEntMan.EventBus.RaiseLocalEvent(console, ref scanned, broadcast: true);
+        });
+        await Pair.RunSeconds(2);
+
+        await Server.WaitAssertion(() =>
+        {
+            Assert.That(
+                SEntMan.System<SharedUserInterfaceSystem>()
+                    .TryGetUiState<CorporateConsoleBuiState>(console, CorporateConsoleUi.Key, out var state),
+                Is.True);
+            Assert.That(state!.MissionHistory.Select(mission => mission.Id), Does.Contain("chemistry-scan-simple"));
+            Assert.That(state.CompanyValue, Is.GreaterThan(0));
+
+            SEntMan.EventBus.RaiseLocalEvent(console, new CorporateConsoleAcceptMissionBuiMsg("chemistry-scan-simple")
+            {
+                Actor = EntityUid.Invalid,
+                UiKey = CorporateConsoleUi.Key,
+            });
+        });
+        await Pair.RunUntilSynced();
+
+        await Server.WaitAssertion(() =>
+        {
+            Assert.That(
+                SEntMan.System<SharedUserInterfaceSystem>()
+                    .TryGetUiState<CorporateConsoleBuiState>(console, CorporateConsoleUi.Key, out var state),
+                Is.True);
+            var next = state!.ActiveMissions.Single(mission => mission.Id == "chemistry-scan-simple");
+            Assert.That(next.Objective, Is.Not.EqualTo(firstObjective),
+                "the round must not repeat the same opposing property pair");
         });
     }
 

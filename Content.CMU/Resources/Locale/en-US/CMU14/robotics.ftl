@@ -22,6 +22,9 @@ ent-CMURoboticsCartridgeProgramSystem = drone program system recipe cartridge
 ent-CMURoboticsCartridgeCombatSystem = drone combat system recipe cartridge
     .desc = A Weyland-Yutani recipe cartridge. Insert it into a robotics fabricator to unlock the drone combat program system board recipe.
 
+ent-CMURoboticsCartridgeModularMine = modular mine recipe cartridge
+    .desc = A Weyland-Yutani recipe cartridge. Insert it into a robotics fabricator to unlock the modular mine casing recipe.
+
 ent-CMUEmpPayload = EMP payload
     .desc = A single-use electromagnetic payload. Disables electronics in a wide radius.
 
@@ -187,6 +190,7 @@ cmu-robotics-cartridges-heading = RECIPE CARTRIDGES
 cmu-robotics-cartridge-emp-desc = Unlocks the EMP payload recipe for the modular grenade and modular mine.
 cmu-robotics-cartridge-program-system-desc = Unlocks the drone program system board recipe. It enables directive-board programs without using the skills module slot.
 cmu-robotics-cartridge-combat-system-desc = Unlocks the drone combat program system board recipe. It adds weapon commands to directive-board programs.
+cmu-robotics-cartridge-modular-mine-desc = Unlocks the modular mine casing recipe for the robotics fabricator.
 cmu-robotics-cartridges-robotics-points = Robotics points
 cmu-robotics-cartridges-cost = Cost
 cmu-robotics-cartridges-cost-value = {$cost} robotics points

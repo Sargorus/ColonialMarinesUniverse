@@ -366,3 +366,5 @@ ent-CMUUtilityTaskMarker = utility task marker
 
 ent-CMUUtilityDroneProgramBoard = utility drone directive board
     .desc = A printed circuit board carrying one validated utility drone program. Install it in a programmable drone with a multitool while it is held in the main hand.
+
+cmu-utility-drone-program-board-name = directive board {$program}-{$serial}

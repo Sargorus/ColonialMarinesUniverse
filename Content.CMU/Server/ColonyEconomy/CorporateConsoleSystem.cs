@@ -18,6 +18,7 @@ using Content.Shared.Tag;
 using Robust.Server.GameObjects;
 using Robust.Shared.Containers;
 using Robust.Shared.Prototypes;
+using Robust.Shared.Random;
 using ThirdPartySystem = Content.Server.CMU14.Ops.ThirdParty.ThirdPartySystem;
 
 namespace Content.Server.CMU14.ColonyEconomy;
@@ -33,6 +34,7 @@ public sealed partial class CorporateConsoleSystem : EntitySystem
     [Dependency] private ColonyBudgetSystem _colonyBudget = default!;
     [Dependency] private PopupSystem _popup = default!;
     [Dependency] private IPrototypeManager _proto = default!;
+    [Dependency] private IRobustRandom _random = default!;
     [Dependency] private StackSystem _stack = default!;
     [Dependency] private TagSystem _tag = default!;
     [Dependency] private ThirdPartySystem _thirdParty = default!;

@@ -11,7 +11,6 @@ public sealed partial class CorporateConsoleSystem
     private const string CorporateFaction = "corporate";
     private const int MaxActiveMissions = 3;
     private const int MaxScanMissionsPerRound = 3;
-    private const int PointsMissionStep = 10;
 
     private enum CompanyMissionKind : byte
     {
@@ -32,6 +31,8 @@ public sealed partial class CorporateConsoleSystem
         public int Progress;
         public int Target;
         public int Reward;
+        public string ScanPropertyA = string.Empty;
+        public string ScanPropertyB = string.Empty;
     }
 
     private sealed class MissionRecord
@@ -42,6 +43,8 @@ public sealed partial class CorporateConsoleSystem
         public int Target;
         public int Reward;
         public int SecondsRemaining;
+        public string ScanPropertyA = string.Empty;
+        public string ScanPropertyB = string.Empty;
     }
 
     private sealed class FactionMissionState
@@ -63,6 +66,7 @@ public sealed partial class CorporateConsoleSystem
         public readonly List<MissionRecord> History = new();
         public readonly HashSet<string> CompletedIds = new(StringComparer.Ordinal);
         public readonly HashSet<string> FailedIds = new(StringComparer.Ordinal);
+        public readonly HashSet<string> UsedScanPairs = new(StringComparer.Ordinal);
         public string Status = string.Empty;
     }
 
@@ -128,7 +132,7 @@ public sealed partial class CorporateConsoleSystem
             return definition.Target;
 
         var completed = state.PointsMissionCompletions.GetValueOrDefault(definition.Id);
-        return definition.Target + completed * PointsMissionStep;
+        return definition.Target + completed * definition.RepeatStep;
     }
 
     private static string GetConsoleFaction(EntityUid uid)

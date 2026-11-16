@@ -76,6 +76,7 @@ public sealed partial class ResearchDataTerminalBui(EntityUid owner, Enum uiKey)
         _window.Tabs.SetTabTitle(1, Loc.GetString("research-data-ui-view"));
         _window.Tabs.SetTabTitle(2, Loc.GetString("research-data-ui-tab-contracts"));
         _window.Tabs.SetTabTitle(3, Loc.GetString("research-data-ui-tab-properties"));
+        _window.Tabs.SetTabTitle(4, Loc.GetString("research-data-ui-tab-guarantee"));
         _window.NextUpdate = state.NextUpdate;
         _window.ReduceCooldown.Disabled = !state.Picked || state.Credits < 1 || state.NextUpdate <= _time.CurTime;
         _window.TimeLeftBar.MaxValue = (float)(state.NextUpdate - state.LastTime).TotalMilliseconds;
@@ -276,6 +277,7 @@ public sealed partial class ResearchDataTerminalBui(EntityUid owner, Enum uiKey)
 
         RefreshContracts(state, panel);
         RefreshProperties(panel);
+        RefreshGuarantees(state, panel);
     }
 
     private string ReagentName(string? id)
@@ -340,6 +342,70 @@ public sealed partial class ResearchDataTerminalBui(EntityUid owner, Enum uiKey)
                 Loc.GetString("research-data-ui-property-name", ("NAME", property.LocalizedName)),
                 DescribeProperty(property),
                 panel));
+        }
+    }
+
+    /// <summary>
+    /// Guaranteed-property shop. Buying an entry spends chemistry points and forces that property to
+    /// lead the next contract offer.
+    /// </summary>
+    private void RefreshGuarantees(ResearchDataTerminalBuiState state, StyleBoxFlat panel)
+    {
+        if (_window is null)
+            return;
+
+        _window.GuaranteeList.RemoveAllChildren();
+
+        var status = new RichTextLabel { Margin = new Thickness(5f, 5f) };
+        status.Text = state.GuaranteedProperty is { } guaranteed
+            ? Loc.GetString("research-data-ui-guarantee-active", ("name", PropertyName(guaranteed)))
+            : Loc.GetString("research-data-ui-guarantee-none");
+        _window.GuaranteeList.AddChild(status);
+
+        var hint = new RichTextLabel { Margin = new Thickness(5f, 0f, 5f, 8f) };
+        hint.Text = Loc.GetString("research-data-ui-guarantee-hint");
+        _window.GuaranteeList.AddChild(hint);
+
+        var buttonStyle = new StyleBoxFlat { BackgroundColor = Color.FromHex("#ffbf00") };
+        foreach (var entry in state.Guarantees)
+        {
+            var row = new BoxContainer
+            {
+                Orientation = BoxContainer.LayoutOrientation.Horizontal,
+                HorizontalExpand = true,
+                SeparationOverride = 8,
+            };
+
+            var label = new RichTextLabel
+            {
+                Text = Loc.GetString(
+                    "research-data-ui-guarantee-entry",
+                    ("name", entry.Name),
+                    ("cost", entry.Cost)),
+                HorizontalExpand = true,
+                VerticalAlignment = Control.VAlignment.Center,
+            };
+            row.AddChild(label);
+
+            var button = new Button
+            {
+                Text = Loc.GetString("research-data-ui-guarantee-buy"),
+                Disabled = state.Locked || state.SampleData < entry.Cost,
+                Margin = new Thickness(5f),
+                StyleBoxOverride = buttonStyle,
+            };
+            button.OnPressed += _ =>
+                SendPredictedMessage(new ResearchDataTerminalBuyGuaranteeBuiMsg(entry.PropertyId));
+            row.AddChild(button);
+
+            var container = new PanelContainer
+            {
+                PanelOverride = panel,
+                HorizontalExpand = true,
+                Margin = new Thickness(0f, 0f, 0f, 4f),
+            };
+            container.AddChild(row);
+            _window.GuaranteeList.AddChild(container);
         }
     }
 

@@ -12,7 +12,8 @@ public sealed partial class CorporateConsoleSystem
         int Reward,
         int Target,
         int TimeLimitMinutes,
-        bool Repeatable = false);
+        bool Repeatable = false,
+        int RepeatStep = 0);
 
     /// <summary>
     /// The company mission board. Values are intentionally in one place so balance passes do not have to hunt
@@ -28,9 +29,10 @@ public sealed partial class CorporateConsoleSystem
             "cmu-company-mission-robotics-desc",
             "cmu-company-mission-robotics-objective",
             Reward: 5,
-            Target: 25,
+            Target: 5,
             TimeLimitMinutes: 30,
-            Repeatable: true),
+            Repeatable: true,
+            RepeatStep: 3),
         new(
             "chemistry-points",
             CompanyMissionKind.ChemistryPoints,
@@ -40,7 +42,8 @@ public sealed partial class CorporateConsoleSystem
             Reward: 5,
             Target: 20,
             TimeLimitMinutes: 30,
-            Repeatable: true),
+            Repeatable: true,
+            RepeatStep: 10),
         new(
             "chemistry-scan-simple",
             CompanyMissionKind.ChemistryScanSimple,

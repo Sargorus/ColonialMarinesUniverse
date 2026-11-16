@@ -17,8 +17,12 @@ public sealed partial class CorporateConsoleSystem
 
         var faction = GetConsoleFaction(uid);
         var state = GetMissionState(faction);
-        if (state.Direction == msg.Direction)
+        if (state.Direction != CorporateResearchDirection.None)
+        {
+            state.Status = Loc.GetString("cmu-company-direction-locked");
+            UpdateAllUi();
             return;
+        }
 
         state.Direction = msg.Direction;
         state.Status = Loc.GetString(
@@ -70,6 +74,16 @@ public sealed partial class CorporateConsoleSystem
             return;
         }
 
+        var scanPropertyA = string.Empty;
+        var scanPropertyB = string.Empty;
+        if (definition.Kind == CompanyMissionKind.ChemistryScanSimple
+            && !TryChooseScanPair(state, out scanPropertyA, out scanPropertyB))
+        {
+            state.Status = Loc.GetString("cmu-company-mission-scan-no-pair");
+            UpdateAllUi();
+            return;
+        }
+
         var target = GetPointsMissionTarget(state, definition);
         var active = new ActiveCompanyMission
         {
@@ -77,6 +91,8 @@ public sealed partial class CorporateConsoleSystem
             Deadline = _timing.CurTime + TimeSpan.FromMinutes(definition.TimeLimitMinutes),
             Target = target,
             Reward = definition.Reward,
+            ScanPropertyA = scanPropertyA,
+            ScanPropertyB = scanPropertyB,
         };
 
         if (IsPointsMission(definition.Kind))
@@ -114,6 +130,8 @@ public sealed partial class CorporateConsoleSystem
             Target = mission.Target,
             Reward = mission.Reward,
             SecondsRemaining = 0,
+            ScanPropertyA = mission.ScanPropertyA,
+            ScanPropertyB = mission.ScanPropertyB,
         });
 
         state.CompanyValue += mission.Reward;
@@ -146,6 +164,8 @@ public sealed partial class CorporateConsoleSystem
             Target = mission.Target,
             Reward = 0,
             SecondsRemaining = 0,
+            ScanPropertyA = mission.ScanPropertyA,
+            ScanPropertyB = mission.ScanPropertyB,
         });
 
         state.Status = Loc.GetString(

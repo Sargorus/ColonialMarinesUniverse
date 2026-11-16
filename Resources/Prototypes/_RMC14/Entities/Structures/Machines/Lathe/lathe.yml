@@ -40,6 +40,7 @@
     - AU14AutolatheRecipes
     - CMUVehicleLatheRecipes # CMU14: vehicle spray painter
     - CMUGrenadePartRecipes # CMU14: custom chemical grenade casing, payload and timer
+    - CMUStationBoards # CMU14: camera monitor and hermetic door electronics
   - type: MaterialStorage
     storage:
       CMSteel: 30000

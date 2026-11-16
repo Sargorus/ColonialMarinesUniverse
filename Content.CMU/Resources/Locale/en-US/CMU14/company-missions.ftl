@@ -39,18 +39,20 @@ cmu-corporate-missions-failed = Failed
 
 # Company task definitions
 cmu-company-mission-robotics-name = Robotics science target
-cmu-company-mission-robotics-desc = Build the complex's robotics science balance. SMO production contracts and completed drone work orders fund it. Repeatable; each repeat raises the target by 10 points.
+cmu-company-mission-robotics-desc = Build the complex's robotics science balance. SMO production contracts and completed drone work orders fund it. Repeatable; each repeat raises the target by 3 points.
 cmu-company-mission-robotics-objective = Reach { $target } robotics points within { $minutes } minutes.
 cmu-company-mission-chemistry-name = Chemistry science target
 cmu-company-mission-chemistry-desc = Build the complex's chemistry science balance through contracts, scans and synthesis. Repeatable; each repeat raises the target by 10 points.
 cmu-company-mission-chemistry-objective = Reach { $target } chemistry points within { $minutes } minutes.
 cmu-company-mission-scan-simple-name = Simple property scan
-cmu-company-mission-scan-simple-desc = Scan a substance whose properties are all common or uncommon. The sample must include at least one positive and one negative property, the antipodal pair the synthesis machine can transfer. The liaison can start at most three scan missions per round.
+cmu-company-mission-scan-simple-desc = Scan a substance with the assigned pair of opposing properties. The pair is chosen when you accept the task and never repeats during the round. The liaison can start at most three scan missions per round.
 cmu-company-mission-scan-complex-name = Complex property scan
 cmu-company-mission-scan-complex-desc = Scan a substance carrying at least one rare or legendary property. The liaison can start at most three scan missions per round.
 cmu-company-mission-scan-objective = Complete the required scan within { $minutes } minutes.
+cmu-company-mission-scan-pair-objective = Scan a compound containing { $first } and { $second } within { $minutes } minutes.
+cmu-company-mission-scan-no-pair = No unrepeatable opposing property pair is available this round.
 cmu-company-mission-wendigo-name = Create a Wendigo
-cmu-company-mission-wendigo-desc = Put a subject through the laboratory procedure. A lesser Wendigo pays half, a full MN-33 or cannibal-grown Wendigo pays full, and a tamed result pays double. Admin-spawned and round-threat Wendigos do not count.
+cmu-company-mission-wendigo-desc = Put a subject through the laboratory procedure. A lesser Wendigo pays half, a full MN-33 or cannibal-grown Wendigo pays full, and a tamed result pays double.
 cmu-company-mission-wendigo-objective = Create a lab-made Wendigo within { $minutes } minutes.
 cmu-company-mission-hive-rep-name = Corrupted hive representative
 cmu-company-mission-hive-rep-desc = Establish a living queen, hive leader or Overmind for a corrupted hive.
@@ -75,6 +77,7 @@ cmu-company-direction-none = Not chosen
 cmu-company-direction-robotics = Robotics
 cmu-company-direction-bioengineering = Bioengineering (Chemistry)
 cmu-company-direction-set = Main direction set to { $direction }.
+cmu-company-direction-locked = The complex's specialization is already fixed for this round.
 
 # Company support tab
 cmu-corporate-pmc-heading = COMPANY SUPPORT

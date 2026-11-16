@@ -23,7 +23,10 @@ public sealed class ResearchDataTerminalBuiState(
     bool picked,
     List<ResearchContractEntry>? contracts = null,
     bool locked = false,
-    string? lockedReason = null) : BoundUserInterfaceState
+    string? lockedReason = null,
+    List<ResearchGuaranteeEntry>? guarantees = null,
+    string? guaranteedProperty = null,
+    int guaranteedPropertyCost = 0) : BoundUserInterfaceState
 {
     public readonly List<GeneratedReagentData> IDs = ids;
     public readonly Dictionary<int, (string, string, TimeSpan, bool, GeneratedReagentData, bool, bool)> Data = data;
@@ -41,7 +44,17 @@ public sealed class ResearchDataTerminalBuiState(
     public readonly bool Locked = locked;
     /// <summary>FLOW-24: the message shown in place of the contract offers while <see cref="Locked"/>.</summary>
     public readonly string? LockedReason = lockedReason;
+    /// <summary>Properties that can be forced into the next contract offer, with their point costs.</summary>
+    public readonly List<ResearchGuaranteeEntry> Guarantees = guarantees ?? new();
+    /// <summary>The property currently guaranteed for the next offer, if any.</summary>
+    public readonly string? GuaranteedProperty = guaranteedProperty;
+    /// <summary>The point cost already paid for <see cref="GuaranteedProperty"/>.</summary>
+    public readonly int GuaranteedPropertyCost = guaranteedPropertyCost;
 }
+
+/// <summary>One property that can be guaranteed as the first property of the next contract.</summary>
+[Serializable, NetSerializable]
+public readonly record struct ResearchGuaranteeEntry(string PropertyId, string Name, int Cost);
 
 /// <summary>One entry of the terminal's Contracts tab: the chemical's name and its server-formatted contract text.</summary>
 [Serializable, NetSerializable]
@@ -67,3 +80,9 @@ public sealed class ResearchDataTerminalPrintChemBuiMsg(int idx) : BoundUserInte
 
 [Serializable, NetSerializable]
 public sealed class CMUResearchReduceCooldownBuiMsg : BoundUserInterfaceMessage;
+
+[Serializable, NetSerializable]
+public sealed class ResearchDataTerminalBuyGuaranteeBuiMsg(string propertyId) : BoundUserInterfaceMessage
+{
+    public readonly string PropertyId = propertyId;
+}
