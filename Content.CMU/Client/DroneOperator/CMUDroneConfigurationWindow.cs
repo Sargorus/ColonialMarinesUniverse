@@ -184,8 +184,8 @@ public sealed class CMUDroneConfigurationWindow : DefaultWindow
         try
         {
             var none = Loc.GetString("cmu-drone-config-board-none");
-            var boards = new FormattedMessage();
-            boards.AddText(string.Join('\n',
+            var boardLines = new string[]
+            {
                 Loc.GetString("cmu-drone-config-boards-heading"),
                 Loc.GetString(
                     "cmu-drone-config-board-skills",
@@ -195,7 +195,10 @@ public sealed class CMUDroneConfigurationWindow : DefaultWindow
                     ("name", string.IsNullOrEmpty(state.ProgramSystem) ? none : state.ProgramSystem)),
                 Loc.GetString(
                     "cmu-drone-config-board-combat",
-                    ("name", string.IsNullOrEmpty(state.CombatSystem) ? none : state.CombatSystem))));
+                    ("name", string.IsNullOrEmpty(state.CombatSystem) ? none : state.CombatSystem)),
+            };
+            var boards = new FormattedMessage();
+            boards.AddText(string.Join('\n', boardLines));
             _boards.SetMessage(boards);
 
             _utilitySection.Visible = state.UtilityDrone;
