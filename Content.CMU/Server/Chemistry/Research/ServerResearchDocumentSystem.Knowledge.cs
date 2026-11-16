@@ -5,6 +5,7 @@ using Content.Shared.Database;
 using Content.Shared.DoAfter;
 using Content.Shared.Interaction.Events;
 using Content.Shared.Verbs;
+using Robust.Shared.Player;
 
 namespace Content.Server.CMU14.Chemistry.Research;
 
@@ -15,12 +16,55 @@ public sealed partial class ServerResearchDocumentSystem
         SubscribeLocalEvent<ResearchDocumentComponent, GetVerbsEvent<AlternativeVerb>>(OnDocumentVerbs);
         SubscribeLocalEvent<ResearchDocumentComponent, UseInHandEvent>(OnDocumentUseInHand);
         SubscribeLocalEvent<ResearchDocumentComponent, ResearchDocumentReadDoAfterEvent>(OnReadComplete);
+        SubscribeLocalEvent<ActorComponent, GetVerbsEvent<AlternativeVerb>>(OnPlayerKnowledgeVerbs);
+    }
+
+    private void OnPlayerKnowledgeVerbs(Entity<ActorComponent> ent, ref GetVerbsEvent<AlternativeVerb> args)
+    {
+        if (args.Target != args.User || !args.CanAccess || !args.CanInteract)
+            return;
+        var user = args.User;
+        args.Verbs.Add(new AlternativeVerb
+        {
+            Text = Loc.GetString("cmu-research-documents-review-verb"),
+            Act = () => OpenKnowledgeView(user, ent.Owner),
+        });
+    }
+
+    private void OpenKnowledgeView(EntityUid user, EntityUid player)
+    {
+        var choices = new List<ResearchKnowledgeChoice>();
+        if (TryComp<ResearchKnowledgeComponent>(user, out var knowledge))
+        {
+            foreach (var factId in knowledge.Facts)
+            {
+                if (!_facts.TryGetValue(factId, out var fact))
+                    continue;
+                choices.Add(new ResearchKnowledgeChoice(
+                    fact.Id,
+                    fact.Title,
+                    CategoryName(fact),
+                    Loc.GetString("cmu-research-documents-source-personal"),
+                    string.Empty,
+                    false,
+                    null));
+            }
+        }
+        _ui.OpenUi(player, ResearchKnowledgeViewUI.Key, user);
+        _ui.SetUiState(
+            player,
+            ResearchKnowledgeViewUI.Key,
+            new ResearchKnowledgeSubmitBuiState(
+                false,
+                Loc.GetString("cmu-research-documents-review-title"),
+                choices));
     }
 
     private void OnDocumentVerbs(Entity<ResearchDocumentComponent> ent, ref GetVerbsEvent<AlternativeVerb> args)
     {
         if (!ent.Comp.ScannerReport || !args.CanAccess || !args.CanInteract)
             return;
+        EnsureScannerReportFacts(ent.Owner, ent.Comp);
         var user = args.User;
         var newFacts = CountNewFacts(user, ent.Comp.FactIds);
         args.Verbs.Add(new AlternativeVerb
@@ -41,6 +85,12 @@ public sealed partial class ServerResearchDocumentSystem
             || !TryComp<ResearchDocumentComponent>(paper, out var document)
             || !document.ScannerReport)
         {
+            return false;
+        }
+        EnsureScannerReportFacts(paper, document);
+        if (document.FactIds.Count == 0)
+        {
+            PopupToUser(user, Loc.GetString("cmu-research-documents-no-facts"), paper);
             return false;
         }
         var added = AddKnowledge(user, document.FactIds);

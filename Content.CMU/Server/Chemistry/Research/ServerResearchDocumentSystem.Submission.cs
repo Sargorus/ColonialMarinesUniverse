@@ -101,6 +101,7 @@ public sealed partial class ServerResearchDocumentSystem
             {
                 if (!TryComp<ResearchDocumentComponent>(held, out var document))
                     continue;
+                EnsureScannerReportFacts(held, document);
                 var source = Loc.GetString("cmu-research-documents-source-paper", ("paper", Name(held)));
                 foreach (var factId in document.FactIds)
                 {

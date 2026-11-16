@@ -206,6 +206,8 @@
       enum.ReplicantUiKey.Key:
         type: ReplicantBoundUserInterface
         requireInputValidation: false
+      enum.ResearchKnowledgeViewUI.Key: # CMU14: personal research knowledge
+        type: ResearchKnowledgeViewBui
   - type: Infectable
   - type: Tackleable
   - type: XenoNestable

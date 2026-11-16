@@ -107,12 +107,10 @@ public sealed partial class ServerResearchDocumentSystem
         string faction,
         ReagentPrototype chem,
         ResearchReportData report,
-        bool firstCompletion,
         IReadOnlyCollection<string> newPropertyIds)
     {
         var factIds = new List<string>();
-        if (firstCompletion
-            && report.Completed
+        if (report.Completed
             && chem.Class != ReagentClass.Hydro
             && (chem.Class >= ReagentClass.Special || chem.Generated))
         {
@@ -126,7 +124,7 @@ public sealed partial class ServerResearchDocumentSystem
                     factIds.Add(RecordPropertyFact(faction, property).Id);
             }
         }
-        if (firstCompletion && report.Completed && chem.Class == ReagentClass.Hydro)
+        if (report.Completed && chem.Class == ReagentClass.Hydro)
             factIds.Add(RecordBotanyFact(faction, chem).Id);
         if (factIds.Count == 0)
             return 0;
@@ -134,6 +132,7 @@ public sealed partial class ServerResearchDocumentSystem
         var document = EnsureComp<ResearchDocumentComponent>(paper);
         document.FactIds = factIds;
         document.ScannerReport = true;
+        document.SourceFaction = faction;
         document.Author = Loc.GetString("cmu-research-document-xrf-author");
         document.Title = Name(paper);
         document.Type = ResearchDocumentType.Report;
@@ -145,6 +144,48 @@ public sealed partial class ServerResearchDocumentSystem
                 (paper, paperComp),
                 paperComp.Content + '\n' + Loc.GetString("cmu-paper-xrf-memory-hint"));
         }
+        return factIds.Count;
+    }
+
+    /// <summary>
+    /// Rebuilds a scanner report's facts from its stored reagent report when an older print or a copied
+    /// document has no fact list. Current reports already carry the list, so this is a compatibility path.
+    /// </summary>
+    public int EnsureScannerReportFacts(EntityUid paper, ResearchDocumentComponent document)
+    {
+        var allRegistered = document.FactIds.Count > 0;
+        foreach (var factId in document.FactIds)
+        {
+            if (_facts.ContainsKey(factId))
+                continue;
+            allRegistered = false;
+            break;
+        }
+        if (allRegistered)
+            return document.FactIds.Count;
+        if (!document.ScannerReport
+            || string.IsNullOrEmpty(document.SourceFaction)
+            || !TryComp<ResearchReportComponent>(paper, out var report)
+            || report.Data is not { } data
+            || !_reagent.TryIndex(data.ID, out var chem))
+        {
+            return 0;
+        }
+
+        var factIds = new List<string>();
+        if (chem.Class != ReagentClass.Hydro
+            && (chem.Class >= ReagentClass.Special || chem.Generated))
+        {
+            factIds.Add(RecordContractFact(document.SourceFaction, chem).Id);
+        }
+        foreach (var propertyId in data.Effects.Keys)
+        {
+            if (_prototypes.TryIndex<ReagentPropertyPrototype>(propertyId, out var property))
+                factIds.Add(RecordPropertyFact(document.SourceFaction, property).Id);
+        }
+        if (chem.Class == ReagentClass.Hydro)
+            factIds.Add(RecordBotanyFact(document.SourceFaction, chem).Id);
+        document.FactIds = factIds;
         return factIds.Count;
     }
 

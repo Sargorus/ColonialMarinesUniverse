@@ -128,6 +128,8 @@
         type: HumanoidMarkingModifierBoundUserInterface
       enum.StrippingUiKey.Key:
         type: StrippableBoundUserInterface
+      enum.ResearchKnowledgeViewUI.Key: # CMU14: personal research knowledge
+        type: ResearchKnowledgeViewBui
   - type: Puller
   - type: Speech
     # cmu edit start

@@ -4,6 +4,7 @@ using Content.Shared.CMU14.Chemistry.Research;
 using Content.Shared.Database;
 using Content.Shared.Examine;
 using Content.Shared.Mobs.Components;
+using Content.Shared.Tag;
 using Robust.Shared.GameObjects;
 using Robust.Shared.Map;
 
@@ -13,20 +14,34 @@ public sealed partial class ServerResearchDocumentSystem
 {
     private void InitializeWitness()
     {
-        SubscribeLocalEvent<ExaminedEvent>(OnExamined);
+        SubscribeLocalEvent<XenoComponent, ExaminedEvent>(OnXenoExamined);
+        SubscribeLocalEvent<XenoParasiteComponent, ExaminedEvent>(OnParasiteExamined);
+        SubscribeLocalEvent<TagComponent, ExaminedEvent>(OnTagExamined);
         SubscribeLocalEvent<VictimInfectionChangedEvent>(OnInfectionChanged);
         SubscribeLocalEvent<VictimBurstComponent, ComponentStartup>(OnBurstStartup);
+    }
+
+    private void OnXenoExamined(Entity<XenoComponent> ent, ref ExaminedEvent args)
+        => OnWitnessExamined(ent.Owner, ref args);
+
+    private void OnParasiteExamined(Entity<XenoParasiteComponent> ent, ref ExaminedEvent args)
+        => OnWitnessExamined(ent.Owner, ref args);
+
+    private void OnTagExamined(Entity<TagComponent> ent, ref ExaminedEvent args)
+    {
+        if (_tags.HasTag(ent.Owner, WendigoTag))
+            OnWitnessExamined(ent.Owner, ref args);
     }
 
     /// <summary>
     /// Examining a xenomorph, neomorph, facehugger or wendigo is the active "saw it" action. The species fact is
     /// created once per round and then copied into each valid observer's personal knowledge.
     /// </summary>
-    private void OnExamined(ExaminedEvent args)
+    private void OnWitnessExamined(EntityUid examined, ref ExaminedEvent args)
     {
         if (!args.IsInDetailsRange || !IsValidWitness(args.Examiner))
             return;
-        if (!TryGetSightingFact(args.Examined, out var fact))
+        if (!TryGetSightingFact(examined, out var fact))
             return;
         if (!TryAddKnowledge(args.Examiner, fact.Id))
             return;
@@ -37,7 +52,7 @@ public sealed partial class ServerResearchDocumentSystem
         _adminLog.Add(
             LogType.Action,
             LogImpact.Low,
-            $"{ToPrettyString(args.Examiner)} observed {ToPrettyString(args.Examined)} and learned {fact.Id}");
+            $"{ToPrettyString(args.Examiner)} observed {ToPrettyString(examined)} and learned {fact.Id}");
     }
 
     private bool TryGetSightingFact(EntityUid examined, out ResearchFact fact)

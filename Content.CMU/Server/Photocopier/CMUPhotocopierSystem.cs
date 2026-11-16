@@ -133,6 +133,7 @@ public sealed class CMUPhotocopierSystem : EntitySystem
                     var copyDocument = EnsureComp<ResearchDocumentComponent>(copy);
                     copyDocument.FactIds = new List<string>(sourceDocument.FactIds);
                     copyDocument.ScannerReport = sourceDocument.ScannerReport;
+                    copyDocument.SourceFaction = sourceDocument.SourceFaction;
                     copyDocument.Author = sourceDocument.Author;
                     copyDocument.Title = sourceDocument.Title;
                     copyDocument.Type = sourceDocument.Type;

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Content.Server.Administration.Logs;
 using Content.Server.CMU14.Chemistry.Reagents;
+using Content.Shared._RMC14.Chemistry.Reagent;
 using Content.Shared._RMC14.Intel;
 using Content.Shared._RMC14.Xenonids;
 using Content.Shared.CMU14.Chemistry.Reagent;
@@ -79,6 +80,7 @@ public sealed partial class ServerResearchDocumentSystem : EntitySystem
     [Dependency] private PaperSystem _paper = default!;
     [Dependency] private SharedPopupSystem _popup = default!;
     [Dependency] private IPrototypeManager _prototypes = default!;
+    [Dependency] private RMCReagentSystem _reagent = default!;
     [Dependency] private ServerResearchDataTerminalSystem _research = default!;
     [Dependency] private TagSystem _tags = default!;
     [Dependency] private IGameTiming _timing = default!;
@@ -153,13 +155,13 @@ public sealed partial class ServerResearchDocumentSystem : EntitySystem
 
     private int CountNewFacts(EntityUid user, IEnumerable<string> factIds)
     {
-        if (!TryComp<ResearchKnowledgeComponent>(user, out var knowledge))
-            return 0;
+        TryComp<ResearchKnowledgeComponent>(user, out var knowledge);
         var count = 0;
         foreach (var factId in factIds)
         {
-            if (!knowledge.Facts.Contains(factId))
-                count++;
+            if (knowledge is not null && knowledge.Facts.Contains(factId))
+                continue;
+            count++;
         }
         return count;
     }

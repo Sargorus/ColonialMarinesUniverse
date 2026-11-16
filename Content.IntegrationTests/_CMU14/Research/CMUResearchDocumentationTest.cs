@@ -146,6 +146,54 @@ public sealed class CMUResearchDocumentationTest : GameTest
     }
 
     [Test]
+    public async Task PrototypesExposeResearchDocumentUis()
+    {
+        var map = await Pair.CreateTestMap();
+        await Server.WaitAssertion(() =>
+        {
+            var player = SEntMan.SpawnEntity("CMMobHuman", map.GridCoords);
+            var paper = SEntMan.SpawnEntity("CMPaper", map.GridCoords);
+            var terminal = SEntMan.SpawnEntity("CMUResearchDataTerminalCorporate", map.GridCoords);
+            var intel = SEntMan.SpawnEntity("RMCComputerIntelGovfor", map.GridCoords);
+            var ui = SEntMan.System<Robust.Shared.GameObjects.SharedUserInterfaceSystem>();
+            Assert.Multiple(() =>
+            {
+                Assert.That(ui.HasUi(player, ResearchKnowledgeViewUI.Key), Is.True);
+                Assert.That(ui.HasUi(paper, ResearchDocumentWriteUI.Key), Is.True);
+                Assert.That(ui.HasUi(terminal, ResearchKnowledgeSubmitUI.Key), Is.True);
+                Assert.That(ui.HasUi(intel, ResearchKnowledgeSubmitUI.Key), Is.True);
+            });
+        });
+    }
+
+    [Test]
+    public async Task ScannerReportRebuildsFactsFromStoredReport()
+    {
+        var map = await Pair.CreateTestMap();
+        await Server.WaitAssertion(() =>
+        {
+            var documents = SEntMan.System<ServerResearchDocumentSystem>();
+            var proto = SProtoMan.Index<ReagentPrototype>(ContractReagent);
+            var paper = SEntMan.SpawnEntity("Paper", map.GridCoords);
+            var document = SEntMan.AddComponent<ResearchDocumentComponent>(paper);
+            document.ScannerReport = true;
+            document.SourceFaction = "corporate";
+            var report = SEntMan.AddComponent<ResearchReportComponent>(paper);
+            report.Data = new GeneratedReagentData
+            {
+                ID = proto.ID,
+                Class = ReagentClass.Ultra,
+            };
+            var count = documents.EnsureScannerReportFacts(paper, document);
+            Assert.Multiple(() =>
+            {
+                Assert.That(count, Is.EqualTo(1));
+                Assert.That(document.FactIds, Does.Contain($"contract:{proto.ID}"));
+            });
+        });
+    }
+
+    [Test]
     public async Task ScannerReportCarriesContractFact()
     {
         var map = await Pair.CreateTestMap();
@@ -162,7 +210,7 @@ public sealed class CMUResearchDocumentationTest : GameTest
                 Valid = true,
                 Icon = ResearchReportIconEnum.Full,
             };
-            var count = documents.AttachScannerReport(paper, "corporate", proto, report, true, []);
+            var count = documents.AttachScannerReport(paper, "corporate", proto, report, []);
             Assert.That(count, Is.EqualTo(1));
             var document = SEntMan.GetComponent<ResearchDocumentComponent>(paper);
             Assert.Multiple(() =>

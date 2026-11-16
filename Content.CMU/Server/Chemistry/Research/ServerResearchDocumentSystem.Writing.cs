@@ -32,9 +32,17 @@ public sealed partial class ServerResearchDocumentSystem
             return;
         if (!HasPen(args.User, args.Using))
             return;
-        if (!TryComp<ResearchKnowledgeComponent>(args.User, out var knowledge) || knowledge.Facts.Count == 0)
-            return;
         var user = args.User;
+        if (!TryComp<ResearchKnowledgeComponent>(user, out var knowledge) || knowledge.Facts.Count == 0)
+        {
+            args.Verbs.Add(new AlternativeVerb
+            {
+                Text = Loc.GetString("cmu-research-documents-write-verb"),
+                Disabled = true,
+                Message = Loc.GetString("cmu-research-documents-no-source"),
+            });
+            return;
+        }
         args.Verbs.Add(new AlternativeVerb
         {
             Text = Loc.GetString("cmu-research-documents-write-verb"),

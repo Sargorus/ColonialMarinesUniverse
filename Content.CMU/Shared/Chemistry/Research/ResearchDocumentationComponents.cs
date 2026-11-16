@@ -28,6 +28,10 @@ public sealed partial class ResearchDocumentComponent : Component
     [DataField]
     public bool ScannerReport;
 
+    /// <summary>Faction that produced a scanner report; used to reconstruct facts from older reports.</summary>
+    [DataField]
+    public string? SourceFaction;
+
     [DataField]
     public string Author = string.Empty;
 

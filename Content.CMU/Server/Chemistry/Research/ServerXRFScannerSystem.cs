@@ -99,11 +99,10 @@ public sealed partial class ServerXRFScannerSystem : XRFScannerSystem
         }
         // The scanner only records the discovery. Its report carries the facts; rewards are paid when a
         // document is submitted at a research terminal.
-        var firstCompletion = false;
         if ((chem.Class >= ReagentClass.Special || chem.Generated) &&
             !_rdat.GetResearch(faction).CompletedChemicals.Contains(chem.ID))
         {
-            firstCompletion = _rdat.DiscoverChemical(chem, faction);
+            _rdat.DiscoverChemical(chem, faction);
         }
         if (scanner == EntityUid.Invalid) //PANIC!!!!!!
             return;
@@ -141,7 +140,7 @@ public sealed partial class ServerXRFScannerSystem : XRFScannerSystem
             (GRD.Value.ID, contents, _time.CurTime, false, GRD.Value, comp.Valid, comp.Completed));
         _mets.SetEntityName(realpaper, name);
         _paper.SetContent(realpaper, contents);
-        _documents.AttachScannerReport(realpaper, faction, chem, dat.Value, firstCompletion, newPropertyIds);
+        _documents.AttachScannerReport(realpaper, faction, chem, dat.Value, newPropertyIds);
         DirtyEntity(realpaper);
         DirtyEntity(scanner);
     }

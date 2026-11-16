@@ -17,6 +17,12 @@ public enum ResearchDocumentWriteUI
     Key,
 }
 
+[Serializable, NetSerializable]
+public enum ResearchKnowledgeViewUI
+{
+    Key,
+}
+
 /// <summary>
 /// Server-built list of facts that can be submitted at a chemistry or intel console. The client only
 /// displays the already resolved title, source, reward and disabled reason.

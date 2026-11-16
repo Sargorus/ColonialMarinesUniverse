@@ -1,11 +1,14 @@
 using System;
+using System.Linq;
 using Content.IntegrationTests.Fixtures;
 using Content.Server.CMU14.Chemistry.Research;
 using Content.Shared.CMU14.Chemistry.Research;
 using Content.Shared._RMC14.Xenonids.Parasite;
 using Content.Shared.Examine;
+using Content.Shared.Hands.Components;
 using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Paper;
+using Content.Shared.Verbs;
 using Robust.Shared.Map;
 using Robust.Shared.Utility;
 
@@ -90,7 +93,7 @@ public sealed class CMUResearchDocumentInteractionTest : GameTest
             var user = SpawnUser(map.GridCoords);
             var xeno = SEntMan.SpawnEntity("CMXenoDrone", map.GridCoords.Offset(new(1, 0)));
             var examined = new ExaminedEvent(new FormattedMessage(), xeno, user, true, false);
-            SEntMan.EventBus.RaiseLocalEvent(xeno, examined, true);
+            SEntMan.EventBus.RaiseLocalEvent(xeno, examined);
             const string factId = "xeno:sighting:CMXenoDrone";
             Assert.That(
                 SEntMan.GetComponent<ResearchKnowledgeComponent>(user).Facts,
@@ -122,6 +125,78 @@ public sealed class CMUResearchDocumentInteractionTest : GameTest
             var fact = documents.GetFactForTest(factId);
             Assert.That(fact, Is.Not.Null);
             Assert.That(fact!.SampleData, Is.EqualTo(5));
+        });
+    }
+
+    [Test]
+    public async Task RmcPaperAndPenOfferWriteVerb()
+    {
+        var map = await Pair.CreateTestMap();
+        await Server.WaitAssertion(() =>
+        {
+            var documents = SEntMan.System<ServerResearchDocumentSystem>();
+            var hands = SEntMan.System<SharedHandsSystem>();
+            var fact = documents.RecordWitnessFact(
+                "xeno:sighting:CMUTestRmcWrite",
+                ServerResearchDocumentSystem.ResearchFactKind.XenoSighting,
+                "Test drone",
+                "A test drone was observed.",
+                5,
+                0.15f);
+            var user = SpawnUser(map.GridCoords, fact.Id);
+            var pen = SEntMan.SpawnEntity("CMPen", map.GridCoords);
+            var paper = SEntMan.SpawnEntity("CMPaper", map.GridCoords);
+            Assert.That(hands.TryPickupAnyHand(user, pen), Is.True);
+            var userHands = SEntMan.GetComponent<HandsComponent>(user);
+            var verbs = new GetVerbsEvent<AlternativeVerb>(
+                user,
+                paper,
+                pen,
+                userHands,
+                canInteract: true,
+                canComplexInteract: true,
+                canAccess: true,
+                extraCategories: []);
+            SEntMan.EventBus.RaiseLocalEvent(paper, verbs);
+            Assert.That(
+                verbs.Verbs.Any(verb => verb.Text == Loc.GetString("cmu-research-documents-write-verb")),
+                Is.True);
+        });
+    }
+
+    [Test]
+    public async Task RememberVerbEnabledWithoutKnowledge()
+    {
+        var map = await Pair.CreateTestMap();
+        await Server.WaitAssertion(() =>
+        {
+            var documents = SEntMan.System<ServerResearchDocumentSystem>();
+            var fact = documents.RecordWitnessFact(
+                "xeno:sighting:CMUTestRememberVerb",
+                ServerResearchDocumentSystem.ResearchFactKind.XenoSighting,
+                "Test drone",
+                "A test drone was observed.",
+                5,
+                0.15f);
+            var user = SpawnUser(map.GridCoords);
+            var paper = SEntMan.SpawnEntity("CMPaper", map.GridCoords);
+            var document = SEntMan.AddComponent<ResearchDocumentComponent>(paper);
+            document.FactIds = [fact.Id];
+            document.ScannerReport = true;
+            var verbs = new GetVerbsEvent<AlternativeVerb>(
+                user,
+                paper,
+                null,
+                SEntMan.GetComponent<HandsComponent>(user),
+                canInteract: true,
+                canComplexInteract: true,
+                canAccess: true,
+                extraCategories: []);
+            SEntMan.EventBus.RaiseLocalEvent(paper, verbs);
+            var remember = verbs.Verbs.Single(
+                verb => verb.Text == Loc.GetString("cmu-research-documents-remember-verb"));
+            Assert.That(remember.Disabled, Is.False,
+                "a player who knows nothing must still be able to memorize a scanner report");
         });
     }
 
