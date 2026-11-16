@@ -98,10 +98,9 @@ public sealed partial class CorporateConsoleSystem
         if (IsPointsMission(definition.Kind))
         {
             var science = QueryScience(faction);
-            var current = definition.Kind == CompanyMissionKind.RoboticsPoints
+            active.StartingPoints = definition.Kind == CompanyMissionKind.RoboticsPoints
                 ? science.RoboticsPoints
                 : science.ChemistryPoints;
-            active.Progress = Math.Min(current, active.Target);
         }
 
         if (IsScanMission(definition.Kind))

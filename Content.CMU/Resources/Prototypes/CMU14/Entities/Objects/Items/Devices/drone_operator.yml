@@ -168,7 +168,7 @@
   description: A bare synthetic torso frame whose control bus is locked out of firearm use. Its limb ports are sealed and its activation socket is empty.
   components:
   - type: CMUDroneFrame
-    dronePrototype: CMUDroneAndroidUnarmed
+    dronePrototype: CMUUtilityDrone
 
 - type: entity
   parent: CMUDroneBodyFrame

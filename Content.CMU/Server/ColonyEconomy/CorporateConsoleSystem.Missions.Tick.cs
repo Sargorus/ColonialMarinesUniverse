@@ -33,14 +33,15 @@ public sealed partial class CorporateConsoleSystem
                         var current = mission.Definition.Kind == CompanyMissionKind.RoboticsPoints
                             ? science.RoboticsPoints
                             : science.ChemistryPoints;
-                        var shown = Math.Min(current, mission.Target);
+                        var earned = Math.Max(0, current - mission.StartingPoints);
+                        var shown = Math.Min(earned, mission.Target);
                         if (shown > mission.Progress)
                         {
                             mission.Progress = shown;
                             changed = true;
                         }
 
-                        if (current >= mission.Target)
+                        if (mission.Progress >= mission.Target)
                         {
                             mission.Progress = mission.Target;
                             CompleteMission(state, i);

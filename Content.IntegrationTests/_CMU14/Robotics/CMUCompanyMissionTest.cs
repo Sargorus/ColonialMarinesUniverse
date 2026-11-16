@@ -108,6 +108,85 @@ public sealed class CMUCompanyMissionTest : GameTest
     }
 
     [Test]
+    public async Task PointsMissionCountsOnlyNewPointsEarnedAfterAcceptance()
+    {
+        var map = await Pair.CreateTestMap();
+        EntityUid console = default;
+
+        await Server.WaitAssertion(() =>
+        {
+            var user = SEntMan.SpawnEntity("CMMobHuman", map.GridCoords);
+            Server.PlayerMan.SetAttachedEntity(ServerSession, user);
+            console = SEntMan.SpawnEntity("AU14CorporateConsole", map.GridCoords);
+            Assert.That(
+                SEntMan.System<SharedUserInterfaceSystem>().TryOpenUi(
+                    console,
+                    CorporateConsoleUi.Key,
+                    user),
+                Is.True);
+
+            SEntMan.System<ServerResearchDataTerminalSystem>().UpdateRoboticsPoints(10, "corporate");
+        });
+        await Pair.RunUntilSynced();
+
+        await Server.WaitAssertion(() =>
+        {
+            SEntMan.EventBus.RaiseLocalEvent(console, new CorporateConsoleAcceptMissionBuiMsg("robotics-points")
+            {
+                Actor = EntityUid.Invalid,
+                UiKey = CorporateConsoleUi.Key,
+            });
+        });
+        await Pair.RunUntilSynced();
+
+        await Server.WaitAssertion(() =>
+        {
+            Assert.That(
+                SEntMan.System<SharedUserInterfaceSystem>()
+                    .TryGetUiState<CorporateConsoleBuiState>(console, CorporateConsoleUi.Key, out var state),
+                Is.True);
+            var active = state!.ActiveMissions.Single(mission => mission.Id == "robotics-points");
+            Assert.Multiple(() =>
+            {
+                Assert.That(active.Progress, Is.Zero);
+                Assert.That(active.Target, Is.EqualTo(5));
+            });
+        });
+
+        await Server.WaitAssertion(() =>
+        {
+            SEntMan.System<ServerResearchDataTerminalSystem>().UpdateRoboticsPoints(13, "corporate");
+        });
+        await Pair.RunSeconds(2);
+
+        await Server.WaitAssertion(() =>
+        {
+            Assert.That(
+                SEntMan.System<SharedUserInterfaceSystem>()
+                    .TryGetUiState<CorporateConsoleBuiState>(console, CorporateConsoleUi.Key, out var state),
+                Is.True);
+            var active = state!.ActiveMissions.Single(mission => mission.Id == "robotics-points");
+            Assert.That(active.Progress, Is.EqualTo(3));
+        });
+
+        await Server.WaitAssertion(() =>
+        {
+            SEntMan.System<ServerResearchDataTerminalSystem>().UpdateRoboticsPoints(15, "corporate");
+        });
+        await Pair.RunSeconds(2);
+
+        await Server.WaitAssertion(() =>
+        {
+            Assert.That(
+                SEntMan.System<SharedUserInterfaceSystem>()
+                    .TryGetUiState<CorporateConsoleBuiState>(console, CorporateConsoleUi.Key, out var state),
+                Is.True);
+            Assert.That(state!.MissionHistory.Select(mission => mission.Id), Does.Contain("robotics-points"));
+            Assert.That(state.CompanyValue, Is.GreaterThan(0));
+        });
+    }
+
+    [Test]
     public async Task ComplexDirectionCannotBeChangedAfterSelection()
     {
         var map = await Pair.CreateTestMap();

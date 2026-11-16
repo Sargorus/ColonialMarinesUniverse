@@ -103,7 +103,7 @@ public sealed partial class CorporateConsoleSystem
         comp.NextCreditAt = _timing.CurTime + comp.CreditCooldown;
         AddToCorporateBudget(comp.CreditAmount);
         _adminLog.Add(LogType.Action, LogImpact.Medium,
-            $"{ToPrettyString(msg.Actor)} requested {comp.CreditAmount} credits at " +
+            $"{ToPrettyString(msg.Actor)} requested additional financing of {comp.CreditAmount} dollars at " +
             $"{ToPrettyString(uid)} for {comp.CreditCostCompanyValue} company value");
         SetSupportStatus(comp, "cmu-corporate-credit-granted");
         UpdateAllUi();

@@ -31,6 +31,7 @@ using Content.Shared.Damage.Systems;
 using Content.Shared.DoAfter;
 using Content.Shared.FixedPoint;
 using Content.Shared.Drunk;
+using Content.Shared.Examine;
 using Content.Shared.Ghost;
 using Content.Shared.Ghost.Components;
 using Content.Shared.Hands;
@@ -149,6 +150,7 @@ public sealed partial class CMUDroneOperatorSystem : EntitySystem
         SubscribeLocalEvent<CMUDroneFrameComponent, CMUDroneFrameClampPartDoAfterEvent>(OnFrameClampPartComplete);
         SubscribeLocalEvent<CMUDroneFrameComponent, CMUDroneFrameWeldPartDoAfterEvent>(OnFrameWeldPartComplete);
         SubscribeLocalEvent<CMUDroneFrameComponent, CMUDroneFrameActivateDoAfterEvent>(OnFrameActivateComplete);
+        SubscribeLocalEvent<CMUDroneFrameComponent, ExaminedEvent>(OnFrameExamined);
 
         SubscribeLocalEvent<CMUDroneControlTabletComponent, UseInHandEvent>(OnTabletUseInHand);
         SubscribeLocalEvent<CMUDroneControlTabletComponent, GetVerbsEvent<Verb>>(OnTabletGetVerbs);

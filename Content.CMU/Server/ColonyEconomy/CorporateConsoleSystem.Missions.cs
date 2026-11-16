@@ -31,6 +31,7 @@ public sealed partial class CorporateConsoleSystem
         public int Progress;
         public int Target;
         public int Reward;
+        public int StartingPoints;
         public string ScanPropertyA = string.Empty;
         public string ScanPropertyB = string.Empty;
     }

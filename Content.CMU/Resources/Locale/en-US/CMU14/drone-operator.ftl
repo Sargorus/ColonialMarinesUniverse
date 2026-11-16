@@ -34,6 +34,12 @@ cmu-drone-frame-part-right-arm = right arm
 cmu-drone-frame-part-left-leg = left leg
 cmu-drone-frame-part-right-leg = right leg
 cmu-drone-frame-part-unknown = part
+cmu-drone-frame-examine-title = Frame assembly:
+cmu-drone-frame-examine-part = {$part}: {$state}
+cmu-drone-frame-examine-missing = missing
+cmu-drone-frame-examine-installed = installed, needs a wrench
+cmu-drone-frame-examine-clamped = clamped, needs welding
+cmu-drone-frame-examine-welded = welded
 
 cmu-drone-link-invalid = That is not a valid operator drone.
 cmu-drone-link-bound = The drone is already bound to another operator.
