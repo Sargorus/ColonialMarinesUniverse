@@ -8,6 +8,7 @@ using Content.Shared._RMC14.Xenonids;
 using Content.Shared.CMU14.Chemistry.Reagent;
 using Content.Shared.CMU14.Chemistry.Reagents;
 using Content.Shared.CMU14.Chemistry.Research;
+using Content.Shared.CMU14.ColonyEconomy;
 using Content.Shared.CMU14.Threats.Mobs.Wendigo;
 using Content.Shared.DoAfter;
 using Content.Shared.Examine;
@@ -149,6 +150,25 @@ public sealed partial class ServerResearchDocumentSystem : EntitySystem
         return knowledge.Facts.Add(factId);
     }
 
+    /// <summary>
+    /// Adds a witness fact the player observed directly. Re-adding it still records the personal
+    /// observation when the fact was previously learned by reading someone else's document.
+    /// </summary>
+    private bool TryAddWitnessKnowledge(EntityUid user, string factId)
+    {
+        if (!_facts.ContainsKey(factId))
+            return false;
+        var knowledge = EnsureComp<ResearchKnowledgeComponent>(user);
+        knowledge.Facts.Add(factId);
+        return knowledge.WitnessedFacts.Add(factId);
+    }
+
+    private bool HasWitnessed(EntityUid user, string factId)
+    {
+        return TryComp<ResearchKnowledgeComponent>(user, out var knowledge)
+               && knowledge.WitnessedFacts.Contains(factId);
+    }
+
     private int AddKnowledge(EntityUid user, IEnumerable<string> factIds)
     {
         var added = 0;
@@ -177,6 +197,23 @@ public sealed partial class ServerResearchDocumentSystem : EntitySystem
 
     private ResearchFact? GetFact(string factId)
         => _facts.GetValueOrDefault(factId);
+
+    /// <summary>
+    /// Applies the complex's research specialization to one fact's scientific credits. Robotics gets a
+    /// 1.5x payout rounded up; bioengineering gives chemistry contracts one extra credit per contract.
+    /// </summary>
+    private int GetFactCredits(ResearchFact fact, string faction)
+    {
+        if (fact.Credits <= 0)
+            return fact.Credits;
+        return _research.GetResearchDirection(faction) switch
+        {
+            CorporateResearchDirection.Robotics => (int) MathF.Ceiling(fact.Credits * 1.5f),
+            CorporateResearchDirection.Bioengineering when fact.Kind == ResearchFactKind.Contract
+                => fact.Credits + 1,
+            _ => fact.Credits,
+        };
+    }
 
     private void PopupToUser(EntityUid user, string message, EntityUid source)
     {

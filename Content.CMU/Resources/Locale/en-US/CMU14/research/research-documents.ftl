@@ -47,6 +47,7 @@ cmu-research-documents-locked = Research is locked for this faction.
 cmu-research-documents-already-known = Already known to the faction.
 cmu-research-documents-witness-cap = This species has already produced three accepted reports.
 cmu-research-documents-player-claimed = You already submitted this knowledge.
+cmu-research-documents-witness-not-personal = You did not witness this event yourself.
 cmu-research-documents-invalid = The selected knowledge is not available.
 cmu-research-document-description = Research document "{$title}" ({$type}). Author: {$author}. Finding: {$finding}.
 cmu-research-document-written-marker = Research findings are recorded in this document's description.

@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Content.Shared.CMU14.ColonyEconomy;
 using Content.Shared.Database;
+using Content.Shared._RMC14.Requisitions;
 using Robust.Shared.GameObjects;
 
 namespace Content.Server.CMU14.ColonyEconomy;
@@ -84,6 +86,13 @@ public sealed partial class CorporateConsoleSystem
             return;
         }
 
+        if (definition.Kind == CompanyMissionKind.PredatorBracer
+            && !TryDeliverMissionBracer(uid, state))
+        {
+            UpdateAllUi();
+            return;
+        }
+
         var target = GetPointsMissionTarget(state, definition);
         var active = new ActiveCompanyMission
         {
@@ -107,13 +116,40 @@ public sealed partial class CorporateConsoleSystem
             state.ScanMissionsStarted++;
 
         state.Active.Add(active);
-        state.Status = Loc.GetString(
-            "cmu-company-mission-accepted",
-            ("name", Loc.GetString(definition.NameLoc)));
+        state.Status = definition.Kind == CompanyMissionKind.PredatorBracer
+            ? Loc.GetString(
+                "cmu-company-mission-accepted-bracer",
+                ("name", Loc.GetString(definition.NameLoc)))
+            : Loc.GetString(
+                "cmu-company-mission-accepted",
+                ("name", Loc.GetString(definition.NameLoc)));
         _adminLog.Add(LogType.Action, LogImpact.Medium,
             $"{ToPrettyString(msg.Actor)} accepted the {faction} company mission " +
             $"{definition.Id} at {ToPrettyString(uid)}");
         UpdateAllUi();
+    }
+
+    /// <summary>
+    /// The bracer mission includes one recovered bracer shipped on the corporate cargo elevator.
+    /// </summary>
+    private bool TryDeliverMissionBracer(EntityUid console, FactionMissionState state)
+    {
+        if (FindCorporateElevator(console) is not { } elevator)
+        {
+            state.Status = Loc.GetString("cmu-company-mission-bracer-no-cargo");
+            return false;
+        }
+
+        var entry = new RequisitionsEntry
+        {
+            Crate = YautjaTechnologyCrate,
+        };
+        if (!_requisitions.TryAddElevatorOrders(elevator, new List<RequisitionsEntry> { entry }))
+        {
+            state.Status = Loc.GetString("cmu-company-mission-bracer-queue-full");
+            return false;
+        }
+        return true;
     }
 
     private void CompleteMission(FactionMissionState state, int index)

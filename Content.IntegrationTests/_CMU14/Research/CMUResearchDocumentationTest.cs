@@ -29,7 +29,18 @@ public sealed class CMUResearchDocumentationTest : GameTest
           flags: NoGeneration
         """;
 
+    [TestPrototypes]
+    private const string BotanyPrototypes = """
+        - type: reagent
+          parent: Water
+          id: CMUTestDocumentBotany
+          class: Hydro
+          reward: 2
+          flags: NoGeneration
+        """;
+
     private const string ContractReagent = "CMUTestDocumentContract";
+    private const string BotanyReagent = "CMUTestDocumentBotany";
 
     private EntityUid SpawnUser(EntityCoordinates coordinates, params string[] facts)
     {
@@ -38,7 +49,10 @@ public sealed class CMUResearchDocumentationTest : GameTest
             return user;
         var knowledge = SEntMan.AddComponent<ResearchKnowledgeComponent>(user);
         foreach (var fact in facts)
+        {
             knowledge.Facts.Add(fact);
+            knowledge.WitnessedFacts.Add(fact);
+        }
         return user;
     }
 
@@ -253,6 +267,88 @@ public sealed class CMUResearchDocumentationTest : GameTest
                 Assert.That(witnessEntry.Reward, Does.Contain("3 sample data"));
                 Assert.That(witnessEntry.Detail, Does.Contain("0 of 3"));
             });
+        });
+    }
+
+    [Test]
+    public async Task PartialScannerReportCarriesOnlyContractFact()
+    {
+        var map = await Pair.CreateTestMap();
+        await Server.WaitAssertion(() =>
+        {
+            var documents = SEntMan.System<ServerResearchDocumentSystem>();
+            var proto = SProtoMan.Index<ReagentPrototype>(ContractReagent);
+            var paper = SEntMan.SpawnEntity("Paper", map.GridCoords);
+            var report = new ResearchReportData
+            {
+                Name = "partial report",
+                Info = "clearance insufficient",
+                Completed = false,
+                Valid = false,
+                Icon = ResearchReportIconEnum.Partial,
+            };
+            var count = documents.AttachScannerReport(paper, "corporate", proto, report, ["Toxic"]);
+            Assert.That(count, Is.EqualTo(1));
+            var document = SEntMan.GetComponent<ResearchDocumentComponent>(paper);
+            Assert.Multiple(() =>
+            {
+                Assert.That(document.ScannerReport, Is.True);
+                Assert.That(document.FactIds, Does.Contain($"contract:corporate:{proto.ID}"));
+                Assert.That(document.FactIds, Does.Not.Contain("property:corporate:Toxic"),
+                    "a low-clearance report must not reveal properties");
+            });
+        });
+    }
+
+    [Test]
+    public async Task BotanyReportPaysItsOldReward()
+    {
+        var map = await Pair.CreateTestMap();
+        await Server.WaitAssertion(() =>
+        {
+            var research = SEntMan.System<ServerResearchDataTerminalSystem>();
+            var documents = SEntMan.System<ServerResearchDocumentSystem>();
+            var proto = SProtoMan.Index<ReagentPrototype>(BotanyReagent);
+            var paper = SEntMan.SpawnEntity("Paper", map.GridCoords);
+            var report = new ResearchReportData
+            {
+                Name = "botany report",
+                Info = "botanical sample",
+                Completed = false,
+                Valid = false,
+                Icon = ResearchReportIconEnum.Partial,
+            };
+            var count = documents.AttachScannerReport(paper, "corporate", proto, report, []);
+            Assert.That(count, Is.EqualTo(1));
+
+            var document = SEntMan.GetComponent<ResearchDocumentComponent>(paper);
+            var fact = documents.GetFactForTest(document.FactIds[0]);
+            Assert.That(fact, Is.Not.Null);
+            Assert.Multiple(() =>
+            {
+                Assert.That(fact!.Kind, Is.EqualTo(ServerResearchDocumentSystem.ResearchFactKind.Botany));
+                Assert.That(fact.Credits, Is.EqualTo(2));
+                Assert.That(fact.SampleData, Is.EqualTo(2));
+                Assert.That(fact.Cash, Is.EqualTo(1000));
+            });
+
+            var user = SpawnUser(map.GridCoords, fact.Id);
+            var terminal = SEntMan.SpawnEntity("CMUResearchDataTerminalCorporate", map.GridCoords);
+            var console = SEntMan.SpawnEntity("AU14CorporateConsole", map.GridCoords);
+            var corporate = SEntMan.GetComponent<CorporateConsoleComponent>(console);
+            corporate.CorporateBudget = 0;
+            research.UpdateClearance(0, -1, "corporate", 0);
+
+            var result = documents.SubmitKnowledge(user, terminal, [fact.Id]);
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Accepted, Is.EqualTo(1));
+                Assert.That(result.Credits, Is.EqualTo(2));
+                Assert.That(result.SampleData, Is.EqualTo(2));
+                Assert.That(result.Cash, Is.EqualTo(1000));
+                Assert.That(corporate.CorporateBudget, Is.EqualTo(1000));
+            });
+            research.UpdateClearance(0, -1, "corporate", 0);
         });
     }
 }

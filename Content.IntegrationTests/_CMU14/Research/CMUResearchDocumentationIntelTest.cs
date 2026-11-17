@@ -32,7 +32,10 @@ public sealed class CMUResearchDocumentationIntelTest : GameTest
         var user = SEntMan.SpawnEntity("CMMobHuman", coordinates);
         var knowledge = SEntMan.AddComponent<ResearchKnowledgeComponent>(user);
         foreach (var fact in facts)
+        {
             knowledge.Facts.Add(fact);
+            knowledge.WitnessedFacts.Add(fact);
+        }
         return user;
     }
 

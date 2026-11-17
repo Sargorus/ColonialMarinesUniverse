@@ -118,7 +118,6 @@ public sealed partial class CorporateConsoleSystem
                     continue;
 
                 mission.Progress++;
-                mission.Reward = mission.Progress;
                 if (mission.Progress >= mission.Target)
                     CompleteMission(state, i);
 

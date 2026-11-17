@@ -28,7 +28,10 @@ public sealed class CMUResearchDocumentInteractionTest : GameTest
             return user;
         var knowledge = SEntMan.AddComponent<ResearchKnowledgeComponent>(user);
         foreach (var fact in facts)
+        {
             knowledge.Facts.Add(fact);
+            knowledge.WitnessedFacts.Add(fact);
+        }
         return user;
     }
 
@@ -74,9 +77,11 @@ public sealed class CMUResearchDocumentInteractionTest : GameTest
                 ServerResearchDocumentSystem.ResearchFactKind.XenoSighting,
                 "Second test drone",
                 "Another test drone was observed.",
-                5,
+                3,
                 0.15f);
-            SEntMan.GetComponent<ResearchKnowledgeComponent>(users[0]).Facts.Add(secondFact.Id);
+            var secondKnowledge = SEntMan.GetComponent<ResearchKnowledgeComponent>(users[0]);
+            secondKnowledge.Facts.Add(secondFact.Id);
+            secondKnowledge.WitnessedFacts.Add(secondFact.Id);
             Assert.That(documents.SubmitKnowledge(users[0], corporateTerminal, [secondFact.Id]).Accepted,
                 Is.EqualTo(1));
             var playerDuplicate = documents.SubmitKnowledge(users[0], opforTerminal, [secondFact.Id]);
@@ -260,6 +265,43 @@ public sealed class CMUResearchDocumentInteractionTest : GameTest
                 // A session-less actor would trip admin identity updates during teardown.
                 SEntMan.RemoveComponent<ActorComponent>(user);
             }
+        });
+    }
+
+    [Test]
+    public async Task ReadWitnessFactCannotBeSubmitted()
+    {
+        var map = await Pair.CreateTestMap();
+        await Server.WaitAssertion(() =>
+        {
+            var research = SEntMan.System<ServerResearchDataTerminalSystem>();
+            var documents = SEntMan.System<ServerResearchDocumentSystem>();
+            var fact = documents.RecordWitnessFact(
+                "xeno:sighting:CMUTestReadWitness",
+                ServerResearchDocumentSystem.ResearchFactKind.XenoSighting,
+                "Test drone",
+                "A test drone was observed.",
+                3,
+                0.15f);
+            var reader = SpawnUser(map.GridCoords);
+            var knowledge = SEntMan.AddComponent<ResearchKnowledgeComponent>(reader);
+            // Reading another person's report adds the fact to Facts, not to WitnessedFacts.
+            knowledge.Facts.Add(fact.Id);
+            var terminal = SEntMan.SpawnEntity("CMUResearchDataTerminalCorporate", map.GridCoords);
+            research.UpdateClearance(0, -1, "corporate", 0);
+
+            var readResult = documents.SubmitKnowledge(reader, terminal, [fact.Id]);
+            Assert.Multiple(() =>
+            {
+                Assert.That(readResult.Accepted, Is.Zero,
+                    "a fact learned from another person's report cannot be submitted");
+                Assert.That(readResult.SkippedReason, Is.Not.Null);
+            });
+
+            knowledge.WitnessedFacts.Add(fact.Id);
+            var witnessResult = documents.SubmitKnowledge(reader, terminal, [fact.Id]);
+            Assert.That(witnessResult.Accepted, Is.EqualTo(1),
+                "the same player may submit after personally witnessing the event");
         });
     }
 

@@ -64,7 +64,9 @@ public sealed partial class ServerResearchDocumentSystem
             Kind = ResearchFactKind.Botany,
             SourceFaction = faction,
             ReagentId = proto.ID,
-            SampleData = 1,
+            Credits = proto.Reward,
+            SampleData = ServerResearchDataTerminalSystem.SampleDataForCompleted(proto),
+            Cash = (int)MathF.Round(_research.ResearchCashRewardMult * proto.Reward),
             IntelPoints = 0.1f,
             Title = Loc.GetString("cmu-research-fact-botany-title", ("name", proto.LocalizedName)),
             Description = Loc.GetString("cmu-research-fact-botany-desc", ("name", proto.LocalizedName)),
@@ -109,9 +111,14 @@ public sealed partial class ServerResearchDocumentSystem
         IReadOnlyCollection<string> newPropertyIds)
     {
         var factIds = new List<string>();
-        if (report.Completed
-            && chem.Class != ReagentClass.Hydro
-            && (chem.Class >= ReagentClass.Special || chem.Generated))
+        var identified = report.Completed
+                         || report.Icon is ResearchReportIconEnum.Partial or ResearchReportIconEnum.Full;
+        if (chem.Class == ReagentClass.Hydro && report.Icon != ResearchReportIconEnum.None)
+        {
+            // Botany reports identify the sample even when low clearance hides its properties.
+            factIds.Add(RecordBotanyFact(faction, chem).Id);
+        }
+        else if (identified && (chem.Class >= ReagentClass.Special || chem.Generated))
         {
             factIds.Add(RecordContractFact(faction, chem).Id);
         }
@@ -123,8 +130,6 @@ public sealed partial class ServerResearchDocumentSystem
                     factIds.Add(RecordPropertyFact(faction, property).Id);
             }
         }
-        if (report.Completed && chem.Class == ReagentClass.Hydro)
-            factIds.Add(RecordBotanyFact(faction, chem).Id);
         if (factIds.Count == 0)
             return 0;
 
@@ -172,18 +177,23 @@ public sealed partial class ServerResearchDocumentSystem
         }
 
         var factIds = new List<string>();
-        if (chem.Class != ReagentClass.Hydro
-            && (chem.Class >= ReagentClass.Special || chem.Generated))
+        if (chem.Class == ReagentClass.Hydro)
+        {
+            // The botanical sample is known from the report itself; its properties may still be hidden.
+            factIds.Add(RecordBotanyFact(document.SourceFaction, chem).Id);
+        }
+        else if (chem.Class >= ReagentClass.Special || chem.Generated)
         {
             factIds.Add(RecordContractFact(document.SourceFaction, chem).Id);
         }
-        foreach (var propertyId in data.Effects.Keys)
+        if (report.Completed)
         {
-            if (_prototypes.TryIndex<ReagentPropertyPrototype>(propertyId, out var property))
-                factIds.Add(RecordPropertyFact(document.SourceFaction, property).Id);
+            foreach (var propertyId in data.Effects.Keys)
+            {
+                if (_prototypes.TryIndex<ReagentPropertyPrototype>(propertyId, out var property))
+                    factIds.Add(RecordPropertyFact(document.SourceFaction, property).Id);
+            }
         }
-        if (chem.Class == ReagentClass.Hydro)
-            factIds.Add(RecordBotanyFact(document.SourceFaction, chem).Id);
         document.FactIds = factIds;
         return factIds.Count;
     }

@@ -22,9 +22,7 @@ public sealed partial class CorporateConsoleSystem
                 continue;
 
             var target = GetPointsMissionTarget(state, definition);
-            var reward = definition.Kind == CompanyMissionKind.PredatorBracer
-                ? definition.Target
-                : definition.Reward;
+            var reward = definition.Reward;
             available.Add(BuildMissionInfo(definition, CompanyMissionStatus.Available, 0,
                 target, reward, 0));
         }

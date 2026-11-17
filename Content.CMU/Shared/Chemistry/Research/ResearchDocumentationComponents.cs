@@ -13,6 +13,13 @@ public sealed partial class ResearchKnowledgeComponent : Component
 {
     [DataField]
     public HashSet<string> Facts = [];
+
+    /// <summary>
+    /// Witness facts this player personally observed. Reading another person's report adds the fact to
+    /// <see cref="Facts"/> but not here, so it cannot be submitted to an intel or chemistry terminal.
+    /// </summary>
+    [DataField]
+    public HashSet<string> WitnessedFacts = [];
 }
 
 /// <summary>

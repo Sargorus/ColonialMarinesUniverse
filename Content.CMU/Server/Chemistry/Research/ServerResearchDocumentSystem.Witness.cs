@@ -43,7 +43,7 @@ public sealed partial class ServerResearchDocumentSystem
             return;
         if (!TryGetSightingFact(examined, out var fact))
             return;
-        if (!TryAddKnowledge(args.Examiner, fact.Id))
+        if (!TryAddWitnessKnowledge(args.Examiner, fact.Id))
             return;
         PopupToUser(
             args.Examiner,
@@ -140,7 +140,7 @@ public sealed partial class ServerResearchDocumentSystem
                 Loc.GetString(descriptionKey),
                 sampleData,
                 intelPoints);
-            if (!TryAddKnowledge(uid, fact.Id))
+            if (!TryAddWitnessKnowledge(uid, fact.Id))
                 continue;
             PopupToUser(
                 uid,

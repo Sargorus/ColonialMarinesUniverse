@@ -329,6 +329,7 @@ public sealed class CMUCompanyMissionTest : GameTest
     {
         var map = await Pair.CreateTestMap();
         EntityUid console = default;
+        EntityUid elevator = default;
 
         await Server.WaitAssertion(() =>
         {
@@ -336,6 +337,10 @@ public sealed class CMUCompanyMissionTest : GameTest
             Server.PlayerMan.SetAttachedEntity(ServerSession, user);
 
             console = SEntMan.SpawnEntity("AU14CorporateConsole", map.GridCoords);
+            elevator = SEntMan.SpawnEntity("AU14CorporateASRSElevator", map.GridCoords.Offset(new(2, 0)));
+            var elevatorComp = SEntMan.GetComponent<RequisitionsElevatorComponent>(elevator);
+            elevatorComp.Faction = "corporate";
+            elevatorComp.Orders.Clear();
             Assert.That(
                 SEntMan.System<SharedUserInterfaceSystem>().TryOpenUi(
                     console,
@@ -357,6 +362,14 @@ public sealed class CMUCompanyMissionTest : GameTest
 
         await Server.WaitAssertion(() =>
         {
+            var elevatorComp = SEntMan.GetComponent<RequisitionsElevatorComponent>(elevator);
+            Assert.That(elevatorComp.Orders, Has.Count.EqualTo(1),
+                "accepting the bracer mission ships one recovered bracer to cargo");
+            Assert.That(elevatorComp.Orders[0].Crate.Id, Is.EqualTo("CMUCrateSecureYautjaTechnology"));
+        });
+
+        await Server.WaitAssertion(() =>
+        {
             var bracer = SEntMan.SpawnEntity("CMUYautjaBracer", map.GridCoords);
             var unlocked = new CMUYautjaBracerUnlockedEvent(bracer, EntityUid.Invalid);
             SEntMan.EventBus.RaiseLocalEvent(bracer, ref unlocked);
@@ -369,7 +382,8 @@ public sealed class CMUCompanyMissionTest : GameTest
                 SEntMan.System<SharedUserInterfaceSystem>()
                     .TryGetUiState<CorporateConsoleBuiState>(console, CorporateConsoleUi.Key, out var state),
                 Is.True);
-            Assert.That(state!.CompanyValue, Is.GreaterThan(0));
+            Assert.That(state!.CompanyValue, Is.EqualTo(50),
+                "opening a Yautja bracer pays 50 company value");
             Assert.That(state.MissionHistory.Select(mission => mission.Id), Does.Contain("predator-bracer"));
             Assert.That(state.AvailableMissions.Select(mission => mission.Id), Does.Contain("predator-bracer"),
                 "the bracer task must be repeatable for every recovered bracer");

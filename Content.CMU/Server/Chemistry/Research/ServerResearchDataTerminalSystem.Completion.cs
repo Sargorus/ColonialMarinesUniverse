@@ -4,6 +4,7 @@ using Content.Server.CMU14.Chemistry.Reagents;
 using Content.Server.CMU14.ColonyEconomy;
 using Content.Shared.CMU14.Chemistry.Reagent;
 using Content.Shared.CMU14.Chemistry.Reagents;
+using Content.Shared.CMU14.ColonyEconomy;
 using Content.Shared.Chemistry.Reagent;
 using Content.Shared._RMC14.Requisitions;
 using Robust.Shared.GameObjects;
@@ -74,6 +75,13 @@ public sealed partial class ServerResearchDataTerminalSystem
             GetSampleData(faction) + SampleDataForCompleted(proto));
         PayFactionCash(faction, (int)MathF.Round(ResearchCashRewardMult * proto.Reward), scanner);
     }
+
+    /// <summary>
+    /// Research direction chosen at the liaison console. Credit payouts use it as a specialization
+    /// modifier: robotics multiplies credits, bioengineering improves chemistry contract credits.
+    /// </summary>
+    public CorporateResearchDirection GetResearchDirection(string faction)
+        => _corpo.GetResearchDirection(faction);
 
     /// <summary>
     /// Routes research cash to the owning faction account. An unknown faction drops physical cash at the

@@ -3,6 +3,9 @@ using Content.IntegrationTests.Fixtures;
 using Content.Server.CMU14.Chemistry.Research;
 using Content.Shared.CMU14.Chemistry.Reagents;
 using Content.Shared.CMU14.Chemistry.Research;
+using Content.Shared.CMU14.ColonyEconomy;
+using Content.Shared.Chemistry.Reagent;
+using Robust.Shared.GameObjects;
 using Robust.Shared.Map;
 using Robust.Shared.Timing;
 
@@ -12,6 +15,36 @@ namespace Content.IntegrationTests._CMU14.Research;
 public sealed class CMUFactionResearchTest : GameTest
 {
     public override PoolSettings PoolSettings => new() { Connected = false };
+
+    [TestPrototypes]
+    private const string Prototypes = """
+        - type: reagent
+          parent: Water
+          id: CMUTestFactionContract
+          class: Special
+          reward: 5
+          flags: NoGeneration
+        """;
+
+    private const string ContractReagent = "CMUTestFactionContract";
+
+    private EntityUid SpawnContractUser(EntityCoordinates coordinates, string factId)
+    {
+        var user = SEntMan.SpawnEntity("CMMobHuman", coordinates);
+        var knowledge = SEntMan.AddComponent<ResearchKnowledgeComponent>(user);
+        knowledge.Facts.Add(factId);
+        knowledge.WitnessedFacts.Add(factId);
+        return user;
+    }
+
+    private void SetResearchDirection(EntityUid console, EntityUid user, CorporateResearchDirection direction)
+    {
+        SEntMan.EventBus.RaiseLocalEvent(console, new CorporateConsoleSetDirectionBuiMsg(direction)
+        {
+            Actor = user,
+            UiKey = CorporateConsoleUi.Key,
+        });
+    }
 
     [Test]
     public async Task CooldownPurchasesAreIsolatedAndValidated()
@@ -73,6 +106,81 @@ public sealed class CMUFactionResearchTest : GameTest
                 gov.Picked = op.Picked = false;
                 gov.NextReroll = op.NextReroll = TimeSpan.Zero;
             }
+        });
+    }
+
+    [Test]
+    public async Task RoboticsDirectionMultipliesContractCredits()
+    {
+        var map = await Pair.CreateTestMap();
+        await Server.WaitAssertion(() =>
+        {
+            var system = SEntMan.System<ServerResearchDataTerminalSystem>();
+            var documents = SEntMan.System<ServerResearchDocumentSystem>();
+            var proto = SProtoMan.Index<ReagentPrototype>(ContractReagent);
+            var fact = documents.RecordContractFact("corporate", proto);
+            var user = SpawnContractUser(map.GridCoords, fact.Id);
+            var console = SEntMan.SpawnEntity("AU14CorporateConsole", map.GridCoords);
+            var terminal = SEntMan.SpawnEntity("CMUResearchDataTerminalCorporate", map.GridCoords);
+            SetResearchDirection(console, user, CorporateResearchDirection.Robotics);
+            system.UpdateClearance(0, -1, "corporate", 0);
+
+            var result = documents.SubmitKnowledge(user, terminal, [fact.Id]);
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Accepted, Is.EqualTo(1));
+                Assert.That(result.Credits, Is.EqualTo(8),
+                    "robotics pays 1.5x contract credits rounded up");
+                Assert.That(system.GetCredits("corporate"), Is.EqualTo(8));
+            });
+            system.UpdateClearance(0, -1, "corporate", 0);
+        });
+    }
+
+    [Test]
+    public async Task BioengineeringDirectionAddsOneContractCredit()
+    {
+        var map = await Pair.CreateTestMap();
+        await Server.WaitAssertion(() =>
+        {
+            var system = SEntMan.System<ServerResearchDataTerminalSystem>();
+            var documents = SEntMan.System<ServerResearchDocumentSystem>();
+            var proto = SProtoMan.Index<ReagentPrototype>(ContractReagent);
+            var fact = documents.RecordContractFact("corporate", proto);
+            var user = SpawnContractUser(map.GridCoords, fact.Id);
+            var console = SEntMan.SpawnEntity("AU14CorporateConsole", map.GridCoords);
+            var terminal = SEntMan.SpawnEntity("CMUResearchDataTerminalCorporate", map.GridCoords);
+            SetResearchDirection(console, user, CorporateResearchDirection.Bioengineering);
+            system.UpdateClearance(0, -1, "corporate", 0);
+
+            var result = documents.SubmitKnowledge(user, terminal, [fact.Id]);
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Accepted, Is.EqualTo(1));
+                Assert.That(result.Credits, Is.EqualTo(6),
+                    "bioengineering pays one extra chemistry contract credit");
+                Assert.That(system.GetCredits("corporate"), Is.EqualTo(6));
+            });
+            system.UpdateClearance(0, -1, "corporate", 0);
+        });
+    }
+
+    [Test]
+    public async Task LiaisonShowsChemistryCreditsNotSampleData()
+    {
+        await Server.WaitAssertion(() =>
+        {
+            var system = SEntMan.System<ServerResearchDataTerminalSystem>();
+            system.UpdateClearance(7, -1, "corporate", 3);
+            var query = new CMUScienceStatusQueryEvent("corporate");
+            SEntMan.EventBus.RaiseEvent(EventSource.Local, ref query);
+            Assert.Multiple(() =>
+            {
+                Assert.That(query.ChemistryPoints, Is.EqualTo(7),
+                    "the liaison console shows chemistry credits, not sample data");
+                Assert.That(system.GetSampleData("corporate"), Is.EqualTo(3));
+            });
+            system.UpdateClearance(0, -1, "corporate", 0);
         });
     }
 

@@ -73,14 +73,17 @@ public sealed partial class ServerResearchDocumentSystem
             var teamClaim = !witness && claims?.Contains(factId) == true;
             var witnessCap = witness && _witnessClaims.GetValueOrDefault(factId) >= fact.MaxSubmissions;
             var playerClaim = witness && _playerClaims.Contains((factId, user));
-            var disabled = teamClaim || witnessCap || playerClaim;
+            var witnessNotPersonal = witness && !HasWitnessed(user, factId);
+            var disabled = teamClaim || witnessCap || playerClaim || witnessNotPersonal;
             var reason = teamClaim
                 ? Loc.GetString("cmu-research-documents-already-known")
                 : witnessCap
                     ? Loc.GetString("cmu-research-documents-witness-cap")
                     : playerClaim
                         ? Loc.GetString("cmu-research-documents-player-claimed")
-                        : null;
+                        : witnessNotPersonal
+                            ? Loc.GetString("cmu-research-documents-witness-not-personal")
+                            : null;
             var ownGovforResearch = IsChemistryFact(fact)
                                     && string.Equals(fact.SourceFaction, "govfor", StringComparison.OrdinalIgnoreCase)
                                     && string.Equals(team, "govfor", StringComparison.OrdinalIgnoreCase);
@@ -193,6 +196,12 @@ public sealed partial class ServerResearchDocumentSystem
             {
                 skipped++;
                 skippedReason ??= Loc.GetString("cmu-research-documents-player-claimed");
+                continue;
+            }
+            if (witness && !HasWitnessed(user, factId))
+            {
+                skipped++;
+                skippedReason ??= Loc.GetString("cmu-research-documents-witness-not-personal");
                 continue;
             }
 

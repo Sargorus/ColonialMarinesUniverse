@@ -52,8 +52,9 @@ public sealed partial class ServerResearchDocumentSystem
     private string BuildCatalogReward(ResearchFact fact, string faction)
     {
         var parts = new List<string>();
-        if (fact.Credits != 0)
-            parts.Add(Loc.GetString("cmu-research-documents-reward-credits", ("credits", fact.Credits)));
+        var credits = GetFactCredits(fact, faction);
+        if (credits != 0)
+            parts.Add(Loc.GetString("cmu-research-documents-reward-credits", ("credits", credits)));
         if (fact.SampleData != 0)
             parts.Add(Loc.GetString("cmu-research-documents-reward-data", ("data", fact.SampleData)));
 

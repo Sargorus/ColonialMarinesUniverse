@@ -97,7 +97,7 @@ public sealed partial class CorporateConsoleSystem
             "cmu-company-mission-bracer-name",
             "cmu-company-mission-bracer-desc",
             "cmu-company-mission-bracer-objective",
-            Reward: 1,
+            Reward: 50,
             Target: 1,
             TimeLimitMinutes: 60,
             Repeatable: true),
