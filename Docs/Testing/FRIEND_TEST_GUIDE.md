@@ -27,14 +27,15 @@ cd ColonialMarinesUniverse
 git log -1 --oneline
 ```
 
-Последний коммит должен быть:
+Последний коммит с кодом должен быть:
 
 ```text
-b485020ce7 docs(testing): add branch feature checklist and friend setup guide
+f690fab55a feat(research): require personal sightings and reward botany reports
 ```
 
-Коммит `f690fab55a` — последний коммит с кодом research-механик;
-`b485020ce7` добавляет только эти два документа.
+После него могут идти docs-коммиты (например, `b485020ce7` и новее) —
+это нормально, они добавляют только эти инструкции. Ветка всё равно
+должна называться `RoboticsUpdate`.
 
 Если submodule не скачался:
 
