@@ -9,6 +9,7 @@
   - CMUCustomGrenadeCasing
   - CMUChemicalPayload
   - CMUTimerTrigger
+  - CMUEmpPayload
 
 - type: latheRecipe
   id: CMUCustomGrenadeCasing

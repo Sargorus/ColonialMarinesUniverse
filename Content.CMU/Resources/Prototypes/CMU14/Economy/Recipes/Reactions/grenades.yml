@@ -74,3 +74,29 @@
       amount: 1
   products:
     CMUTearGas: 3
+
+# A chemical EMP. Silver, uranium and phoron form a conductive, energetic blend
+# that discharges when the payload mixes; the residue is inert and NoGeneration,
+# so chemical contracts cannot ask for it or use the blend as a recipe.
+- type: reaction
+  id: CMUEmpPulse
+  impact: High
+  priority: 10
+  conserveEnergy: false
+  requiredMixerCategories: # CMU14: only reacts when mixed (lid-closed Mix verb or a detonating payload)
+  - CMUMix
+  reactants:
+    RMCSilver:
+      amount: 2
+    RMCUranium:
+      amount: 1
+    RMCPhoron:
+      amount: 2
+  products:
+    CMUEmpResidue: 2
+  effects:
+  - !type:Emp
+    rangeModifier: 1.0
+    maxRange: 5.5
+    energyConsumption: 50000
+    duration: 60
