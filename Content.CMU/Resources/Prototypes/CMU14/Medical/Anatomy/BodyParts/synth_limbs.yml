@@ -1,0 +1,87 @@
+# Ordinary synthetic replacement limbs. They use the human body-part sprites
+# but are robotic and belong to the Synth limb family, so they are valid on
+# synths and humans while drone and Working Joe surgery rejects them.
+- type: entity
+  id: CMUPartSynthVisual
+  abstract: true
+  components:
+  - type: Sprite
+    sprite: Mobs/Species/Human/parts.rsi
+  - type: VisualOrgan
+    data:
+      sprite: Mobs/Species/Human/parts.rsi
+  - type: VisualOrganMarkings
+    markingData:
+      group: Human
+
+- type: entity
+  parent: [ CMUPartSynthVisual, CMUPartHumanLeftArm ]
+  id: CMUPartSynthLeftArm
+  name: left synthetic arm
+  suffix: CMU
+  components:
+  - type: CMURoboticLimb
+    prosthetic: false
+
+- type: entity
+  parent: [ CMUPartSynthVisual, CMUPartHumanRightArm ]
+  id: CMUPartSynthRightArm
+  name: right synthetic arm
+  suffix: CMU
+  components:
+  - type: CMURoboticLimb
+    prosthetic: false
+
+- type: entity
+  parent: [ CMUPartSynthVisual, CMUPartHumanLeftHand ]
+  id: CMUPartSynthLeftHand
+  name: left synthetic hand
+  suffix: CMU
+  components:
+  - type: CMURoboticLimb
+    prosthetic: false
+
+- type: entity
+  parent: [ CMUPartSynthVisual, CMUPartHumanRightHand ]
+  id: CMUPartSynthRightHand
+  name: right synthetic hand
+  suffix: CMU
+  components:
+  - type: CMURoboticLimb
+    prosthetic: false
+
+- type: entity
+  parent: [ CMUPartSynthVisual, CMUPartHumanLeftLeg ]
+  id: CMUPartSynthLeftLeg
+  name: left synthetic leg
+  suffix: CMU
+  components:
+  - type: CMURoboticLimb
+    prosthetic: false
+
+- type: entity
+  parent: [ CMUPartSynthVisual, CMUPartHumanRightLeg ]
+  id: CMUPartSynthRightLeg
+  name: right synthetic leg
+  suffix: CMU
+  components:
+  - type: CMURoboticLimb
+    prosthetic: false
+
+- type: entity
+  parent: [ CMUPartSynthVisual, CMUPartHumanLeftFoot ]
+  id: CMUPartSynthLeftFoot
+  name: left synthetic foot
+  suffix: CMU
+  components:
+  - type: CMURoboticLimb
+    prosthetic: false
+
+- type: entity
+  parent: [ CMUPartSynthVisual, CMUPartHumanRightFoot ]
+  id: CMUPartSynthRightFoot
+  name: right synthetic foot
+  suffix: CMU
+  components:
+  - type: CMURoboticLimb
+    prosthetic: false

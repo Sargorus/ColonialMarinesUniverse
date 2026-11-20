@@ -218,8 +218,8 @@ public sealed class CMUCombatDroneTest
             var examine = new ExaminedEvent(new FormattedMessage(), drone, user, true, false);
             entities.EventBus.RaiseLocalEvent(drone, examine);
             var description = examine.GetTotalMessage().ToString();
-            Assert.That(description, Does.Contain("dented"));
-            Assert.That(description, Does.Contain("Burnt wires"));
+            Assert.That(description, Does.Contain(Loc.GetString("cmu-combat-drone-frame-dented")));
+            Assert.That(description, Does.Contain(Loc.GetString("cmu-combat-drone-wires-burnt")));
             Assert.That(entities.System<SharedHandsSystem>().TryPickupAnyHand(user, cable, checkActionBlocker: false), Is.True);
             Interact(entities, user, cable, drone);
         });
@@ -379,7 +379,9 @@ public sealed class CMUCombatDroneTest
         });
         await server.WaitAssertion(() =>
         {
-            Assert.That(entities.GetComponent<MetaDataComponent>(drone).EntityName, Does.Contain("wreckage"));
+            var wreckName = entities.GetComponent<MetaDataComponent>(drone).EntityName;
+            Assert.That(wreckName, Is.Not.EqualTo(originalName), "The wreck must get a distinct name.");
+            Assert.That(wreckName, Does.Contain(originalName), "The wreck name must keep the original drone name.");
             Assert.That(entities.GetComponent<MindComponent>(mind).VisitingEntity, Is.Null);
             Assert.That(entities.GetComponent<CMUDroneControlTabletComponent>(tablet).LinkedDrone, Is.EqualTo(drone));
             Assert.That(entities.GetComponent<CMUDroneOperatorComponent>(user).Drone, Is.EqualTo(drone));

@@ -29,6 +29,7 @@ public sealed partial class CMUSurgerySystem : SharedCMUSurgerySystem
     [Dependency] private IConfigurationManager _cfg = default!;
     [Dependency] private SharedHandsSystem _hands = default!;
     [Dependency] private SharedBodyPartHealthSystem _partHealth = default!;
+    [Dependency] private IPrototypeManager _prototypes = default!;
     [Dependency] private SharedPopupSystem _popup = default!;
     [Dependency] private StatusEffectsSystem _status = default!;
     [Dependency] private IGameTiming _timing = default!;
@@ -153,9 +154,88 @@ public sealed partial class CMUSurgerySystem : SharedCMUSurgerySystem
         }
 
         TryClearMissingLimbStatus(body, limbPart.PartType, limbPart.Symmetry);
+        TryAttachWholeLimbChildren(body, limb, limbPart);
 
         _popup.PopupEntity(Loc.GetString("cmu-medical-reattach-success"), body, user, PopupType.Medium);
         return true;
+    }
+
+    /// <summary>
+    /// A separated arm carries its hand and a separated leg carries its foot in
+    /// the detached subtree. When the new limb is a bare arm or leg, create the
+    /// matching extremity from the same prototype family so the patient is not
+    /// left with a second, unattached missing-part surgery.
+    /// </summary>
+    private void TryAttachWholeLimbChildren(EntityUid body, EntityUid limb, BodyPartComponent limbPart)
+    {
+        var childType = limbPart.PartType switch
+        {
+            BodyPartType.Arm => BodyPartType.Hand,
+            BodyPartType.Leg => BodyPartType.Foot,
+            _ => (BodyPartType?) null,
+        };
+        if (childType is not { } type)
+            return;
+
+        foreach (var slot in MedicalIndex.GetBodyPartSlots(limb))
+        {
+            if (slot.Type != type || slot.Part is not null)
+                continue;
+            if (!CMUBodyPartSlots.TryGetSymmetry(slot.SlotId, limbPart.Symmetry, out var symmetry))
+                continue;
+
+            if (FindChildLimbPrototype(body, limb, type, symmetry) is not { } childPrototype)
+                continue;
+
+            var child = Spawn(childPrototype, new EntityCoordinates(limb, default));
+            if (!TryComp<BodyPartComponent>(child, out var childPart) ||
+                childPart.PartType != type ||
+                childPart.Symmetry != symmetry ||
+                !CanPatientAcceptLimb(body, child))
+            {
+                QueueDel(child);
+                continue;
+            }
+
+            if (!Body.AttachPart(limb, slot.SlotId, child))
+            {
+                QueueDel(child);
+                continue;
+            }
+
+            TryClearMissingLimbStatus(body, type, symmetry);
+        }
+    }
+
+    private EntProtoId? FindChildLimbPrototype(
+        EntityUid body,
+        EntityUid limb,
+        BodyPartType type,
+        BodyPartSymmetry symmetry)
+    {
+        var limbId = MetaData(limb).EntityPrototype?.ID;
+        if (!string.IsNullOrEmpty(limbId))
+        {
+            var childId = limbId
+                .Replace("Arm", "Hand", StringComparison.Ordinal)
+                .Replace("Leg", "Foot", StringComparison.Ordinal);
+            if (childId != limbId && _prototypes.HasIndex<EntityPrototype>(childId))
+                return childId;
+        }
+
+        if (!TryComp<InitialBodyComponent>(body, out var initialBody))
+            return null;
+
+        if (!TryGetInitialBodyCategory(type, symmetry, out var category))
+            return null;
+
+        foreach (var (initialCategory, prototype) in initialBody.Organs)
+        {
+            if (initialCategory == category)
+                return prototype;
+        }
+
+        return null;
     }
 
     public bool TryRegenerateLimb(EntityUid body, BodyPartType type, BodyPartSymmetry symmetry,
@@ -249,8 +329,7 @@ public sealed partial class CMUSurgerySystem : SharedCMUSurgerySystem
 
     private bool CanPatientAcceptLimb(EntityUid body, EntityUid limb)
     {
-        return !HasComp<CMUDroneAndroidComponent>(body) ||
-               HasComp<CMURoboticLimbComponent>(limb);
+        return CMULimbCompatibility.CanAttach(EntityManager, body, limb);
     }
 
     private static bool TryGetInitialBodyCategory(

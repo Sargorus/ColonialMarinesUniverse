@@ -2,8 +2,8 @@ cmu-job-name-govfordroneoperator = Drone Operator
 cmu-job-description-govfordroneoperator = Assemble, link, and remotely pilot a drone android, gun UGV, or flamer UGV.
 cmu-job-prefix-govfordroneoperator = DRO
 
-cmu-species-name-drone-android = Drone Android
-cmu-species-drone-android-generation = drone android
+cmu-species-name-drone-android = Humanoid drone
+cmu-species-drone-android-generation = humanoid drone
 
 cmu-drone-operator-required = You are not trained to operate this drone system.
 cmu-drone-assembly-finish = You finish assembling {$drone}.
@@ -41,6 +41,8 @@ cmu-drone-tablet-bound = The tablet is already bound to another operator.
 cmu-drone-link-finish = You link the tablet to {$drone}.
 cmu-drone-tablet-must-carry = You must be carrying the tablet to control the drone.
 cmu-drone-tablet-no-link = The tablet is not linked to a drone.
+cmu-drone-unlink-verb = Unlink from current drone
+cmu-drone-unlink-finish = You unlink the tablet from {$drone}.
 cmu-drone-rename-verb = Rename Drone
 cmu-drone-rename-title = Rename Drone
 cmu-drone-rename-prompt = Enter a one-word drone name ({$max} characters max).
@@ -79,13 +81,30 @@ cmu-drone-control-ended-operator-hurt = The drone control session ends as you ar
 cmu-drone-control-ended-operator-disabled = The drone control session ends as your body is disabled.
 cmu-drone-control-ended-link-lost = The drone control session ends as the link is lost.
 cmu-drone-control-ended-leash = The drone control session ends as the drone leaves tablet range.
+cmu-drone-control-ended-unlinked = The drone control session ends as the tablet is unlinked from the drone.
 
 cmu-drone-self-repair-blocked = The drone frame cannot self-repair.
+cmu-drone-revive-already-alive = {$drone} is already active.
+cmu-drone-revive-repair-first = Repair {$drone} before inserting an activation key.
+cmu-drone-revive-start = You start reactivating {$drone} with the synth key.
+cmu-drone-revive-finish = {$drone} comes back online.
+cmu-drone-repair-target-locked = This customer unit is locked to its repair contract and cannot be controlled.
+cmu-drone-module-combat-blocked = {$drone} cannot accept a combat module.
 cmu-drone-module-tool-required = You need a suitable tool in your other hand to install {$module}.
 cmu-drone-module-install-start = You start installing {$module} into {$drone}.
 cmu-drone-module-install-finish = You install {$module} into {$drone}.
 cmu-drone-module-remove-start = You start removing {$module} from {$drone}.
 cmu-drone-module-remove-finish = You remove {$module} from {$drone}.
+
+ent-CMUDroneConfigurationKey = Wey-Yu drone configuration key
+    .desc = A Weyland-Yutani service key that rewrites a drone's faction, available radio channels, and access levels from the holder's credentials. On a utility drone it also controls programmable mode, the board port, and the installed directive program.
+cmu-drone-config-title = Drone Configuration
+cmu-drone-config-faction = Faction
+cmu-drone-config-channels = Available Channels
+cmu-drone-config-access = Access
+cmu-drone-config-no-id = No ID card in the other hand: no access levels will be granted.
+cmu-drone-config-apply = Apply
+cmu-drone-config-applied = You reconfigure the drone.
 
 cmu-name-drone-android-1 = Apex
 cmu-name-drone-android-2 = Argus

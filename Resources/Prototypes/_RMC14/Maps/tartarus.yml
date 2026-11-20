@@ -18,5 +18,6 @@
             AU14JobWYGuard: [4, 4]
             AU14JobCivilianKellandWarden: [1, 1]
             AU14JobCivilianScientist: [3, 3]
+            AU14JobCivilianScientistRoboticist: [1, 1] # CMU14
             AU14JobCivilianFreightSystemsSpecialist: [1, 1]
             AU14JobCivilianPhysician: [1, 1]

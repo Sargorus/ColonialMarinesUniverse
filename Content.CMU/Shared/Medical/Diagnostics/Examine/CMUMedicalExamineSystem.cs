@@ -354,7 +354,8 @@ public sealed partial class CMUMedicalExamineSystem : EntitySystem
             return;
 
         var details = GetRoboticDetails(robotic);
-        sections.Add(ToSentence(details));
+        if (details.Count > 0)
+            sections.Add(ToSentence(details));
     }
 
     private void AddRoboticDetailedSections(EntityUid part, List<string> sections)
@@ -362,7 +363,11 @@ public sealed partial class CMUMedicalExamineSystem : EntitySystem
         if (!TryComp<CMURoboticLimbComponent>(part, out var robotic))
             return;
 
-        sections.Add(Color(Loc.GetString("cmu-robotic-limb-detailed-state"), RoboticLimbColor));
+        // Native synthetic limbs are part of the body, not medical conditions.
+        // Only replacement prostheses get a state line; damage is shown below
+        // for either kind.
+        if (robotic.Prosthetic)
+            sections.Add(Color(Loc.GetString("cmu-robotic-limb-detailed-state"), RoboticLimbColor));
 
         if (robotic.BruteDamage > FixedPoint2.Zero)
             sections.Add(Color(Loc.GetString("cmu-robotic-limb-detailed-brute"), RoboticDamageColor));
@@ -401,10 +406,12 @@ public sealed partial class CMUMedicalExamineSystem : EntitySystem
 
     private List<string> GetRoboticDetails(CMURoboticLimbComponent robotic)
     {
-        var details = new List<string>
-        {
-            Color(Loc.GetString("cmu-robotic-limb-examine-state"), RoboticLimbColor),
-        };
+        var details = new List<string>();
+
+        // A synthetic's own limb is simply its body. Do not describe it as a
+        // prosthesis or print a "synthetic limb" status line for it.
+        if (robotic.Prosthetic)
+            details.Add(Color(Loc.GetString("cmu-robotic-limb-examine-state"), RoboticLimbColor));
 
         AddRoboticDamageDetails(robotic, details, true);
         return details;

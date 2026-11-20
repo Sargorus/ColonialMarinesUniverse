@@ -1,3 +1,4 @@
+# Synthetic whitelist parent used by the UPP Line Squad synthetic job.
 - type: job
   parent: CMJobBase
   id: CMUJobSyntheticWhitelist

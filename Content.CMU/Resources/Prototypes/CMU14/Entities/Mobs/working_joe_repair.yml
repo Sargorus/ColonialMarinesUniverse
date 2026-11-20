@@ -1,0 +1,26 @@
+# Soulless colony Working Joe sent as a repair-order target. It intentionally
+# uses the base mob instead of AU14MobWorkingJoeColony so no ghost role exists.
+- type: entity
+  parent: AU14MobWorkingJoe
+  id: CMUWorkingJoeRepair
+  name: damaged Working Joe
+  suffix: CMU14, Repair target
+  components:
+  - type: CMUHumanMedical
+  - type: CMURoboticsDamagedBody
+    minSeveredLimbs: 2
+    maxSeveredLimbs: 4
+    minBurnDamage: 150
+    maxBurnDamage: 280
+    minBruteDamage: 100
+    maxBruteDamage: 200
+
+# Stable repair-order variant: the console pre-rolls the damage and applies it
+# when the crate arrives, so the reward does not change after acceptance.
+- type: entity
+  parent: CMUWorkingJoeRepair
+  id: CMUWorkingJoeRepairOrder
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: CMURoboticsDamagedBody
+    randomizeOnMapInit: false

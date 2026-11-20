@@ -1,0 +1,29 @@
+# Lockable crate used to carry exactly one synthetic to or from the
+# corporate cargo platform. It is delivered as itself, never inside another
+# shipment crate, and it stays in the world when opened.
+- type: entity
+  parent: RMCCrateSecure
+  id: CMUCrateSyntheticTransport
+  name: synthetic transport crate
+  suffix: CMU
+  description: A lockable transport crate sized for one synthetic and one drone control tablet. Attach a robotics order slip to its label slot before lowering it with the cargo platform.
+  components:
+  - type: RemoveComponents
+    components:
+    - type: EntityStorageCloseOnMapInit
+  - type: CMURoboticsTransportCrate
+  - type: EntityStorage
+    capacity: 2
+    maxSize: 4
+  - type: Lock
+    locked: false
+    lockOnClick: false
+  - type: AccessReader
+    access: [["AU14AccessCorporateWEYU"]]
+  - type: PaperLabel
+    labelSlot:
+      insertVerbText: cmu-robotics-slip-attach
+      ejectVerbText: cmu-robotics-slip-remove
+      whitelist:
+        components:
+        - CMURoboticsOrderSlip

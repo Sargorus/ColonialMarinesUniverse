@@ -6,3 +6,14 @@
     contents:
     - id: CMUCombatDroneAmmoBox
       amount: 2
+
+- type: entity
+  parent: RMCCrateConstruction
+  id: CMUCrateCombatDroneFrame
+  name: combat drone body frame crate
+  description: A sealed crate containing one combat humanoid drone body frame. Its limb ports are sealed and its activation socket is empty.
+  components:
+  - type: StorageFill
+    contents:
+    - id: CMUDroneBodyFrameCombat
+      amount: 1

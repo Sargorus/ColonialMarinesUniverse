@@ -1,5 +1,8 @@
 using Content.Shared.Dataset;
+using Content.Shared.Access;
+using Content.Shared.Radio;
 using Content.Shared._RMC14.Marines.Skills;
+using Content.Shared.FixedPoint;
 using Content.Shared.StatusIcon;
 using Content.Shared.Tools;
 using Robust.Shared.Containers;
@@ -82,8 +85,45 @@ public sealed partial class CMUDroneAndroidComponent : Component
     [DataField]
     public bool SupportsModules = true;
 
+    /// <summary>
+    /// Whether the combat module may be installed. Unarmed drone frames keep this false
+    /// so a weapon permit board cannot be fitted at all.
+    /// </summary>
+    [DataField]
+    public bool SupportsCombatModule = true;
+
+    /// <summary>
+    /// Whether the drone's IFF was explicitly configured with a Weyland-Yutani configuration key.
+    /// Linking or taking control must not overwrite it with the operator's IFF.
+    /// </summary>
+    [DataField]
+    public bool IffConfigured;
+
+    /// <summary>
+    /// Whether the controlling operator's skills are copied onto this drone while piloted.
+    /// Civilian drones leave this false so only their frame and module grant skills.
+    /// </summary>
+    [DataField]
+    public bool InheritsOperatorSkills = true;
+
+    /// <summary>
+    /// Whether the operator repeats the drone's speech on their own radio or as a whisper.
+    /// GOVFOR and OPFOR issue drones keep this enabled; the Weyland-Yutani drone frames disable it.
+    /// </summary>
+    [DataField]
+    public bool RelayOperatorSpeech = true;
+
     [DataField]
     public string ModuleContainerId = "cmu-drone-module";
+
+    [DataField]
+    public EntProtoId CombatModule = "CMUDroneModuleCombat";
+
+    [DataField]
+    public TimeSpan ReviveDelay = TimeSpan.FromSeconds(5);
+
+    [DataField]
+    public FixedPoint2 ReviveDamageLimit = 5;
 
     [DataField]
     public EntityUid? Operator;
@@ -193,6 +233,21 @@ public sealed partial class CMUDroneAssemblyPartComponent : Component
 [RegisterComponent]
 public sealed partial class CMUDroneSynthKeyComponent : Component
 {
+}
+
+[RegisterComponent]
+public sealed partial class CMUDroneConfigurationKeyComponent : Component
+{
+}
+
+[RegisterComponent]
+public sealed partial class CMUDroneConfigurationSessionComponent : Component
+{
+    public EntityUid Key;
+    public EntityUid User;
+    public bool HasIdCard;
+    public HashSet<ProtoId<RadioChannelPrototype>> AvailableChannels = new();
+    public HashSet<ProtoId<AccessLevelPrototype>> AvailableAccess = new();
 }
 
 [RegisterComponent]

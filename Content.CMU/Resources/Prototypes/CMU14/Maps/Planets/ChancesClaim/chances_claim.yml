@@ -117,6 +117,7 @@
             # Ambassadors
 
             AU14JobCivilianScientist: [6, 6]
+            AU14JobCivilianScientistRoboticist: [1, 1]
             AU14JobWYGuard: [4, 4]
 
             # Security/LEO

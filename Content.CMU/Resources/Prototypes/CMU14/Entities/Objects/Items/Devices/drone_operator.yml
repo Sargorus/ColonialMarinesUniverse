@@ -77,12 +77,12 @@
     - id: CMWrench
     - id: CMWelder
     - id: CMUDroneModuleCombat
-    - id: CMUDroneModuleCare
+    - id: CMUDroneModuleMedical
 
 - type: entity
   parent: BaseItem
   id: CMUDroneBodyFrame
-  name: drone android body frame
+  name: humanoid drone body frame
   description: A bare synthetic torso frame with sealed limb ports and an empty activation socket.
   components:
   - type: ContainerContainer
@@ -93,11 +93,91 @@
         occludes: True
   - type: Sprite
     sprite: CMU14/Mobs/DroneAndroid/parts.rsi
-    state: torso_m
+    layers:
+    - state: torso_m
+    - state: head_m
+      map: ["head"]
+      visible: false
+    - state: r_arm
+      map: ["right_arm"]
+      visible: false
+    - state: l_arm
+      map: ["left_arm"]
+      visible: false
+    - state: r_leg
+      map: ["right_leg"]
+      visible: false
+    - state: l_leg
+      map: ["left_leg"]
+      visible: false
+    - state: l_foot
+      map: ["left_foot"]
+      visible: false
+    - state: r_foot
+      map: ["right_foot"]
+      visible: false
+    - state: l_hand
+      map: ["left_hand"]
+      visible: false
+    - state: r_hand
+      map: ["right_hand"]
+      visible: false
+  - type: GenericVisualizer
+    visuals:
+      enum.CMUDroneFrameVisuals.Head:
+        head:
+          True: { visible: true }
+          False: { visible: false }
+      enum.CMUDroneFrameVisuals.LeftArm:
+        left_arm:
+          True: { visible: true }
+          False: { visible: false }
+        left_hand:
+          True: { visible: true }
+          False: { visible: false }
+      enum.CMUDroneFrameVisuals.RightArm:
+        right_arm:
+          True: { visible: true }
+          False: { visible: false }
+        right_hand:
+          True: { visible: true }
+          False: { visible: false }
+      enum.CMUDroneFrameVisuals.LeftLeg:
+        left_leg:
+          True: { visible: true }
+          False: { visible: false }
+        left_foot:
+          True: { visible: true }
+          False: { visible: false }
+      enum.CMUDroneFrameVisuals.RightLeg:
+        right_leg:
+          True: { visible: true }
+          False: { visible: false }
+        right_foot:
+          True: { visible: true }
+          False: { visible: false }
   - type: Item
     size: Normal
   - type: CMUDroneFrame
     dronePrototype: CMUDroneAndroid
+
+- type: entity
+  parent: CMUDroneBodyFrame
+  id: CMUDroneBodyFrameUnarmed
+  name: civilian humanoid drone body frame
+  description: A bare synthetic torso frame whose control bus is locked out of firearm use. Its limb ports are sealed and its activation socket is empty.
+  components:
+  - type: CMUDroneFrame
+    dronePrototype: CMUDroneAndroidUnarmed
+
+- type: entity
+  parent: CMUDroneBodyFrame
+  id: CMUDroneBodyFrameCombat
+  name: combat humanoid drone body frame
+  description: A reinforced synthetic torso frame with a combat-rated control bus. Its limb ports are sealed and its activation socket is empty.
+  components:
+  - type: CMUDroneFrame
+    dronePrototype: CMUDroneAndroidCombat
 
 - type: entity
   abstract: true
@@ -123,46 +203,46 @@
     part: Head
 
 - type: entity
-  parent: CMUDronePartBase
+  parent: CMUPartDroneAndroidLeftArm
   id: CMUDroneLeftArmAssembly
   name: drone android left arm
-  description: A left arm assembly with exposed actuator bundles.
+  description: A left arm assembly with exposed actuator bundles. It can be fitted to a drone frame or attached as a replacement limb.
   components:
-  - type: Sprite
-    state: l_arm
+  - type: Item
+    size: Small
   - type: CMUDroneAssemblyPart
     part: LeftArm
 
 - type: entity
-  parent: CMUDronePartBase
+  parent: CMUPartDroneAndroidRightArm
   id: CMUDroneRightArmAssembly
   name: drone android right arm
-  description: A right arm assembly with exposed actuator bundles.
+  description: A right arm assembly with exposed actuator bundles. It can be fitted to a drone frame or attached as a replacement limb.
   components:
-  - type: Sprite
-    state: r_arm
+  - type: Item
+    size: Small
   - type: CMUDroneAssemblyPart
     part: RightArm
 
 - type: entity
-  parent: CMUDronePartBase
+  parent: CMUPartDroneAndroidLeftLeg
   id: CMUDroneLeftLegAssembly
   name: drone android left leg
-  description: A left leg assembly with reinforced knee servos.
+  description: A left leg assembly with reinforced knee servos. It can be fitted to a drone frame or attached as a replacement limb.
   components:
-  - type: Sprite
-    state: l_leg
+  - type: Item
+    size: Small
   - type: CMUDroneAssemblyPart
     part: LeftLeg
 
 - type: entity
-  parent: CMUDronePartBase
+  parent: CMUPartDroneAndroidRightLeg
   id: CMUDroneRightLegAssembly
   name: drone android right leg
-  description: A right leg assembly with reinforced knee servos.
+  description: A right leg assembly with reinforced knee servos. It can be fitted to a drone frame or attached as a replacement limb.
   components:
-  - type: Sprite
-    state: r_leg
+  - type: Item
+    size: Small
   - type: CMUDroneAssemblyPart
     part: RightLeg
 
@@ -178,6 +258,19 @@
   - type: Item
     size: Tiny
   - type: CMUDroneSynthKey
+
+- type: entity
+  parent: BaseItem
+  id: CMUDroneConfigurationKey
+  name: Wey-Yu drone configuration key
+  description: A Weyland-Yutani service key that rewrites a drone's faction, radio channels and access permissions from the holder's credentials. On a utility drone it also controls programmable mode, the board port and the installed directive program.
+  components:
+  - type: Sprite
+    sprite: _RMC14/Objects/Devices/synth_reset_key.rsi
+    state: reset_key
+  - type: Item
+    size: Tiny
+  - type: CMUDroneConfigurationKey
 
 - type: entity
   abstract: true
@@ -208,9 +301,9 @@
 
 - type: entity
   parent: CMUDroneModuleBase
-  id: CMUDroneModuleCare
-  name: drone care module
-  description: A medical care module loaded with doctor-grade treatment and surgery routines.
+  id: CMUDroneModuleMedical
+  name: drone medical module
+  description: A medical module loaded with doctor-grade treatment and surgery routines.
   components:
   - type: Sprite
     state: power_mod
@@ -218,3 +311,32 @@
     skills:
       RMCSkillMedical: 4
       RMCSkillSurgery: 4
+
+- type: entity
+  parent: CMUDroneModuleBase
+  id: CMUDroneModuleEngineering
+  name: drone engineering module
+  description: An engineering module loaded with construction, engineering, and power loader routines.
+  components:
+  - type: Sprite
+    state: std_mod
+  - type: CMUDroneModule
+    skills:
+      RMCSkillConstruction: 4
+      RMCSkillEngineer: 4
+      RMCSkillPowerLoader: 2
+
+- type: entity
+  parent: CMUDroneModuleBase
+  id: CMUDroneModulePolice
+  name: drone police module
+  description: A police module loaded with law enforcement, endurance, and melee routines. It does not grant firearm authorization.
+  components:
+  - type: Sprite
+    state: std_mod
+  - type: CMUDroneModule
+    skills:
+      RMCSkillPolice: 4
+      RMCSkillEndurance: 4
+      RMCSkillMeleeWeapons: 4
+      RMCSkillCqc: 4

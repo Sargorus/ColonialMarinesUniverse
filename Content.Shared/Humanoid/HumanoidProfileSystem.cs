@@ -1,4 +1,5 @@
 using Content.Shared._RMC14.Humanoid;
+using Content.Shared.CMU14.DroneOperator; // CMU14
 using Content.Shared.Chat.Prototypes;
 using Content.Shared.Examine;
 using Content.Shared.Humanoid.Prototypes;
@@ -83,8 +84,13 @@ public sealed partial class HumanoidProfileSystem : EntitySystem
         // RMC14 end
 
         // AU14 start
-        var locale = "humanoid-appearance-component-examine";
-        if (args.Examiner == args.Examined)
+        // CMU14: drone androids have a synthetic appearance line instead of age and self-awareness.
+        var locale = HasComp<CMUDroneAndroidComponent>(ent.Owner)
+            ? "humanoid-appearance-component-examine-synthetic"
+            : "humanoid-appearance-component-examine";
+
+        if (args.Examiner == args.Examined
+            && !HasComp<CMUDroneAndroidComponent>(ent.Owner))
             locale += "-selfaware";
 
         args.PushText(Loc.GetString(locale, ("user", identity), ("age", age), ("species", species)), 100);

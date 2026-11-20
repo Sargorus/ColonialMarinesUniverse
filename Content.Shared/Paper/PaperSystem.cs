@@ -57,10 +57,11 @@ public sealed partial class PaperSystem : EntitySystem
 
     private void OnMapInit(Entity<PaperComponent> entity, ref MapInitEvent args)
     {
-        if (!string.IsNullOrEmpty(entity.Comp.Content))
-        {
-            SetContent(entity, Loc.GetString(entity.Comp.Content));
-        }
+        // CMU14 start: leave ready-made paper text untouched instead of warning on it.
+        if (!string.IsNullOrEmpty(entity.Comp.Content) &&
+            Loc.TryGetString(entity.Comp.Content, out var content))
+            SetContent(entity, content);
+        // CMU14 end
     }
 
     private void OnInit(Entity<PaperComponent> entity, ref ComponentInit args)

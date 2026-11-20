@@ -149,6 +149,17 @@
     factions:
     - FactionWEYU
 
+- type: entity
+  parent: AU14IDCardBaseCivilianNoIFF
+  id: AU14IDCardCivilianScientistRoboticist
+  name: scientist-roboticist ID card
+  components:
+  - type: PresetIdCard
+    job: AU14JobCivilianScientistRoboticist
+  - type: ItemIFF
+    factions:
+    - FactionWEYU
+
 # ├──[ SYNTHS ]──────────────────────────────────────────────────────┤
 - type: entity
   parent: AU14IDCardBaseCivilianNoIFF

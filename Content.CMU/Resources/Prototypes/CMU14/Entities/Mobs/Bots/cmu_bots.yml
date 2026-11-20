@@ -1,0 +1,121 @@
+# Weyland-Yutani medical bot built by the robotics fabricator.
+# It draws its injection from any beaker in its slot; the drone configuration
+# key tunes the dose, trigger damage and the factions it serves. It also
+# performs CPR on intact corpses.
+
+- type: utilityQuery
+  id: CMUMedibotCPR
+  query:
+    - !type:ComponentQuery
+      components:
+        - type: MobState
+        - type: Damageable
+        - type: Marine
+    - !type:ComponentFilter
+      components:
+        - type: Rotting
+      retainWithComp: false
+  considerations:
+    - !type:TargetDistanceCon
+      curve: !type:PresetCurve
+        preset: TargetDistance
+    - !type:TargetAccessibleCon
+      curve: !type:BoolCurve
+    - !type:TargetInLOSOrCurrentCon
+      curve: !type:BoolCurve
+
+- type: htnCompound
+  id: CMUMedibotCompound
+  branches:
+    - tasks:
+        - !type:HTNCompoundTask
+          task: CMUMedibotCPRCompound
+    - tasks:
+        - !type:HTNCompoundTask
+          task: MedibotCompound
+    - tasks:
+        - !type:HTNCompoundTask
+          task: IdleCompound
+
+- type: htnCompound
+  id: CMUMedibotCPRCompound
+  branches:
+    - tasks:
+        - !type:HTNPrimitiveTask
+          operator: !type:UtilityOperator
+            proto: CMUMedibotCPR
+            returnType: EnumerableDescending
+        - !type:HTNPrimitiveTask
+          operator: !type:CMUPickNearbyCorpseOperator
+            targetKey: Target
+            targetMoveKey: TargetCoordinates
+        - !type:HTNPrimitiveTask
+          operator: !type:MoveToOperator
+            pathfindInPlanning: false
+            targetKey: TargetCoordinates
+            pathfindKey: TargetPathfind
+            rangeKey: InteractRange
+        - !type:HTNPrimitiveTask
+          operator: !type:CMUCPROperator
+            targetKey: Target
+
+- type: entity
+  parent: MobMedibot
+  id: CMUMedibot
+  name: medical bot
+  suffix: CMU14
+  description: A Weyland-Yutani medical bot. It injects the contents of its beaker and performs CPR on intact corpses. Its beaker slot is behind a screw-fastened service panel.
+  components:
+  - type: Medibot
+    treatments:
+      Alive:
+        reagent: CMTricordrazine
+        quantity: 15
+      Critical:
+        reagent: CMInaprovaline
+        quantity: 15
+  - type: CMUMedibot
+  - type: CMUHandsItemBlock
+  - type: CMUBotSlogan
+  - type: Marine
+  - type: Hands
+    canBeStripped: false
+    startingHands:
+      hand_right:
+        location: Right
+      hand_left:
+        location: Left
+  - type: ComplexInteraction
+  - type: ToolOpenable
+    openToolQualityNeeded: Screwing
+    closeToolQualityNeeded: Screwing
+    name: cmu-medibot-panel
+  - type: HTN
+    rootTask:
+      task: CMUMedibotCompound
+  - type: UserInterface
+    interfaces:
+      enum.CMUMedibotConfigurationUi.Key:
+        type: CMUMedibotConfigurationBui
+  - type: ContainerContainer
+    containers:
+      cmu-medibot-beaker: !type:ContainerSlot
+  - type: ItemSlots
+    slots:
+      cmu-medibot-beaker:
+        name: cmu-medibot-beaker-slot
+        locked: true
+        lockedFailPopup: cmu-medibot-panel-closed
+        ejectOnInteract: true
+        whitelist:
+          components:
+          - FitsInDispenser
+
+- type: entity
+  parent: MobHugBot
+  id: CMUHugBot
+  name: hug bot
+  suffix: CMU14
+  description: A Weyland-Yutani hug bot. It wanders the colony looking for someone who needs a hug.
+  components:
+  - type: CMUBotSlogan

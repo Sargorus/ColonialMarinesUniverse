@@ -3,6 +3,7 @@ using Content.Shared._RMC14.Marines;
 using Content.Shared._RMC14.Marines.Skills;
 using Content.Shared._RMC14.Prototypes;
 using Content.Shared._RMC14.Storage.Containers;
+using Content.Shared.CMU14.Robotics; // CMU14
 using Content.Shared.Destructible;
 using Content.Shared.DoAfter;
 using Content.Shared.Hands.EntitySystems;
@@ -220,6 +221,12 @@ public sealed partial class RMCStorageSystem : EntitySystem
 
     private void OnBlockInsertIntoEntityStorageAttempt(Entity<BlockEntityStorageComponent> ent, ref InsertIntoEntityStorageAttemptEvent args)
     {
+        // CMU14: the synthetic transport crate is the one storage designed to
+        // carry a whole synthetic or drone, so the generic mob storage block
+        // must not reject it.
+        if (HasComp<CMURoboticsTransportCrateComponent>(args.Container.Owner))
+            return;
+
         if (_entityWhitelist.IsWhitelistPassOrNull(ent.Comp.Whitelist, args.Container.Owner))
             args.Cancelled = true;
     }
@@ -589,8 +596,15 @@ public sealed partial class RMCStorageSystem : EntitySystem
             {
                 foreach (var toClose in _toClose)
                 {
-                    if (TerminatingOrDeleted(toClose) || !HasComp<EntityStorageComponent>(toClose))
+                    // CMU14: a prototype may remove EntityStorageCloseOnMapInit
+                    // (for example the synthetic transport crate); skip queued
+                    // entries whose component was removed before this update.
+                    if (TerminatingOrDeleted(toClose) ||
+                        !HasComp<EntityStorageComponent>(toClose) ||
+                        !HasComp<EntityStorageCloseOnMapInitComponent>(toClose))
+                    {
                         continue;
+                    }
 
                     var locked = _lock.IsLocked(toClose);
                     if (locked)
