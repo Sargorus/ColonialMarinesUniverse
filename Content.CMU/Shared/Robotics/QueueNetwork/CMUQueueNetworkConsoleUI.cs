@@ -206,6 +206,8 @@ public sealed class CMUQueueNetworkConsoleState : BoundUserInterfaceState
     public List<CMUQueueRouteInfo> Routes { get; }
     public List<CMUQueueBypassInfo> Bypasses { get; }
     public List<CMUQueueHistoryInfo> History { get; }
+    public int CooldownSeconds { get; }
+    public int Revision { get; }
 
     public CMUQueueNetworkConsoleState(
         bool active,
@@ -227,7 +229,9 @@ public sealed class CMUQueueNetworkConsoleState : BoundUserInterfaceState
         List<CMUQueueNodeInfo> nodes,
         List<CMUQueueRouteInfo> routes,
         List<CMUQueueBypassInfo> bypasses,
-        List<CMUQueueHistoryInfo> history)
+        List<CMUQueueHistoryInfo> history,
+        int cooldownSeconds = 0,
+        int revision = 0)
     {
         Active = active;
         Completed = completed;
@@ -249,6 +253,8 @@ public sealed class CMUQueueNetworkConsoleState : BoundUserInterfaceState
         Routes = routes;
         Bypasses = bypasses;
         History = history;
+        CooldownSeconds = cooldownSeconds;
+        Revision = revision;
     }
 }
 

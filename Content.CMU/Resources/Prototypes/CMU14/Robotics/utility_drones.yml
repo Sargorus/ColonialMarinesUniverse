@@ -36,6 +36,7 @@
     selfRepairTime: 12
   - type: CMUDroneAndroid
     supportsCombatModule: true
+    startsCombatProgramCapable: true
   - type: Skills
     skills:
       RMCSkillFirearms: 3
@@ -45,8 +46,8 @@
 - type: entity
   parent: RMCCommunicationsConsoleBase
   id: CMUUtilityDroneConsole
-  name: utility drone console
-  description: A Weyland-Yutani terminal for editing one utility drone program, registering physical task markers, and printing directive boards.
+  name: utility drone programming terminal
+  description: A Weyland-Yutani terminal for writing and validating utility drone programs, registering physical task markers, and printing directive boards.
   components:
   - type: Transform
     anchored: false

@@ -1,5 +1,6 @@
 using Content.Server.Power.Components;
 using Content.Server.Power.EntitySystems;
+using Content.Server.Lathe;
 using Content.Shared._RMC14.Marines.Skills;
 using Content.Shared._RMC14.Power;
 using Content.Shared.CMU14.Robotics;
@@ -13,6 +14,8 @@ using Content.Shared.Tools.Systems;
 using Content.Shared.UserInterface;
 using Content.Shared.Verbs;
 using Robust.Shared.Containers;
+using Robust.Shared.GameObjects;
+using Robust.Shared.Prototypes;
 
 namespace Content.Server.CMU14.Robotics;
 
@@ -31,6 +34,8 @@ public sealed partial class CMURoboticsFabricatorSystem : EntitySystem
     [Dependency] private SharedToolSystem _tool = default!;
     [Dependency] private SkillsSystem _skills = default!;
     [Dependency] private PowerReceiverSystem _power = default!;
+    [Dependency] private LatheSystem _lathe = default!;
+    [Dependency] private IPrototypeManager _prototypes = default!;
 
     public override void Initialize()
     {
@@ -46,6 +51,7 @@ public sealed partial class CMURoboticsFabricatorSystem : EntitySystem
         SubscribeLocalEvent<CMURoboticsFabricatorComponent, CMURoboticsFabricatorRemoveCellDoAfterEvent>(OnRemoveCell);
         SubscribeLocalEvent<CMURoboticsFabricatorComponent, ExaminedEvent>(OnExamined);
         SubscribeLocalEvent<CMURoboticsFabricatorComponent, ActivatableUIOpenAttemptEvent>(OnUiOpenAttempt);
+        SubscribeLocalEvent<CMURoboticsFabricatorComponent, LatheGetRecipesEvent>(OnGetRecipes);
     }
 
     private void OnInit(Entity<CMURoboticsFabricatorComponent> ent, ref ComponentInit args)
@@ -72,6 +78,13 @@ public sealed partial class CMURoboticsFabricatorSystem : EntitySystem
     {
         if (args.Handled)
             return;
+
+        if (HasComp<CMURoboticsRecipeCartridgeComponent>(args.Used))
+        {
+            args.Handled = true;
+            TryUnlockCartridge(ent, args.Used, args.User);
+            return;
+        }
 
         var container = EnsureCellContainer(ent);
 
@@ -127,16 +140,17 @@ public sealed partial class CMURoboticsFabricatorSystem : EntitySystem
         if (!args.CanAccess || !args.CanInteract || args.Hands == null)
             return;
 
-        if (!HasCell(ent))
-            return;
-
         var user = args.User;
-        args.Verbs.Add(new AlternativeVerb
+
+        if (HasCell(ent))
         {
-            Text = Loc.GetString("cmu-robotics-fabricator-cell-remove-verb"),
-            Priority = 2,
-            Act = () => StartRemoveCell(ent, user),
-        });
+            args.Verbs.Add(new AlternativeVerb
+            {
+                Text = Loc.GetString("cmu-robotics-fabricator-cell-remove-verb"),
+                Priority = 2,
+                Act = () => StartRemoveCell(ent, user),
+            });
+        }
     }
 
     private void StartRemoveCell(
@@ -247,6 +261,10 @@ public sealed partial class CMURoboticsFabricatorSystem : EntitySystem
             args.PushMarkup(Loc.GetString(
                 "cmu-robotics-fabricator-examine-research",
                 ("level", ent.Comp.ResearchLevel)));
+
+            args.PushMarkup(Loc.GetString(
+                "cmu-robotics-fabricator-examine-unlocked",
+                ("count", ent.Comp.UnlockedPacks.Count)));
         }
     }
 
@@ -266,6 +284,50 @@ public sealed partial class CMURoboticsFabricatorSystem : EntitySystem
                 ent.Owner,
                 args.User,
                 PopupType.SmallCaution);
+        }
+    }
+
+    /// <summary>
+    /// Consumes a recipe cartridge and permanently unlocks its pack on this
+    /// fabricator. The cartridge item is deleted so the unlock is one-way.
+    /// </summary>
+    public bool TryUnlockCartridge(
+        Entity<CMURoboticsFabricatorComponent> ent,
+        EntityUid cartridge,
+        EntityUid user)
+    {
+        if (!TryComp<CMURoboticsRecipeCartridgeComponent>(cartridge, out var cartridgeComp))
+            return false;
+
+        var alreadyKnown = ent.Comp.UnlockedPacks.Contains(cartridgeComp.Pack);
+        if (!alreadyKnown)
+            ent.Comp.UnlockedPacks.Add(cartridgeComp.Pack);
+
+        _lathe.UpdateUserInterfaceState(ent.Owner);
+        _popup.PopupEntity(
+            Loc.GetString(
+                alreadyKnown
+                    ? "cmu-robotics-fabricator-cartridge-known"
+                    : "cmu-robotics-fabricator-cartridge-unlocked",
+                ("cartridge", Name(cartridge))),
+            ent.Owner,
+            user);
+        QueueDel(cartridge);
+        return true;
+    }
+
+    private void OnGetRecipes(Entity<CMURoboticsFabricatorComponent> ent, ref LatheGetRecipesEvent args)
+    {
+        if (args.Lathe != ent.Owner)
+            return;
+
+        foreach (var packId in ent.Comp.UnlockedPacks)
+        {
+            if (!_prototypes.TryIndex(packId, out var pack))
+                continue;
+
+            foreach (var recipe in pack.Recipes)
+                args.Recipes.Add(recipe);
         }
     }
 

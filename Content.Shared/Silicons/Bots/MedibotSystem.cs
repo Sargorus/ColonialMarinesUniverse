@@ -233,7 +233,7 @@ public sealed partial class MedibotSystem : EntitySystem
         if (!_solutionContainer.TryGetSolution(beaker, component.BeakerSolution, out var beakerSolution, out var solution))
             return false;
 
-        var amount = FixedPoint2.Min(component.InjectAmount, solution.Volume);
+        var amount = FixedPoint2.Min(FixedPoint2.Min(component.InjectAmount, component.MaxInjectAmount), solution.Volume); // CMU14: cap a single injection
         if (amount <= FixedPoint2.Zero)
             return false;
 

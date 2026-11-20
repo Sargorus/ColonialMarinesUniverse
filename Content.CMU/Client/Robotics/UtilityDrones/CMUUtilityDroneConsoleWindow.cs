@@ -1,6 +1,8 @@
+using System;
 using System.Linq;
 using System.Numerics;
 using Content.Shared.CMU14.Robotics.UtilityDrones;
+using Robust.Client.Graphics;
 using Robust.Client.UserInterface;
 using Robust.Client.UserInterface.Controls;
 using Robust.Client.UserInterface.CustomControls;
@@ -16,12 +18,14 @@ public sealed class CMUUtilityDroneConsoleWindow : DefaultWindow
     private readonly TextEdit _scriptEdit = new();
     private readonly BoxContainer _markerList = new();
     private readonly Label _status = new();
-    private readonly Label _validation = new();
+    private readonly RichTextLabel _validation = new();
     private readonly Label _lineHint = new();
 
     private List<CMUUtilityMarkerInfo> _markers = new();
     private bool _dirty;
     private bool _updating;
+    private int _lastValidationLine = -1;
+    private string _lastValidationError = string.Empty;
 
     public CMUUtilityDroneConsoleWindow()
     {
@@ -45,7 +49,9 @@ public sealed class CMUUtilityDroneConsoleWindow : DefaultWindow
         _tabs.SetTabTitle(1, Loc.GetString("cmu-utility-drone-tab-markers"));
 
         _status.Text = string.Empty;
-        _validation.Text = string.Empty;
+        _validation.SetMessage(new FormattedMessage());
+        _validation.Visible = false;
+        _validation.HorizontalExpand = true;
         root.AddChild(_status);
         root.AddChild(_validation);
 
@@ -157,7 +163,36 @@ public sealed class CMUUtilityDroneConsoleWindow : DefaultWindow
         {
             _markers = state.Markers;
             _status.Text = state.Status;
-            _validation.Text = state.ValidationError;
+
+            var validationChanged = !string.Equals(
+                state.ValidationError,
+                _lastValidationError,
+                StringComparison.Ordinal) || state.ValidationLine != _lastValidationLine;
+            _lastValidationError = state.ValidationError;
+            _lastValidationLine = state.ValidationLine;
+
+            var validation = new FormattedMessage();
+            if (!string.IsNullOrEmpty(state.ValidationError))
+            {
+                validation.PushColor(Color.FromHex("#ff6b6b"));
+                if (state.ValidationLine > 0)
+                {
+                    validation.AddText(Loc.GetString(
+                        "cmu-utility-drone-error-line",
+                        ("line", state.ValidationLine)));
+                    validation.AddText(" ");
+                }
+
+                validation.AddText(state.ValidationError);
+                validation.Pop();
+                _validation.Visible = true;
+            }
+            else
+            {
+                _validation.Visible = false;
+            }
+
+            _validation.SetMessage(validation);
 
             var scriptMatches = string.Equals(ScriptText, state.Script, StringComparison.Ordinal);
             if (!_dirty && !scriptMatches)
@@ -166,12 +201,51 @@ public sealed class CMUUtilityDroneConsoleWindow : DefaultWindow
             if (string.Equals(ScriptText, state.Script, StringComparison.Ordinal))
                 _dirty = false;
 
+            if (validationChanged && state.ValidationLine > 0)
+                HighlightErrorLine(state.ValidationLine);
+
             RebuildMarkers();
         }
         finally
         {
             _updating = false;
         }
+    }
+
+    /// <summary>
+    /// Selects the offending source line in the editor so the error is visible
+    /// at a glance instead of only in the footer label.
+    /// </summary>
+    private void HighlightErrorLine(int line)
+    {
+        if (line <= 0)
+            return;
+
+        var text = ScriptText;
+        var lineIndex = line - 1;
+        var start = 0;
+        for (var index = 0; index < lineIndex; index++)
+        {
+            var newline = text.IndexOf('\n', start);
+            if (newline < 0)
+            {
+                start = text.Length;
+                break;
+            }
+
+            start = newline + 1;
+        }
+
+        start = Math.Clamp(start, 0, text.Length);
+        var end = text.IndexOf('\n', start);
+        if (end < 0)
+            end = text.Length;
+        else if (end > start && text[end - 1] == '\r')
+            end--;
+
+        _scriptEdit.CursorPosition = new TextEdit.CursorPos(end, TextEdit.LineBreakBias.Top);
+        _scriptEdit.SelectionStart = new TextEdit.CursorPos(start, TextEdit.LineBreakBias.Top);
+        _scriptEdit.GrabKeyboardFocus();
     }
 
     private void OpenCommandWindow(bool insertMode)

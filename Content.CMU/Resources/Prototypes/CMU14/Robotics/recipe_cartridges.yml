@@ -1,0 +1,103 @@
+# Recipe cartridges sold by the robotics terminal for sample data.
+#
+# A cartridge is consumed when inserted into a robotics fabricator and
+# permanently unlocks its recipe pack on that fabricator. Unlocked recipes use
+# their own lathe category so they stay separate from the baseline parts list.
+
+- type: entity
+  parent: BaseItem
+  id: CMURoboticsCartridgeEmp
+  name: EMP payload recipe cartridge
+  description: A Weyland-Yutani recipe cartridge. Insert it into a robotics fabricator to unlock the modular-grenade EMP payload recipe.
+  components:
+  - type: Sprite
+    sprite: Objects/Devices/cartridge.rsi
+    state: cart-e
+  - type: Item
+    size: Small
+  - type: CMURoboticsRecipeCartridge
+    pack: CMURoboticsEmpCartridge
+  - type: StaticPrice
+    price: 150
+
+- type: entity
+  parent: BaseItem
+  id: CMURoboticsCartridgeProgramSystem
+  name: drone program system recipe cartridge
+  description: A Weyland-Yutani recipe cartridge. Insert it into a robotics fabricator to unlock the drone program system board recipe.
+  components:
+  - type: Sprite
+    sprite: Objects/Devices/cartridge.rsi
+    state: cart-e
+  - type: Item
+    size: Small
+  - type: CMURoboticsRecipeCartridge
+    pack: CMURoboticsProgramSystemCartridge
+  - type: StaticPrice
+    price: 150
+
+- type: entity
+  parent: BaseItem
+  id: CMURoboticsCartridgeCombatSystem
+  name: drone combat system recipe cartridge
+  description: A Weyland-Yutani recipe cartridge. Insert it into a robotics fabricator to unlock the drone combat program system board recipe.
+  components:
+  - type: Sprite
+    sprite: Objects/Devices/cartridge.rsi
+    state: cart-sec
+  - type: Item
+    size: Small
+  - type: CMURoboticsRecipeCartridge
+    pack: CMURoboticsCombatSystemCartridge
+  - type: StaticPrice
+    price: 150
+
+- type: entity
+  parent: BaseItem
+  id: CMURoboticsCartridgeModularMine
+  name: modular mine recipe cartridge
+  description: A Weyland-Yutani recipe cartridge. Insert it into a robotics fabricator to unlock the modular mine casing recipe.
+  components:
+  - type: Sprite
+    sprite: Objects/Devices/cartridge.rsi
+    state: cart-sec
+  - type: Item
+    size: Small
+  - type: CMURoboticsRecipeCartridge
+    pack: CMURoboticsModularMineCartridge
+  - type: StaticPrice
+    price: 150
+
+- type: latheRecipe
+  id: CMURoboticsModularMine
+  result: CMUModularMine
+  completetime: 6
+  materials:
+    CMSteel: 4000
+    RMCPlastic: 1500
+  categories: [ CMURoboticsUnlockedRecipes ]
+
+- type: latheRecipe
+  id: CMURoboticsEmpPayload
+  result: CMUEmpPayload
+  completetime: 4
+  materials:
+    CMSteel: 3000
+    RMCPlastic: 2500
+    CMGlass: 1250
+  categories: [ CMURoboticsUnlockedRecipes ]
+
+- type: latheRecipePack
+  id: CMURoboticsEmpCartridge
+  recipes:
+  - CMURoboticsEmpPayload
+
+- type: latheRecipePack
+  id: CMURoboticsProgramSystemCartridge
+  recipes:
+  - CMURoboticsProgramSystemBoard
+
+- type: latheRecipePack
+  id: CMURoboticsCombatSystemCartridge
+  recipes:
+  - CMURoboticsCombatSystemBoard

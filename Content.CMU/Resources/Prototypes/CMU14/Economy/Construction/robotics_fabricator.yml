@@ -24,11 +24,15 @@
   id: CMURoboticsBots
   name: cmu-lathe-category-robotics-bots
 
+- type: latheCategory
+  id: CMURoboticsUnlockedRecipes
+  name: cmu-lathe-category-robotics-unlocked-recipes
+
 - type: entity
   parent: CMAutolathe
   id: CMURoboticsFabricator
   name: robotics fabricator
-  description: A Weyland-Yutani fabricator for android frames, limbs, control tablets, task markers, modules and activation keys. It needs a WL-6 universal fuel cell and a trained roboticist.
+  description: A Weyland-Yutani fabricator for android frames, limbs, control tablets, task markers, modules, activation keys and recipe cartridges. It needs a WL-6 universal fuel cell and a trained roboticist.
   components:
   - type: Transform
     anchored: false
@@ -51,14 +55,17 @@
   - type: StaticPrice
     price: 1500
 
+# One unarmed drone costs about $504 in materials at current prices:
+# frame + head + four limbs (~$471) plus the consumed synth key (~$33).
+# The control tablet, configuration key and modules are excluded.
 - type: latheRecipe
   id: CMURoboticsFrameUnarmed
   result: CMUDroneBodyFrameUnarmed
   completetime: 8
   materials:
-    CMSteel: 15000
-    CMPlasteel: 3750
-    RMCPlastic: 7500
+    CMSteel: 28000
+    CMPlasteel: 7500
+    RMCPlastic: 14000
   categories: [ CMURoboticsComponents ]
 
 - type: latheRecipe
@@ -66,8 +73,8 @@
   result: CMUDroneHeadAssembly
   completetime: 3
   materials:
-    CMSteel: 3750
-    RMCPlastic: 1875
+    CMSteel: 7500
+    RMCPlastic: 3750
   categories: [ CMURoboticsComponents ]
 
 - type: latheRecipe
@@ -75,8 +82,8 @@
   result: CMUDroneLeftArmAssembly
   completetime: 3
   materials:
-    CMSteel: 3750
-    RMCPlastic: 1875
+    CMSteel: 7500
+    RMCPlastic: 3750
   categories: [ CMURoboticsComponents ]
 
 - type: latheRecipe
@@ -84,8 +91,8 @@
   result: CMUDroneRightArmAssembly
   completetime: 3
   materials:
-    CMSteel: 3750
-    RMCPlastic: 1875
+    CMSteel: 7500
+    RMCPlastic: 3750
   categories: [ CMURoboticsComponents ]
 
 - type: latheRecipe
@@ -93,8 +100,8 @@
   result: CMUDroneLeftLegAssembly
   completetime: 3
   materials:
-    CMSteel: 3750
-    RMCPlastic: 1875
+    CMSteel: 7500
+    RMCPlastic: 3750
   categories: [ CMURoboticsComponents ]
 
 - type: latheRecipe
@@ -102,8 +109,8 @@
   result: CMUDroneRightLegAssembly
   completetime: 3
   materials:
-    CMSteel: 3750
-    RMCPlastic: 1875
+    CMSteel: 7500
+    RMCPlastic: 3750
   categories: [ CMURoboticsComponents ]
 
 - type: latheRecipe

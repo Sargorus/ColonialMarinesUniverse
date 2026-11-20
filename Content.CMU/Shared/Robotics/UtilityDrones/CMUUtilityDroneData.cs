@@ -150,6 +150,7 @@ public sealed class CMUUtilityDroneConsoleState : BoundUserInterfaceState
     public readonly CMUUtilityProgramInfo Program;
     public readonly string Status;
     public readonly string ValidationError;
+    public readonly int ValidationLine;
     public readonly List<CMUUtilityItemInfo> NearbyItems;
     public readonly NetEntity ScannedMarker;
     public readonly string Script;
@@ -161,12 +162,14 @@ public sealed class CMUUtilityDroneConsoleState : BoundUserInterfaceState
         string validationError,
         List<CMUUtilityItemInfo>? nearbyItems = null,
         NetEntity scannedMarker = default,
-        string script = "")
+        string script = "",
+        int validationLine = 0)
     {
         Markers = markers;
         Program = program;
         Status = status;
         ValidationError = validationError;
+        ValidationLine = validationLine;
         NearbyItems = nearbyItems ?? new List<CMUUtilityItemInfo>();
         ScannedMarker = scannedMarker;
         Script = script;

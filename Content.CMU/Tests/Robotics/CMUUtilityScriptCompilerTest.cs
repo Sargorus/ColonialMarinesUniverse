@@ -198,6 +198,42 @@ public sealed class CMUUtilityScriptCompilerTest : ContentUnitTest
         Assert.That(error, Does.Contain("health"));
     }
 
+    [Test]
+    public void MarksCombatPrograms()
+    {
+        Assert.That(_compiler.TryCompile("main { shoot 1 }", out var combat, out var error), Is.True, error);
+        Assert.That(combat.UsesCombat, Is.True);
+
+        Assert.That(
+            _compiler.TryCompile("main { say \"hello\" }", out var peaceful, out var peacefulError),
+            Is.True,
+            peacefulError);
+        Assert.That(peaceful.UsesCombat, Is.False);
+    }
+
+    [Test]
+    public void ReportsTheFailingSourceLine()
+    {
+        const string source = """
+            main {
+              $
+            }
+            """;
+
+        Assert.That(_compiler.TryCompile(source, out _, out var error, out var line), Is.False);
+        Assert.That(error, Is.Not.Empty);
+        Assert.That(line, Is.EqualTo(2));
+    }
+
+    [Test]
+    public void ReportsAnalyzerErrorLine()
+    {
+        Assert.That(
+            _compiler.TryCompile("main { missingnative() }", out _, out _, out var line),
+            Is.False);
+        Assert.That(line, Is.EqualTo(1));
+    }
+
     private static string Find(params string[] parts)
     {
         var directory = new DirectoryInfo(TestContext.CurrentContext.TestDirectory);

@@ -73,6 +73,7 @@ public sealed class CMUUtilityScriptProgram
     public int MainStart;
     public int MaxStack;
     public bool UsesMarkers;
+    public bool UsesCombat;
 
     public bool HasEventHandler(CMUUtilityTrigger trigger)
     {

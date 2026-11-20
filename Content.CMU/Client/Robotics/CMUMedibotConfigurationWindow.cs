@@ -39,7 +39,7 @@ public sealed class CMUMedibotConfigurationWindow : DefaultWindow
         _amount = new SpinBox
         {
             Value = 15,
-            IsValid = value => value is >= 1 and <= 50,
+            IsValid = value => value is >= 1 and <= 20,
         };
         root.AddChild(_amount);
 

@@ -38,9 +38,21 @@ public sealed partial class CMUUtilityDroneSystem
         out List<EntityUid> markers,
         out string error)
     {
+        return ValidateScript(console, source, out program, out markers, out error, out _);
+    }
+
+    public bool ValidateScript(
+        EntityUid console,
+        string? source,
+        out CMUUtilityScriptProgram program,
+        out List<EntityUid> markers,
+        out string error,
+        out int errorLine)
+    {
         program = new CMUUtilityScriptProgram();
         markers = new List<EntityUid>();
         error = string.Empty;
+        errorLine = 0;
 
         if (!TryComp<CMUUtilityDroneConsoleComponent>(console, out var consoleComp))
         {
@@ -54,7 +66,7 @@ public sealed partial class CMUUtilityDroneSystem
             return false;
         }
 
-        if (!_scriptCompiler.TryCompile(source, out var compiled, out error))
+        if (!_scriptCompiler.TryCompile(source, out var compiled, out error, out errorLine))
             return false;
 
         program = compiled;
@@ -83,10 +95,14 @@ public sealed partial class CMUUtilityDroneSystem
 
     private bool ValidateBoardScript(
         CMUUtilityDroneProgramBoardComponent board,
-        out string error)
+        out string error,
+        out CMUUtilityScriptProgram? program)
     {
-        if (!_scriptCompiler.TryCompile(board.Script, out _, out error))
+        program = null;
+        if (!_scriptCompiler.TryCompile(board.Script, out var compiled, out error))
             return false;
+
+        program = compiled;
 
         foreach (var marker in board.ScriptMarkers)
         {
@@ -108,9 +124,12 @@ public sealed partial class CMUUtilityDroneSystem
         CMUUtilityDroneProgramBoardComponent board,
         out string error)
     {
-        if (!ValidateBoardScript(board, out error) ||
-            !_scriptCompiler.TryCompile(board.Script, out var compiled, out error))
+        if (!ValidateBoardScript(board, out error, out var compiled) || compiled == null)
+            return false;
+
+        if (compiled.UsesCombat && !CanProgramCombat(drone))
         {
+            error = Loc.GetString("cmu-utility-drone-error-combat-board-required");
             return false;
         }
 

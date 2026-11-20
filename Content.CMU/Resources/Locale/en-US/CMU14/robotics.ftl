@@ -1,17 +1,35 @@
 ent-CMURoboticsFabricator = robotics fabricator
-    .desc = A Weyland-Yutani fabricator for android frames, limbs, control tablets, modules and activation keys. It needs a WL-6 universal fuel cell and a trained roboticist.
+    .desc = A Weyland-Yutani fabricator for android frames, limbs, control tablets, modules, activation keys and recipe cartridges. It needs a WL-6 universal fuel cell and a trained roboticist.
 
 ent-CMUCrateRoboticsFabricator = robotics fabricator crate
     .desc = A sealed crate containing one Weyland-Yutani robotics fabricator. The fuel cell is not included; install a WL-6 universal fuel cell to power it. Pry it open with a crowbar.
 
-ent-CMURoboticsOrderConsole = robotics order console
-    .desc = A Weyland-Yutani contract terminal for robotics work. Accept a build or repair order, receive its synthetic transport crates in cargo, then attach the order slip to a loaded crate and lower the platform. It can be anchored, moved and rotated.
+ent-CMURoboticsOrderConsole = robotics terminal
+    .desc = A Weyland-Yutani robotics terminal. Accept build or repair orders, run SMO production-network contracts, or spend sample data on recipe cartridges. It can be anchored, moved and rotated.
 
-ent-CMUCrateRoboticsOrderConsole = robotics order console crate
-    .desc = A sealed crate containing one Weyland-Yutani robotics order console. Pry it open with a crowbar.
+ent-CMUCrateRoboticsOrderConsole = robotics terminal crate
+    .desc = A sealed crate containing one Weyland-Yutani robotics terminal. Pry it open with a crowbar.
 
 ent-CMUCrateSyntheticTransport = synthetic transport crate
     .desc = A lockable transport crate sized for one synthetic and one drone control tablet. Attach a robotics order slip to its label slot before lowering it with the cargo platform.
+
+ent-CMURoboticsCartridgeEmp = EMP payload recipe cartridge
+    .desc = A Weyland-Yutani recipe cartridge. Insert it into a robotics fabricator to unlock the modular-grenade EMP payload recipe.
+
+ent-CMURoboticsCartridgeProgramSystem = drone program system recipe cartridge
+    .desc = A Weyland-Yutani recipe cartridge. Insert it into a robotics fabricator to unlock the drone program system board recipe.
+
+ent-CMURoboticsCartridgeCombatSystem = drone combat system recipe cartridge
+    .desc = A Weyland-Yutani recipe cartridge. Insert it into a robotics fabricator to unlock the drone combat program system board recipe.
+
+ent-CMUEmpPayload = EMP payload
+    .desc = A single-use electromagnetic payload. Disables electronics in a wide radius.
+
+ent-CMUUtilityDroneProgramSystemBoard = drone program system board
+    .desc = A Weyland-Yutani control bus board. Install it in a drone to let it run directive-board programs; the skills module slot stays free.
+
+ent-CMUUtilityDroneCombatSystemBoard = drone combat program system board
+    .desc = A reinforced Weyland-Yutani control bus board. Install it in a drone to run directive-board programs and use weapon commands.
 
 ent-CMUMedibot = medical bot
     .desc = A Weyland-Yutani medical bot. It injects the contents of its beaker and performs CPR on intact corpses. Its beaker slot is behind a screw-fastened service panel.
@@ -87,6 +105,7 @@ cmu-lathe-category-robotics-working-joe-limbs = Working Joe limbs
 cmu-lathe-category-robotics-prosthetics = Human prosthetics
 cmu-lathe-category-robotics-components = Components
 cmu-lathe-category-robotics-bots = Bots
+cmu-lathe-category-robotics-unlocked-recipes = Unlocked recipes
 
 cmu-robotics-fabricator-cell-already = The fabricator already has a fuel cell.
 cmu-robotics-fabricator-cell-insert-start = You start inserting the fuel cell into the fabricator.
@@ -98,12 +117,22 @@ cmu-robotics-fabricator-cell-remove-verb = Remove fuel cell
 cmu-robotics-fabricator-cell-remove-finish = You remove the fuel cell from the fabricator.
 cmu-robotics-fabricator-examine-cell-inserted = The fuel cell is [color=cyan]inserted[/color].
 cmu-robotics-fabricator-examine-cell-empty = The fuel cell is [color=red]not inserted[/color].
+cmu-robotics-fabricator-examine-unlocked = Unlocked recipe packs: [color=cyan]{$count}[/color].
 cmu-robotics-fabricator-examine-research = Requires [color=cyan]Research {$level}[/color].
 cmu-robotics-fabricator-skill-required = You need Research {$level} to operate this fabricator.
+cmu-robotics-fabricator-cartridge-unlocked = You insert {$cartridge}; its recipes are now available in this fabricator.
+cmu-robotics-fabricator-cartridge-known = {$cartridge} was already unlocked in this fabricator.
 
-cmu-robotics-console-title = Robotics Order Console
-cmu-robotics-console-heading = ROBOTICS ORDERS
+cmu-robotics-console-title = Robotics Terminal
+cmu-robotics-console-heading = ROBOTICS TERMINAL
 cmu-robotics-console-subheading = Weyland-Yutani contract terminal
+cmu-robotics-tab-orders = Work orders
+cmu-robotics-tab-network = SMO network
+cmu-robotics-tab-cartridges = Recipe cartridges
+cmu-robotics-console-cooldown = Next order
+cmu-robotics-console-cooldown-ready = Ready
+cmu-robotics-console-cooldown-value = {$seconds} s
+cmu-robotics-console-cooldown-message = The order queue is on cooldown. Next order in {$seconds} s.
 cmu-robotics-console-active = Active order
 cmu-robotics-console-available = Available orders
 cmu-robotics-console-no-active = No order accepted.
@@ -153,3 +182,16 @@ cmu-robotics-slip-module-none = not required
 cmu-robotics-slip-package-build = finished unit + drone control tablet
 cmu-robotics-slip-package-repair = repaired unit
 cmu-robotics-slip-content = [bold]WEYLAND-YUTANI SUPPLY ORDER #{$id}[/bold]\n\nForm: robotics supply order\nOrder type: {$type}\nTarget: {$target}\nRequired module: {$module}\nUnits: {$amount}\nPackage: {$package}\nReward: {$reward}\nTime limit: {$minutes} minutes\n\nAcceptance: install the required module in the target, place the unit in a synthetic transport crate, attach this form to the loaded crate, and lower the corporate cargo platform.
+
+cmu-robotics-cartridges-heading = RECIPE CARTRIDGES
+cmu-robotics-cartridge-emp-desc = Unlocks the EMP payload recipe for the modular grenade and modular mine.
+cmu-robotics-cartridge-program-system-desc = Unlocks the drone program system board recipe. It enables directive-board programs without using the skills module slot.
+cmu-robotics-cartridge-combat-system-desc = Unlocks the drone combat program system board recipe. It adds weapon commands to directive-board programs.
+cmu-robotics-cartridges-sample-data = Sample data
+cmu-robotics-cartridges-cost = Cost
+cmu-robotics-cartridges-cost-value = {$cost} sample data
+cmu-robotics-cartridges-buy = Purchase cartridge
+cmu-robotics-cartridges-empty = No recipe cartridges are offered by this terminal.
+cmu-robotics-cartridges-unavailable = That cartridge is not offered by this terminal.
+cmu-robotics-cartridges-no-funds = Not enough sample data: need {$cost}, available {$balance}.
+cmu-robotics-cartridges-purchased = Purchased {$cartridge}. Insert it into a robotics fabricator to unlock its recipe.

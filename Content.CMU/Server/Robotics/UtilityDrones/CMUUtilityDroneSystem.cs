@@ -8,6 +8,7 @@ using Content.Shared._RMC14.Repairable;
 using Content.Shared._RMC14.Synth;
 using Content.Shared._RMC14.Tools;
 using Content.Shared.CMU14.Robotics.UtilityDrones;
+using Content.Shared.CMU14.DroneOperator;
 using Content.Shared.Containers.ItemSlots;
 using Content.Shared.Damage.Systems;
 using Content.Shared.DoAfter;
@@ -106,9 +107,13 @@ public sealed partial class CMUUtilityDroneSystem : EntitySystem
         EnsureComp<ActiveListenerComponent>(ent);
         EnsureComp<CMUUtilityDroneRuntimeComponent>(ent);
         RemComp<NPCMeleeCombatComponent>(ent);
-        // Utility drones are strictly non-combat: the civilian parent frame
-        // carries a basic melee weapon for other synthetic roles.
-        RemComp<MeleeWeaponComponent>(ent);
+        // Civilian frames lose their basic melee weapon when the program agent
+        // takes over. Combat-rated frames keep it for scripted melee actions.
+        if (!TryComp<CMUDroneAndroidComponent>(ent.Owner, out var android) ||
+            (!android.StartsCombatProgramCapable && android.InstalledCombatSystem == null))
+        {
+            RemComp<MeleeWeaponComponent>(ent);
+        }
         // The synthetic species carries a player input mover that disables NPC
         // movement when no client is attached. Utility drones are always server-driven.
         RemComp<RMCActiveInputMoverComponent>(ent);
@@ -316,12 +321,44 @@ public sealed partial class CMUUtilityDroneSystem : EntitySystem
         }
 
         if (!string.IsNullOrWhiteSpace(boardComp.Script))
-            return ValidateBoardScript(boardComp, out error);
+        {
+            if (!ValidateBoardScript(boardComp, out error, out var compiled))
+                return false;
+
+            if (!CanProgramCombat(drone) && compiled!.UsesCombat)
+            {
+                error = Loc.GetString("cmu-utility-drone-error-combat-board-required");
+                return false;
+            }
+
+            return true;
+        }
 
         if (!ValidateBoardProgram(boardComp.Program, out error))
             return false;
 
         return true;
+    }
+
+    private bool CanProgramCombat(EntityUid drone)
+    {
+        if (!TryComp<CMUDroneAndroidComponent>(drone, out var android))
+            return false;
+
+        if (android.StartsCombatProgramCapable || android.InstalledCombatSystem != null)
+            return true;
+
+        if (_containers.TryGetContainer(drone, android.CombatSystemContainerId, out var baseContainer) &&
+            baseContainer is ContainerSlot container &&
+            container.ContainedEntity is { } board &&
+            TryComp<CMUUtilityDroneSystemBoardComponent>(board, out var boardComp) &&
+            boardComp.Combat)
+        {
+            android.InstalledCombatSystem = board;
+            return true;
+        }
+
+        return false;
     }
 
     private void OnAgentInteractUsing(Entity<CMUUtilityDroneAgentComponent> ent, ref InteractUsingEvent args)

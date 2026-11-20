@@ -1,0 +1,20 @@
+- type: entity
+  parent: BaseLandMine
+  id: CMUModularMine
+  name: modular mine
+  suffix: CMU14
+  description: A modular mine casing. It can be picked up, dragged, or anchored with a wrench.
+  components:
+  - type: Item
+    size: Small
+  - type: Anchorable
+    flags: [Anchorable, Unanchorable]
+  - type: Physics
+    bodyType: Dynamic
+    fixedRotation: true
+  - type: PayloadCase
+  - type: Construction
+    graph: CMUModularMineGraph
+    node: emptyCase
+  - type: StaticPrice
+    price: 500

@@ -19,6 +19,12 @@ public sealed partial class CMUMedibotComponent : Component
     [DataField]
     public FixedPoint2 InjectAmount = 15;
 
+    /// <summary>
+    /// Hard cap for a single injection, independent of the configured dose.
+    /// </summary>
+    [DataField]
+    public FixedPoint2 MaxInjectAmount = 20;
+
     [DataField]
     public bool InjectOnBrute = true;
 

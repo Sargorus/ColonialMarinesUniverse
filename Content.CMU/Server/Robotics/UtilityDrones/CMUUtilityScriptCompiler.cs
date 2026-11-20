@@ -53,8 +53,18 @@ public sealed class CMUUtilityScriptCompiler
 
     public bool TryCompile(string source, out CMUUtilityScriptProgram program, out string error)
     {
+        return TryCompile(source, out program, out error, out _);
+    }
+
+    public bool TryCompile(
+        string source,
+        out CMUUtilityScriptProgram program,
+        out string error,
+        out int errorLine)
+    {
         program = new CMUUtilityScriptProgram();
         error = string.Empty;
+        errorLine = 0;
 
         if (string.IsNullOrWhiteSpace(source))
         {
@@ -74,8 +84,9 @@ public sealed class CMUUtilityScriptCompiler
             var tokens = Tokenize(source);
             var parser = new Parser(tokens, program);
             parser.ParseProgram();
+            program.UsesCombat = CMUUtilityScriptCombat.Detect(program);
 
-            if (!CMUUtilityScriptAnalyzer.TryAnalyze(program, out error))
+            if (!CMUUtilityScriptAnalyzer.TryAnalyze(program, out error, out errorLine))
                 return false;
 
             return true;
@@ -83,6 +94,7 @@ public sealed class CMUUtilityScriptCompiler
         catch (ScriptCompileException exception)
         {
             error = exception.Message;
+            errorLine = exception.Line;
             return false;
         }
     }

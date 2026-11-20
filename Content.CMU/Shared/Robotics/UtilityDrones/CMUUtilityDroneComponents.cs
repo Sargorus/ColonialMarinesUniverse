@@ -31,6 +31,7 @@ public sealed partial class CMUUtilityDroneConsoleComponent : Component
 
     public string Status = string.Empty;
     public string ValidationError = string.Empty;
+    public int ValidationLine;
 }
 
 /// <summary>

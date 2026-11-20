@@ -1,0 +1,69 @@
+- type: constructionGraph
+  id: CMUModularMineGraph
+  start: start
+  graph:
+  - node: start
+    edges:
+    - to: emptyCase
+      steps:
+      - material: CMSteel
+        amount: 1
+        doAfter: 1
+
+  - node: emptyCase
+    entity: CMUModularMine
+    edges:
+    - to: wiredCase
+      steps:
+      - material: Cable
+        doAfter: 0.5
+      - tag: ProximitySensor
+        icon:
+          sprite: Objects/Misc/proximity_sensor.rsi
+          state: icon
+        name: construction-graph-tag-proximity-sensor
+    - to: start
+      completed:
+      - !type:SpawnPrototype
+        prototype: CMSheetMetal1
+      - !type:DeleteEntity
+      steps:
+      - tool: Welding
+        doAfter: 2
+
+  - node: wiredCase
+    entity: CMUModularMine
+    actions:
+    - !type:PlaySound
+      sound: /Audio/Machines/button.ogg
+    edges:
+    - to: emptyCase
+      steps:
+      - tool: Cutting
+        doAfter: 0.5
+        completed:
+        - !type:SpawnPrototype
+          prototype: CableApcStack1
+        - !type:SpawnPrototype
+          prototype: ProximitySensor
+    - to: mine
+      steps:
+      - tag: Payload
+        store: payload
+        name: construction-graph-tag-payload
+        doAfter: 0.5
+
+  - node: mine
+    actions:
+    - !type:PlaySound
+      sound: /Audio/Machines/button.ogg
+    - !type:AdminLog
+      message: "A CMU modular mine was assembled"
+    edges:
+    - to: wiredCase
+      steps:
+      - tool: Prying
+        doAfter: 0.5
+        completed:
+        - !type:EmptyContainer
+          container: payload

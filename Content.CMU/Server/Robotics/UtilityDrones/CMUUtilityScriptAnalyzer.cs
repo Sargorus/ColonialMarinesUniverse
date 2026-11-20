@@ -74,7 +74,13 @@ public static class CMUUtilityScriptAnalyzer
 
     public static bool TryAnalyze(CMUUtilityScriptProgram program, out string error)
     {
+        return TryAnalyze(program, out error, out _);
+    }
+
+    public static bool TryAnalyze(CMUUtilityScriptProgram program, out string error, out int errorLine)
+    {
         error = string.Empty;
+        errorLine = 0;
 
         if (program.MainStart < 0 || program.MainStart > program.Instructions.Count)
         {
@@ -82,12 +88,12 @@ public static class CMUUtilityScriptAnalyzer
             return false;
         }
 
-        if (!TryValidateProgram(program, program, out error))
+        if (!TryValidateProgram(program, program, out error, out errorLine))
             return false;
 
         foreach (var handler in program.EventHandlers)
         {
-            if (!TryValidateProgram(handler.Program, program, out error))
+            if (!TryValidateProgram(handler.Program, program, out error, out errorLine))
                 return false;
         }
 
@@ -97,9 +103,11 @@ public static class CMUUtilityScriptAnalyzer
     private static bool TryValidateProgram(
         CMUUtilityScriptProgram program,
         CMUUtilityScriptProgram mainProgram,
-        out string error)
+        out string error,
+        out int errorLine)
     {
         error = string.Empty;
+        errorLine = 0;
 
         foreach (var instruction in program.Instructions)
         {
@@ -121,6 +129,7 @@ public static class CMUUtilityScriptAnalyzer
                     error = Loc.GetString(
                         "cmu-utility-drone-script-error-label",
                         ("label", instruction.Text));
+                    errorLine = instruction.Line;
                     return false;
                 }
 
@@ -132,6 +141,7 @@ public static class CMUUtilityScriptAnalyzer
                             "cmu-utility-drone-script-error-unknown-function",
                             ("name", instruction.Text),
                             ("line", instruction.Line));
+                        errorLine = instruction.Line;
                         return false;
                     }
 
@@ -146,6 +156,7 @@ public static class CMUUtilityScriptAnalyzer
                             ("expected", expected),
                             ("count", instruction.ArgCount),
                             ("line", instruction.Line));
+                        errorLine = instruction.Line;
                         return false;
                     }
 

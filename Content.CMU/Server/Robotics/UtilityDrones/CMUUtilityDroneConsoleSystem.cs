@@ -109,6 +109,7 @@ public sealed partial class CMUUtilityDroneConsoleSystem : EntitySystem
         {
             comp.RejectedCommands++;
             comp.ValidationError = Loc.GetString("cmu-utility-drone-error-malformed");
+            comp.ValidationLine = 0;
             UpdateIfOpen(console, comp);
             return false;
         }
@@ -134,6 +135,7 @@ public sealed partial class CMUUtilityDroneConsoleSystem : EntitySystem
                 if (!TryGetEntity(args.Marker, out var marker) || marker is not { } markerUid)
                 {
                     comp.ValidationError = Loc.GetString("cmu-utility-drone-error-marker");
+                    comp.ValidationLine = 0;
                     UpdateIfOpen(console, comp);
                     return false;
                 }
@@ -141,6 +143,7 @@ public sealed partial class CMUUtilityDroneConsoleSystem : EntitySystem
                 if (!TryUnlinkMarker(console, markerUid, comp, out var unlinkError))
                 {
                     comp.ValidationError = unlinkError;
+                    comp.ValidationLine = 0;
                     UpdateIfOpen(console, comp);
                     return false;
                 }
@@ -163,6 +166,7 @@ public sealed partial class CMUUtilityDroneConsoleSystem : EntitySystem
                     if (!TryGetEntity(args.Marker, out var scanMarker) || scanMarker is not { } resolvedScanMarker)
                     {
                         comp.ValidationError = Loc.GetString("cmu-utility-drone-error-marker");
+                        comp.ValidationLine = 0;
                         UpdateIfOpen(console, comp);
                         return false;
                     }
@@ -173,11 +177,13 @@ public sealed partial class CMUUtilityDroneConsoleSystem : EntitySystem
                 if (!TryScanMarkerItems(console, scanMarkerUid, comp, out var scanError))
                 {
                     comp.ValidationError = scanError;
+                    comp.ValidationLine = 0;
                     UpdateIfOpen(console, comp);
                     return false;
                 }
 
                 comp.ValidationError = string.Empty;
+                comp.ValidationLine = 0;
                 comp.Status = Loc.GetString("cmu-utility-drone-status-items-scanned",
                     ("count", comp.ScanItems.Count));
                 UpdateIfOpen(console, comp);
@@ -186,6 +192,7 @@ public sealed partial class CMUUtilityDroneConsoleSystem : EntitySystem
             default:
                 comp.RejectedCommands++;
                 comp.ValidationError = Loc.GetString("cmu-utility-drone-error-malformed");
+                comp.ValidationLine = 0;
                 UpdateIfOpen(console, comp);
                 return false;
         }
@@ -211,6 +218,7 @@ public sealed partial class CMUUtilityDroneConsoleSystem : EntitySystem
         {
             comp.RejectedSaves++;
             comp.ValidationError = Loc.GetString("cmu-utility-drone-error-no-program");
+            comp.ValidationLine = 0;
             comp.Status = Loc.GetString("cmu-utility-drone-status-rejected");
             UpdateIfOpen(console, comp);
             return false;
@@ -224,10 +232,12 @@ public sealed partial class CMUUtilityDroneConsoleSystem : EntitySystem
                     args.Program.Script,
                     out _,
                     out _,
-                    out error))
+                    out error,
+                    out var errorLine))
             {
                 comp.RejectedSaves++;
                 comp.ValidationError = error;
+                comp.ValidationLine = errorLine;
                 comp.Status = Loc.GetString("cmu-utility-drone-status-rejected");
                 UpdateIfOpen(console, comp);
                 return false;
@@ -242,6 +252,7 @@ public sealed partial class CMUUtilityDroneConsoleSystem : EntitySystem
             {
                 comp.RejectedSaves++;
                 comp.ValidationError = error;
+                comp.ValidationLine = 0;
                 comp.Status = Loc.GetString("cmu-utility-drone-status-rejected");
                 UpdateIfOpen(console, comp);
                 return false;
@@ -252,6 +263,7 @@ public sealed partial class CMUUtilityDroneConsoleSystem : EntitySystem
         }
 
         comp.ValidationError = string.Empty;
+        comp.ValidationLine = 0;
 
         if (args.Command == CMUUtilityConsoleCommand.SaveProgram)
         {
@@ -263,6 +275,7 @@ public sealed partial class CMUUtilityDroneConsoleSystem : EntitySystem
         if (!TryPrintProgramBoard(console, actor, args.Program, out _, out error, comp))
         {
             comp.ValidationError = error;
+            comp.ValidationLine = 0;
             comp.Status = Loc.GetString("cmu-utility-drone-status-rejected");
             UpdateIfOpen(console, comp);
             return false;
@@ -403,6 +416,7 @@ public sealed partial class CMUUtilityDroneConsoleSystem : EntitySystem
         markerData.Console = console;
         comp.Markers.Add(marker);
         comp.ValidationError = string.Empty;
+        comp.ValidationLine = 0;
         comp.Status = Loc.GetString("cmu-utility-drone-status-marker-linked");
         UpdateIfOpen(console, comp);
         return true;
@@ -627,7 +641,8 @@ public sealed partial class CMUUtilityDroneConsoleSystem : EntitySystem
                 comp.ValidationError,
                 nearbyItems,
                 comp.ScanMarker is { } currentScan ? GetNetEntity(currentScan) : NetEntity.Invalid,
-                comp.Script));
+                comp.Script,
+                comp.ValidationLine));
     }
 
     private void PruneMarkers(CMUUtilityDroneConsoleComponent comp)
