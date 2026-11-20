@@ -38,6 +38,12 @@ public sealed partial class DeployableTurretComponent : Component
     public string? DeployedFixture = "turret";
 
     /// <summary>
+    /// How long the user must interact with the turret to toggle it on or off.
+    /// </summary>
+    [DataField]
+    public TimeSpan ToggleDelay = TimeSpan.FromSeconds(1);
+
+    /// <summary>
     /// When retracted, the following damage modifier set will be applied to the turret.
     /// </summary>
     [DataField]
