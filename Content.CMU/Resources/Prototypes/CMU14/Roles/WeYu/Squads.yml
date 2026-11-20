@@ -1,7 +1,7 @@
 # CMU14: WY overwatch squads. These intentionally have no SquadPMC tag, so
 # AssignSquad never puts anyone in them automatically. Security holds the WY
-# guards; Staff holds the liaison, his assistant, the scientists and the
-# handyman. Membership comes from the per-job AssignSquad tags below, and both
+# guards; Staff holds the liaison, his assistant and the scientists. Membership
+# comes from the per-job AssignSquad tags below, and both
 # squads are visible in the WeYa overwatch console.
 - type: entity
   parent: SquadBase

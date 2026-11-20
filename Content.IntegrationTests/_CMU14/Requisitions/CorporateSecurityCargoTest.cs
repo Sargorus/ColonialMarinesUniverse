@@ -28,7 +28,7 @@ public sealed class CorporateSecurityCargoTest : GameTest
                 .Select(entry => entry.Crate.Id)
                 .ToList();
 
-            Assert.That(crates, Does.Contain("CMUWYSecurityBarrier"));
+            Assert.That(crates, Does.Contain("CMUCrateWYSecurityBarrier"));
             Assert.That(crates, Does.Contain("CMUCrateM54C2"));
             Assert.That(crates, Does.Contain("CMUCrateNSG23"));
             Assert.That(crates, Does.Contain("CMUCrateNSG23Flamer"));

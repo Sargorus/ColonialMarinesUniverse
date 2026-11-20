@@ -50,7 +50,7 @@
       - cost: 500
         crate: CMUArmorProdigyFlakVest
       - cost: 600
-        crate: CMUWYSecurityBarrier
+        crate: CMUCrateWYSecurityBarrier
       - cost: 700
         crate: CMUCrateBiosuitWYTSSArmor
       - cost: 300
