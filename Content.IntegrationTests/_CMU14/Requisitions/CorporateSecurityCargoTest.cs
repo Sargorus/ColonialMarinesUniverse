@@ -31,6 +31,7 @@ public sealed class CorporateSecurityCargoTest : GameTest
             Assert.That(crates, Does.Contain("CMUWYSecurityBarrier"));
             Assert.That(crates, Does.Contain("CMUCrateM54C2"));
             Assert.That(crates, Does.Contain("CMUCrateNSG23"));
+            Assert.That(crates, Does.Contain("CMUCrateNSG23Flamer"));
             Assert.That(crates, Does.Contain("CMUCrateF44AAMags"));
             Assert.That(crates, Does.Contain("CMUCrateMagazineM96S"));
             Assert.That(crates, Does.Contain("CMUCrateMagazineML66A"));
@@ -55,7 +56,7 @@ public sealed class CorporateSecurityCargoTest : GameTest
         {
             var factory = SEntMan.ComponentFactory;
 
-            Assert.That(SProtoMan.TryIndex<EntityPrototype>("CMUCrateNSG23", out var crate), Is.True);
+            Assert.That(SProtoMan.TryIndex<EntityPrototype>("CMUCrateNSG23Flamer", out var crate), Is.True);
             Assert.That(crate!.TryComp<StorageFillComponent>(out var fill, factory), Is.True);
             Assert.That(fill!.Contents.Any(entry =>
                     entry.PrototypeId?.Id == "RMCWeaponRifleSSG45NoLock"),
