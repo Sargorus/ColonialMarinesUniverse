@@ -91,4 +91,21 @@ public sealed class CMUSignalGasVentTest : GameTest
             Assert.That(SEntMan.GetComponent<SignalGasVentComponent>(vent).Enabled, Is.False);
         });
     }
+
+    [Test]
+    public async Task CanisterIsRejected()
+    {
+        var map = await Pair.CreateTestMap();
+        EntityUid vent = default;
+        EntityUid canister = default;
+
+        await Server.WaitAssertion(() =>
+        {
+            vent = SEntMan.SpawnEntity("CMUSignalGasVent", map.GridCoords);
+            canister = SEntMan.SpawnEntity("OxygenCanister", map.GridCoords);
+
+            Assert.That(Server.System<ItemSlotsSystem>().TryInsert(vent, "tank", canister, null), Is.False,
+                "the vent must only accept gas tanks, not large canisters");
+        });
+    }
 }

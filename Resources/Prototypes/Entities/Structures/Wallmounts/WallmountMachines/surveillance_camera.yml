@@ -107,14 +107,9 @@
     - type: CameraMapMarker
     - type: SurveillanceCamera
       setupAvailableNetworks:
-        - SurveillanceCameraEngineering
-        - SurveillanceCameraSecurity
-        - SurveillanceCameraService
-        - SurveillanceCameraSupply
-        - SurveillanceCameraScience
-        - SurveillanceCameraGeneral
-        - SurveillanceCameraMedical
-        - SurveillanceCameraCommand
+        - CMUSurveillanceCameraColonyCMB
+        - CMUSurveillanceCameraColonyGOVFOR
+        - CMUSurveillanceCameraColonyWEYU
 
 - type: entity
   parent: SurveillanceCameraBase

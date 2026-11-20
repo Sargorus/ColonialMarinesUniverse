@@ -43,6 +43,13 @@ public sealed partial class CameraNetworkReceiverComponent : Component
     [DataField] public HashSet<ProtoId<CameraNetworkPrototype>> Networks = [];
     [DataField(required: true)] public CameraSourceKinds SupportedSources = CameraSourceKinds.None;
 
+    /// <summary>
+    /// If true, this receiver can also see every runtime-created camera
+    /// network, not only the prototype seeds listed in <see cref="Networks"/>.
+    /// </summary>
+    [DataField]
+    public bool ReceiveAllRuntimeNetworks;
+
     public HashSet<EntityUid> RuntimeNetworks = [];
 }
 

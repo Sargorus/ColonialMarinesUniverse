@@ -18,8 +18,9 @@
   - type: WirelessNetworkConnection
     range: 200
   - type: CameraNetworkReceiver
-    networks: [SurveillanceCameraEngineering, SurveillanceCameraSecurity, SurveillanceCameraScience, SurveillanceCameraSupply, SurveillanceCameraCommand, SurveillanceCameraService, SurveillanceCameraMedical, SurveillanceCameraGeneral]
+    networks: [CMUSurveillanceCameraColonyCMB, CMUSurveillanceCameraColonyGOVFOR, CMUSurveillanceCameraColonyWEYU]
     supportedSources: Standard
+    receiveAllRuntimeNetworks: true
   - type: Speech
   - type: SurveillanceCameraSpeaker
   - type: SurveillanceCameraMonitor

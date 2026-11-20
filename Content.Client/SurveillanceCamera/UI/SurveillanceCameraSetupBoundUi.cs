@@ -26,15 +26,24 @@ public sealed class SurveillanceCameraSetupBoundUi : BoundUserInterface
         _window = this.CreateWindow<SurveillanceCameraSetupWindow>();
 
         if (_type == SurveillanceCameraSetupUiKey.Router)
+        {
             _window.HideNameSelector();
+            _window.HideNetworkCreation();
+        }
 
         _window.OnNameConfirm += SendDeviceName;
         _window.OnNetworkConfirm += SendSelectedNetwork;
+        _window.OnNetworkCreate += SendCustomNetwork;
     }
 
     private void SendSelectedNetwork(int idx)
     {
         SendMessage(new SurveillanceCameraSetupSetNetwork(idx));
+    }
+
+    private void SendCustomNetwork(string name)
+    {
+        SendMessage(new SurveillanceCameraSetupSetCustomNetwork(name));
     }
 
     private void SendDeviceName(string name)
@@ -58,7 +67,8 @@ public sealed class SurveillanceCameraSetupBoundUi : BoundUserInterface
                 _window.LoadAvailableNetworks(frequencyState.Network, frequencyState.Networks);
                 break;
             case SurveillanceCameraLogicalNetworkSetupBoundUiState networkState:
-                _window.UpdateState(networkState.Name, networkState.NameDisabled, networkState.NetworkDisabled);
+                _window.UpdateState(networkState.Name, networkState.NameDisabled, networkState.NetworkDisabled,
+                    networkState.CurrentNetworkName);
                 _window.LoadAvailableCameraNetworks(networkState.Network, networkState.Networks);
                 break;
         }

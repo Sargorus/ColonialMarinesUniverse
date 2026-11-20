@@ -41,8 +41,9 @@
     energy: 3.0
     color: "#b89f25"
   - type: CameraNetworkReceiver
-    networks: [SurveillanceCameraEngineering, SurveillanceCameraSecurity, SurveillanceCameraScience, SurveillanceCameraSupply, SurveillanceCameraCommand, SurveillanceCameraService, SurveillanceCameraMedical, SurveillanceCameraGeneral]
+    networks: [CMUSurveillanceCameraColonyCMB, CMUSurveillanceCameraColonyGOVFOR, CMUSurveillanceCameraColonyWEYU]
     supportedSources: Standard
+    receiveAllRuntimeNetworks: true
   - type: SurveillanceCameraMonitor
   - type: ActivatableUI
     key: enum.SurveillanceCameraMonitorUiKey.Key
