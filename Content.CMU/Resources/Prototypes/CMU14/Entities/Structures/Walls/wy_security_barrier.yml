@@ -1,0 +1,39 @@
+# Weyland-Yutani security barrier.
+#
+# Same deployable barrier as CMDeployableBarrier, but locked to corporate security
+# (WY guard officer/leader plus the corporate liaison and assistant).
+# It is tougher than the marine barrier and stops bullets while letting lasers
+# pass: the deployed fixture has no Opaque or general Impassable layer, only the
+# movement layers and BulletImpassable.
+- type: entity
+  parent: CMDeployableBarrier
+  id: CMUWYSecurityBarrier
+  name: WY security barrier
+  description: A reinforced deployable barrier used by Weyland-Yutani security. Swipe an authorized ID card to lock or unlock it.
+  components:
+  - type: CMUWYSecurityBarrier
+    access: CMU14AccessWYSecurityBarrier
+    hitPoints: 2250
+  - type: Lock
+    locked: false
+    lockOnClick: true
+    lockTime: 1
+    unlockTime: 1
+  - type: Fixtures
+    fixtures:
+      base:
+        shape:
+          !type:PhysShapeCircle
+          radius: 0.45
+        density: 75
+        mask:
+        - MachineMask
+      barrier:
+        shape:
+          !type:PhysShapeCircle
+          radius: 0.45
+        layer:
+        - HighImpassable
+        - MidImpassable
+        - LowImpassable
+        - BulletImpassable

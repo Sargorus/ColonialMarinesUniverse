@@ -130,7 +130,8 @@
             AU14JobCivilianCorporateAssistant: [1, 1]
 
             AU14JobCivilianScientist: [8, 8]
-            AU14JobWYGuard: [8, 8]
+            AU14JobWYGuardLeader: [1, 1]
+            AU14JobWYGuard: [7, 7]
 
             # Security/LEO
             AU14JobCivilianCMBMarshal: [1, 1]

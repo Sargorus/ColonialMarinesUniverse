@@ -11,6 +11,18 @@
   - type: Tag
     tags:
     - RMCSentryWeYa
+  # CMU14: full autocannon damage instead of the 0.7 corporate multiplier.
+  - type: GunDamageModifier
+    multiplier: 1
+  # CMU14: 5.0 -> 8.0 detection range.
+  - type: HTN
+    blackboard:
+      SoundTargetInLOS: !type:SoundPathSpecifier
+        path: /Audio/Effects/double_beep.ogg
+      VisionRadius: !type:Single
+        8.0
+      AggroVisionRadius: !type:Single
+        8.0
   - type: SentryTargeting
     lockedFriendlyFactions:
     - AUWeYu
@@ -21,6 +33,35 @@
     deployedFriendlyFactions:
     - AUWeYu
     - WeYa
+
+- type: entity
+  parent: RMCSentryMiniWeYa
+  id: CMUSentryMiniWeYu # CMU14
+  components:
+  - type: UserIFF
+    factions:
+    - FactionWEYU
+  - type: EntityIFF
+  # CMU14: detection range 6.0.
+  - type: HTN
+    blackboard:
+      SoundTargetInLOS: !type:SoundPathSpecifier
+        path: /Audio/Effects/double_beep.ogg
+      VisionRadius: !type:Single
+        6.0
+      AggroVisionRadius: !type:Single
+        6.0
+  - type: SentryTargeting
+    lockedFriendlyFactions:
+    - AUWeYu
+    - WeYa
+    friendlyFactions:
+    - AUWeYu
+    - WeYa
+    deployedFriendlyFactions:
+    - AUWeYu
+    - WeYa
+
 - type: entity
   parent: RMCTurretAlmayer
   id: AU14TurretAlmayerWeYu

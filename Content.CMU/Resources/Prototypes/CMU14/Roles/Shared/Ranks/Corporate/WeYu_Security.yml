@@ -1,8 +1,14 @@
 # Corporate Security
 - type: rank
+  id: AU14RankWYSecurityOfficerDirector
+  name: Director of Corporate Security
+  prefix: DCSO.
+  paygrade: CORP-SEC6
+
+- type: rank
   id: AU14RankWYSecurityOfficerChief
-  name: Chief Corporate Security Officer
-  prefix: CCSO.
+  name: Corporate Security Officer First Class
+  prefix: CSO1.
   paygrade: CORP-SEC5
 
 - type: rank

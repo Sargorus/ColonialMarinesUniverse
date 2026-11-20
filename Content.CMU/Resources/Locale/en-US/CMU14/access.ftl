@@ -24,3 +24,4 @@ cmu-access-opfor-requisitions = Opfor Requisitions
 cmu-access-opfor-vehicle-crew = Opfor Vehicle Crew
 cmu-access-staff-officer = Staff Officer
 cmu-access-kitchen = Kitchen
+cmu-access-wy-security-barrier = WY Security Barrier

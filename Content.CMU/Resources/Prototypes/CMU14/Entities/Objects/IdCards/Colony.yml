@@ -244,6 +244,17 @@
 
 - type: entity
   parent: AU14IDCardBaseCivilianNoIFF
+  id: AU14IDCardWYSecurityLeader
+  name: WY corporate security chief ID card
+  components:
+  - type: PresetIdCard
+    job: AU14JobWYGuardLeader
+  - type: ItemIFF
+    factions:
+    - FactionWEYU
+
+- type: entity
+  parent: AU14IDCardBaseCivilianNoIFF
   id: CMU14IDCardColonyProdigyLiaison
   name: prodigy liaison ID card
   components:

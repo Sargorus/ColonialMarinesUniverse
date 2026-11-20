@@ -648,6 +648,23 @@
     camouflageVariations: { }
 
 - type: entity
+  parent: AU14BeltHolsterPistolBlack
+  id: CMUBeltHolsterPistolBlackFilledM77 # CMU14
+  suffix: Black, AU14, Filled, M77
+  components:
+  - type: StorageFill
+    contents:
+    - id: CMMagazinePistolM77AP
+      amount: 3
+    - id: RMCWeaponPistolM77
+      amount: 1
+
+- type: entity
+  parent: RMCMatebaBeltLuxuriousFilledWEYA
+  id: CMUMatebaBeltLuxuriousFilledWEYADirector # CMU14
+  suffix: Заполнен, Директор Ве-Ю
+
+- type: entity
   parent: RMCMatebaBelt
   id: AU14MatebaCustomBeltFilledAmmo
   name: M276 pattern Mateba Custom holster rig
