@@ -173,4 +173,12 @@ public sealed partial class CMUUtilityDroneProgramBoardComponent : Component
 
     [DataField]
     public List<EntityUid> ScriptMarkers = new();
+
+    /// <summary>Program number assigned by the programming terminal when the board is printed.</summary>
+    [DataField]
+    public int ProgramNumber;
+
+    /// <summary>Hex serial assigned by the programming terminal when the board is printed.</summary>
+    [DataField]
+    public int BoardSerial;
 }

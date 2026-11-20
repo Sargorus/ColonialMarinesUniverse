@@ -195,6 +195,28 @@
 
 - type: entity
   parent: RMCCrateConstruction
+  id: CMUCrateUtilityDroneConsole
+  name: utility drone programming terminal crate
+  description: A crate containing one Weyland-Yutani terminal for writing and validating utility drone programs.
+  components:
+  - type: CrateOpenable
+    spawn:
+    - id: CMUUtilityDroneConsole
+
+- type: entity
+  parent: RMCCrateConstruction
+  id: CMUCrateWeldingFuelCanister
+  name: welding fuel canister crate
+  description: A crate containing one RMC-pattern jerry can filled with welding fuel.
+  components:
+  - type: CrateOpenable
+    spawn:
+    - id: RMCFuelCan
+  - type: StaticPrice
+    price: 500
+
+- type: entity
+  parent: RMCCrateConstruction
   id: CMUCrateProductionDiagnosticConsole
   components:
   - type: CrateOpenable

@@ -1,0 +1,11 @@
+# CMU14: colony autolathe boards for cameras and hermetic doors.
+- type: latheRecipe
+  parent: BaseCheapElectronicsRecipe
+  id: CMUHermeticDoorElectronicsRecipe
+  result: CMUHermeticDoorElectronics
+
+- type: latheRecipePack
+  id: CMUStationBoards
+  recipes:
+  - CMUHermeticDoorElectronicsRecipe
+  - SurveillanceCameraMonitorCircuitboard

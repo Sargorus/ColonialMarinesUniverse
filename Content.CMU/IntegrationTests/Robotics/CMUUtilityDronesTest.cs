@@ -5,6 +5,7 @@ using System.Numerics;
 using Content.Client.CMU14.Robotics.UtilityDrones;
 using Content.IntegrationTests.Fixtures;
 using Content.Server.Chat.Systems;
+using Content.Server.CMU14.DroneOperator;
 using Content.Server.CMU14.Robotics.UtilityDrones;
 using Content.Server.CMU14.ZLevels.Core;
 using Content.Server.Weapons.Ranged.Systems;
@@ -30,6 +31,7 @@ using Content.Shared.NPC.Systems;
 using Content.Shared.Storage.EntitySystems;
 using Content.Shared.Storage.Components;
 using Content.Shared.Weapons.Ranged.Components;
+using Content.Shared._RMC14.Marines.Skills;
 using Content.Shared._RMC14.Synth;
 using Robust.Shared.GameObjects;
 using Robust.Shared.Map;
@@ -612,6 +614,79 @@ public sealed class CMUUtilityDronesTest : GameTest
     }
 
     [Test]
+    public async Task PrintedBoardsReuseProgramNumberAndIncrementHexSerial()
+    {
+        var map = await CreateFloorMap();
+        await Server.WaitAssertion(() =>
+        {
+            var pair = SpawnPair(map, new Vector2(-3, 0), new Vector2(0, 0));
+            Consoles.ResetProgramNumbering();
+            var marker = SEntMan.SpawnEntity("CMUUtilityTaskMarker", map.GridCoords.Offset(new Vector2(2, 0)));
+            Assert.That(Transforms.AnchorEntity(marker), Is.True);
+            Assert.That(Consoles.TryLinkMarker(pair.Console, marker, pair.Console, out var linkError),
+                Is.True, linkError);
+
+            var program = new CMUUtilityProgramInfo(
+                new List<CMUUtilityStepInfo>
+                {
+                    new(CMUUtilityStepKind.MoveTo, Net(marker), 4f, 0f, string.Empty),
+                },
+                new List<CMUUtilityRuleInfo>(),
+                false,
+                30f);
+
+            Assert.That(Consoles.TryPrintProgramBoard(pair.Console, default, program, out var first, out var error),
+                Is.True, error);
+            var firstComp = SEntMan.GetComponent<CMUUtilityDroneProgramBoardComponent>(first);
+            Assert.Multiple(() =>
+            {
+                Assert.That(firstComp.ProgramNumber, Is.EqualTo(1));
+                Assert.That(firstComp.BoardSerial, Is.EqualTo(1));
+                Assert.That(SEntMan.GetComponent<MetaDataComponent>(first).EntityName, Does.Contain("1-0001"));
+            });
+
+            Assert.That(Consoles.TryPrintProgramBoard(pair.Console, default, program, out var second, out error),
+                Is.True, error);
+            var secondComp = SEntMan.GetComponent<CMUUtilityDroneProgramBoardComponent>(second);
+            Assert.Multiple(() =>
+            {
+                Assert.That(secondComp.ProgramNumber, Is.EqualTo(1));
+                Assert.That(secondComp.BoardSerial, Is.EqualTo(2));
+                Assert.That(SEntMan.GetComponent<MetaDataComponent>(second).EntityName, Does.Contain("1-0002"));
+            });
+
+            var other = new CMUUtilityProgramInfo(
+                new List<CMUUtilityStepInfo>
+                {
+                    new(CMUUtilityStepKind.MoveTo, Net(marker), 3f, 0f, string.Empty),
+                },
+                new List<CMUUtilityRuleInfo>(),
+                false,
+                30f);
+            Assert.That(Consoles.TryPrintProgramBoard(pair.Console, default, other, out var third, out error),
+                Is.True, error);
+            var thirdComp = SEntMan.GetComponent<CMUUtilityDroneProgramBoardComponent>(third);
+            Assert.Multiple(() =>
+            {
+                Assert.That(thirdComp.ProgramNumber, Is.EqualTo(2));
+                Assert.That(thirdComp.BoardSerial, Is.EqualTo(3));
+                Assert.That(SEntMan.GetComponent<MetaDataComponent>(third).EntityName, Does.Contain("2-0003"));
+            });
+
+            for (var i = 0; i < 7; i++)
+            {
+                Assert.That(Consoles.TryPrintProgramBoard(pair.Console, default, program, out var board, out error),
+                    Is.True, error);
+                if (i == 6)
+                {
+                    Assert.That(SEntMan.GetComponent<MetaDataComponent>(board).EntityName,
+                        Does.Contain("1-000A"));
+                }
+            }
+        });
+    }
+
+    [Test]
     public async Task MarkerLinkingUsesMultitoolInMarkerThenConsoleOrder()
     {
         var map = await CreateFloorMap();
@@ -804,6 +879,44 @@ public sealed class CMUUtilityDronesTest : GameTest
                 Assert.That(combatSynth.CanUseGuns, Is.True);
                 Assert.That(civilianAndroid.SupportsCombatModule, Is.False);
                 Assert.That(combatAndroid.SupportsCombatModule, Is.True);
+            });
+        });
+    }
+
+    [Test]
+    public async Task CivilianDroneBecomesCombatCapableWithProgramAndCombatBoards()
+    {
+        var map = await CreateFloorMap();
+        await Server.WaitAssertion(() =>
+        {
+            var drone = SEntMan.SpawnEntity("CMUUtilityDrone", map.GridCoords);
+            var user = SEntMan.SpawnEntity("CMMobHuman", map.GridCoords.Offset(new Vector2(1, 0)));
+            var screwdriver = SEntMan.SpawnEntity("CMScrewdriver", map.GridCoords.Offset(new Vector2(1, 0)));
+            var programBoard = SEntMan.SpawnEntity(
+                "CMUUtilityDroneProgramSystemBoard",
+                map.GridCoords.Offset(new Vector2(1, 0)));
+            var combatBoard = SEntMan.SpawnEntity(
+                "CMUUtilityDroneCombatSystemBoard",
+                map.GridCoords.Offset(new Vector2(1, 0)));
+
+            Assert.That(Hands.TryPickupAnyHand(user, screwdriver), Is.True);
+            Assert.That(Hands.TryPickupAnyHand(user, programBoard), Is.True);
+
+            var boards = SEntMan.System<CMUDroneSystemBoardSystem>();
+            Assert.That(boards.TryInstallSystemBoard(drone, programBoard, user, out var error), Is.True, error);
+
+            Assert.That(Hands.TryPickupAnyHand(user, combatBoard), Is.True);
+            Assert.That(boards.TryInstallSystemBoard(drone, combatBoard, user, out error), Is.True, error);
+
+            var synth = SEntMan.GetComponent<SynthComponent>(drone);
+            var android = SEntMan.GetComponent<CMUDroneAndroidComponent>(drone);
+            var skills = SEntMan.GetComponent<SkillsComponent>(drone);
+            Assert.Multiple(() =>
+            {
+                Assert.That(synth.CanUseGuns, Is.True);
+                Assert.That(android.InstalledProgramSystem, Is.Not.Null);
+                Assert.That(android.InstalledCombatSystem, Is.Not.Null);
+                Assert.That(skills.Skills.Keys.Select(key => key.Id), Does.Contain("RMCSkillFirearms"));
             });
         });
     }

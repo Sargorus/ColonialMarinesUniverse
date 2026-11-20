@@ -1,0 +1,5 @@
+- type: entity
+  parent: DoorElectronics
+  id: CMUHermeticDoorElectronics
+  name: hermetic door electronics
+  description: A control board for a Weyland-Yutani hermetic door.

@@ -60,10 +60,13 @@ public sealed class CMURoboticsTerminalTest : GameTest
             Assert.Multiple(() =>
             {
                 Assert.That(state!.Queue, Is.Not.Null, "the network tab state is embedded");
-                Assert.That(state.Cartridges, Has.Count.GreaterThanOrEqualTo(3));
+                Assert.That(state.Cartridges, Has.Count.GreaterThanOrEqualTo(4));
                 Assert.That(
                     state.Cartridges.Select(cartridge => cartridge.Prototype.Id),
                     Does.Contain("CMURoboticsCartridgeEmp"));
+                Assert.That(
+                    state.Cartridges.Select(cartridge => cartridge.Prototype.Id),
+                    Does.Contain("CMURoboticsCartridgeModularMine"));
                 Assert.That(state.Available, Is.Not.Empty);
             });
         });
@@ -79,7 +82,7 @@ public sealed class CMURoboticsTerminalTest : GameTest
                         out var state),
                 Is.True);
             Assert.That(state!.Queue, Is.Not.Null, "nested network state survives serialization");
-            Assert.That(state.Cartridges, Has.Count.GreaterThanOrEqualTo(3));
+            Assert.That(state.Cartridges, Has.Count.GreaterThanOrEqualTo(4));
             Assert.That(
                 state.Cartridges.Select(cartridge => cartridge.Description),
                 Does.Contain("cmu-robotics-cartridge-emp-desc"));

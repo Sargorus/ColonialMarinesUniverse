@@ -74,10 +74,12 @@
       # XRF crates are added via code
       #- cost: 1000
       #  crate: CMUCrateXRF
-      - cost: 4000
+      - cost: 1000
         crate: CMUCrateRoboticsFabricator
       - cost: 100
         crate: CMUCrateRoboticsOrderConsole
+      - cost: 800
+        crate: CMUCrateUtilityDroneConsole
       - cost: 100
         crate: CMUCrateSyntheticTransport
       - cost: 2500

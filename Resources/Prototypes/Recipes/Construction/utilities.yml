@@ -20,6 +20,7 @@
   id: camera
   graph: SurveillanceCamera
   targetNode: camera
+  isCM: true # CMU14: colony engineers build and configure camera networks
   conditions:
   - !type:AgainstWall
     offset: 0 # expects a wall to the north when the camera is in its north facing
@@ -29,6 +30,7 @@
   id: WallmountTelescreen
   graph: WallmountTelescreen
   targetNode: Telescreen
+  isCM: true # CMU14: wallmount camera monitor
 
 - type: construction
   parent: BaseUtilityWallmount

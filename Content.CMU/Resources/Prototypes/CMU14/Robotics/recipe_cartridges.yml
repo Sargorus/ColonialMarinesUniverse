@@ -101,3 +101,8 @@
   id: CMURoboticsCombatSystemCartridge
   recipes:
   - CMURoboticsCombatSystemBoard
+
+- type: latheRecipePack
+  id: CMURoboticsModularMineCartridge
+  recipes:
+  - CMURoboticsModularMine
