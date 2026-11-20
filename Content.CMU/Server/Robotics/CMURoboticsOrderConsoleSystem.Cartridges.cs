@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Content.Shared.CMU14.Robotics;
+using Content.Shared.Database;
 using Robust.Shared.GameObjects;
 using Robust.Shared.Prototypes;
 
@@ -25,14 +26,6 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
 
         var pool = _pools.GetPool(ent.Owner);
         var faction = pool.Faction;
-        if (entry.RequiredDirection is { } requiredDirection
-            && _corporateConsole.GetResearchDirection(faction) != requiredDirection)
-        {
-            ent.Comp.CartridgeStatus = Loc.GetString("cmu-robotics-cartridges-wrong-direction");
-            UpdateUi(ent);
-            return;
-        }
-
         var balance = _research.GetRoboticsPoints(faction);
         if (balance < entry.Cost)
         {
@@ -57,6 +50,9 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
             _hands.TryPickupAnyHand(args.Actor, cartridge);
 
         _research.UpdateRoboticsPoints(balance - entry.Cost, faction);
+        _adminLog.Add(LogType.Action, LogImpact.Medium,
+            $"{ToPrettyString(args.Actor)} bought the robotics cartridge {entry.Cartridge.Id} " +
+            $"for {entry.Cost} robotics points ({faction}) at {ToPrettyString(ent.Owner)}");
         ent.Comp.CartridgeStatus = Loc.GetString(
             "cmu-robotics-cartridges-purchased",
             ("cartridge", GetPrototypeName(entry.Cartridge)));

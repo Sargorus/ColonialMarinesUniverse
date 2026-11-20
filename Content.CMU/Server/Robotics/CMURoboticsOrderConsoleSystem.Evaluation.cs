@@ -9,6 +9,7 @@ using Content.Shared.CMU14.Medical.Anatomy.BodyParts;
 using Content.Shared.CMU14.Requisitions;
 using Content.Shared.CMU14.Robotics;
 using Content.Shared.Damage.Components;
+using Content.Shared.Database;
 using Content.Shared.FixedPoint;
 using Content.Shared.Storage.Components;
 using Robust.Shared.GameObjects;
@@ -49,6 +50,9 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
             var paid = order.Reward - penalty;
             PayCorporateBudget(paid);
             AwardRoboticsPoints(paid, pool.Faction);
+            _adminLog.Add(LogType.Action, LogImpact.Medium,
+                $"Robotics contract {order.Id} delivered at {ToPrettyString(consoleUid)}: " +
+                $"paid {paid}, penalty {penalty}, missing elements {missingElements}");
             DeleteOrderSlips(order.Id);
             pool.ActiveOrder = null;
             pool.LastPenalty = penalty;

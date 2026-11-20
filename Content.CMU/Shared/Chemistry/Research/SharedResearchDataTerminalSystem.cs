@@ -23,10 +23,14 @@ public abstract partial class SharedResearchDataTerminalSystem : EntitySystem
     // Sample data is the synthesis simulator's own currency. It is earned by XRF scans alongside research
     // credits so that editing chemicals no longer competes with buying clearance.
     private readonly Dictionary<string, int> _sampleData = new(StringComparer.OrdinalIgnoreCase);
+    // Robotics science is tracked separately from chemistry: SMO contracts and drone work orders fund it,
+    // and the robotics terminal spends it on recipe cartridges.
+    private readonly Dictionary<string, int> _roboticsPoints = new(StringComparer.OrdinalIgnoreCase);
 
     public int GetCredits(string faction) => _credits.GetValueOrDefault(faction);
     public int GetClearance(string faction) => _clearance.GetValueOrDefault(faction, 1);
     public int GetSampleData(string faction) => _sampleData.GetValueOrDefault(faction);
+    public int GetRoboticsPoints(string faction) => _roboticsPoints.GetValueOrDefault(faction);
 
     /// <summary>Unassigned synthesis machines use their nearest research terminal on the same map.</summary>
     public string GetFaction(EntityUid machine)
@@ -64,7 +68,6 @@ public abstract partial class SharedResearchDataTerminalSystem : EntitySystem
             SubscribeAllEvent<UpdateDataTerminalClearanceEvent>(OnUpdateClearance);
         else
             SubscribeLocalEvent<UpdateDataTerminalClearanceEvent>(OnUpdateClearance);
-
     }
 
     protected void ResetResearchAccounts()
@@ -72,17 +75,19 @@ public abstract partial class SharedResearchDataTerminalSystem : EntitySystem
         _credits.Clear();
         _clearance.Clear();
         _sampleData.Clear();
+        _roboticsPoints.Clear();
     }
 
     protected virtual void OnResearchBalanceChanged(string faction) { }
 
     /// <summary>
-    /// Sets a faction's research balances. <paramref name="points"/> is absolute; <paramref name="clearance"/>
-    /// and <paramref name="sampleData"/> are left unchanged when -1.
+    /// Sets a faction's research balances. <paramref name="points"/> is absolute; <paramref name="clearance"/>,
+    /// <paramref name="sampleData"/> and <paramref name="roboticsPoints"/> are left unchanged when -1.
     /// </summary>
-    public void UpdateClearance(int points, int clearance, string faction = "corporate", int sampleData = -1)
+    public void UpdateClearance(int points, int clearance, string faction = "corporate", int sampleData = -1,
+        int roboticsPoints = -1)
     {
-        var ev = new UpdateDataTerminalClearanceEvent(clearance, points, faction, sampleData);
+        var ev = new UpdateDataTerminalClearanceEvent(clearance, points, faction, sampleData, roboticsPoints);
         RaiseLocalEvent(ev);
         RaiseNetworkEvent(ev);
     }
@@ -90,6 +95,10 @@ public abstract partial class SharedResearchDataTerminalSystem : EntitySystem
     /// <summary>Sets a faction's sample data without touching credits or clearance.</summary>
     public void UpdateSampleData(int sampleData, string faction)
         => UpdateClearance(GetCredits(faction), -1, faction, Math.Max(0, sampleData));
+
+    /// <summary>Sets a faction's robotics science without touching chemistry balances.</summary>
+    public void UpdateRoboticsPoints(int roboticsPoints, string faction)
+        => UpdateClearance(GetCredits(faction), -1, faction, -1, Math.Max(0, roboticsPoints));
 
 
     private void OnUpdateClearance(UpdateDataTerminalClearanceEvent args)
@@ -102,6 +111,10 @@ public abstract partial class SharedResearchDataTerminalSystem : EntitySystem
         if (args.SampleData != -1)
         {
             _sampleData[args.Faction] = args.SampleData;
+        }
+        if (args.RoboticsPoints != -1)
+        {
+            _roboticsPoints[args.Faction] = args.RoboticsPoints;
         }
         _credits[args.Faction] = args.Credits;
         OnResearchBalanceChanged(args.Faction);

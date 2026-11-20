@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Content.Shared.CMU14.Robotics;
+using Content.Shared.Database;
 using Robust.Shared.GameObjects;
 
 namespace Content.Server.CMU14.Robotics;
@@ -67,10 +68,12 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
             ("crates", entries.Count),
             ("reward", order.Reward));
         ent.Comp.NextUiUpdate = _timing.CurTime;
+        _adminLog.Add(LogType.Action, LogImpact.Medium,
+            $"{ToPrettyString(args.Actor)} accepted robotics contract {order.Id} " +
+            $"({order.Type}) for {order.Reward} at {ToPrettyString(ent.Owner)}");
         PrintSlip(ent, order, args.Actor);
         UpdateUi(ent);
     }
-
 
     private void OnCancelOrder(Entity<CMURoboticsOrderConsoleComponent> ent, ref CMURoboticsCancelOrderMessage args)
     {
@@ -86,10 +89,11 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
         pool.LastPenalty = 0;
         pool.LastMissingElements = 0;
         pool.Status = Loc.GetString("cmu-robotics-console-cancelled");
+        _adminLog.Add(LogType.Action, LogImpact.Low,
+            $"{ToPrettyString(args.Actor)} cancelled robotics contract {order.Id} at {ToPrettyString(ent.Owner)}");
         FillOrders(ent);
         UpdateUi(ent);
     }
-
 
     private void OnRefreshOrders(Entity<CMURoboticsOrderConsoleComponent> ent, ref CMURoboticsRefreshOrdersMessage args)
     {
@@ -129,6 +133,9 @@ public sealed partial class CMURoboticsOrderConsoleSystem : EntitySystem
         pool.Status = reason == null
             ? Loc.GetString("cmu-robotics-console-failed-timeout", ("fine", fineAmount))
             : Loc.GetString("cmu-robotics-console-rejected", ("reason", reason));
+        _adminLog.Add(LogType.Action, fine ? LogImpact.High : LogImpact.Medium,
+            $"Robotics contract {order.Id} failed at {ToPrettyString(console.Owner)}: " +
+            $"{reason ?? "deadline expired"}; fine {fineAmount}");
         FillOrders(console);
         UpdateUi(console);
     }

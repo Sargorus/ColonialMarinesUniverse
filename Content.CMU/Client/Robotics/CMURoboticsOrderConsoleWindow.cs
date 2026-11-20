@@ -15,9 +15,9 @@ namespace Content.Client.CMU14.Robotics;
 
 /// <summary>
 /// CRT-style robotics terminal: work orders, the production-network contract
-/// tab, and the sample-data recipe cartridge shop.
+/// tab, and the robotics-point recipe cartridge shop.
 /// </summary>
-public sealed class CMURoboticsOrderConsoleWindow : DefaultWindow
+public sealed partial class CMURoboticsOrderConsoleWindow : DefaultWindow
 {
     public event Action<int>? OnAccept;
     public event Action? OnCancel;
@@ -35,7 +35,7 @@ public sealed class CMURoboticsOrderConsoleWindow : DefaultWindow
     private readonly Label _subheading;
     private readonly BoxContainer _cartridgeBody;
     private readonly RichTextLabel _cartridgeStatus;
-    private readonly Label _sampleData;
+    private readonly Label _roboticsPoints;
 
     private string _cartridgeSignature = string.Empty;
 
@@ -74,9 +74,9 @@ public sealed class CMURoboticsOrderConsoleWindow : DefaultWindow
             out _);
         _cartridgeKit.Root.AddChild(cartridgeHeader);
         _cartridgeKit.Root.AddChild(_cartridgeKit.Readout(
-            Loc.GetString("cmu-robotics-cartridges-sample-data"),
+            Loc.GetString("cmu-robotics-cartridges-robotics-points"),
             "0",
-            out _sampleData,
+            out _roboticsPoints,
             CrtTerminalPalette.Accent));
 
         var cartridgeScroll = new ScrollContainer { VerticalExpand = true, HScrollEnabled = false };
@@ -108,6 +108,11 @@ public sealed class CMURoboticsOrderConsoleWindow : DefaultWindow
         _body.RemoveAllChildren();
 
         _body.AddChild(_kit.Field(
+            Loc.GetString("cmu-robotics-cartridges-robotics-points"),
+            state.RoboticsPoints.ToString(),
+            CrtTerminalPalette.Accent));
+
+        _body.AddChild(_kit.Field(
             Loc.GetString("cmu-robotics-console-penalty"),
             state.LastPenalty > 0
                 ? Loc.GetString(
@@ -132,13 +137,13 @@ public sealed class CMURoboticsOrderConsoleWindow : DefaultWindow
         if (state.Queue != null)
             QueuePanel.UpdateState(state.Queue);
 
-        _sampleData.Text = state.SampleData.ToString();
+        _roboticsPoints.Text = state.RoboticsPoints.ToString();
         SetRichText(
             _cartridgeStatus,
             state.CartridgeStatus,
             CrtTerminalPalette.TextDim);
 
-        var signature = $"{state.SampleData}|{state.CartridgeStatus}|" +
+        var signature = $"{state.RoboticsPoints}|{state.CartridgeStatus}|" +
                         string.Join(',', state.Cartridges.Select(cartridge =>
                             $"{cartridge.Prototype.Id}:{cartridge.Cost}:{cartridge.Description}"));
         if (signature == _cartridgeSignature)
@@ -146,166 +151,6 @@ public sealed class CMURoboticsOrderConsoleWindow : DefaultWindow
 
         _cartridgeSignature = signature;
         BuildCartridges(state);
-    }
-
-    private void BuildActive(CMURoboticsOrderInfo? active)
-    {
-        var section = _kit.Section(Loc.GetString("cmu-robotics-console-active"), out var column);
-
-        if (active is not { } order)
-        {
-            column.AddChild(CrtConsoleKit.Wrapping(
-                Loc.GetString("cmu-robotics-console-no-active"),
-                CrtTerminalPalette.TextDim));
-            _body.AddChild(section);
-            return;
-        }
-
-        AddOrderFields(column, order);
-
-        var print = _kit.Button(
-            Loc.GetString("cmu-robotics-console-print-slip"),
-            CmuButtonStyles.Variant.Neutral);
-        print.OnPressed += _ => OnPrintSlip?.Invoke();
-        column.AddChild(print);
-
-        var cancel = _kit.Button(
-            Loc.GetString("cmu-robotics-console-cancel"),
-            CmuButtonStyles.Variant.Caution);
-        cancel.OnPressed += _ => OnCancel?.Invoke();
-        column.AddChild(cancel);
-
-        var hint = order.Type == CMURoboticsOrderType.Repair
-            ? Loc.GetString(
-                "cmu-robotics-console-delivery-hint-repair",
-                ("amount", order.Amount))
-            : Loc.GetString("cmu-robotics-console-delivery-hint-build");
-        column.AddChild(CrtConsoleKit.Wrapping(hint, CrtTerminalPalette.TextDim));
-        _body.AddChild(section);
-    }
-
-    private void BuildAvailable(CMURoboticsOrderConsoleState state)
-    {
-        var section = _kit.Section(Loc.GetString("cmu-robotics-console-available"), out var column);
-
-        if (state.Available.Count == 0)
-        {
-            column.AddChild(CrtConsoleKit.Wrapping(
-                Loc.GetString("cmu-robotics-console-no-orders"),
-                CrtTerminalPalette.TextDim));
-        }
-        else
-        {
-            foreach (var order in state.Available)
-            {
-                var card = _kit.Section(
-                    Loc.GetString(
-                        "cmu-robotics-console-order-heading",
-                        ("type", TypeName(order.Type)),
-                        ("target", Loc.GetString(order.TargetNameLocId))),
-                    out var details);
-
-                AddOrderFields(details, order);
-
-                var accept = _kit.Button(
-                    Loc.GetString("cmu-robotics-console-accept"),
-                    CmuButtonStyles.Variant.Affirm);
-                accept.Disabled = state.Active != null || state.CooldownSeconds > 0;
-                var id = order.Id;
-                accept.OnPressed += _ => OnAccept?.Invoke(id);
-                details.AddChild(accept);
-
-                column.AddChild(card);
-            }
-        }
-
-        var refresh = _kit.Button(
-            Loc.GetString("cmu-robotics-console-refresh"),
-            CmuButtonStyles.Variant.Neutral);
-        refresh.Disabled = state.Active != null;
-        refresh.OnPressed += _ => OnRefresh?.Invoke();
-        column.AddChild(refresh);
-
-        _body.AddChild(section);
-    }
-
-    private void BuildCartridges(CMURoboticsOrderConsoleState state)
-    {
-        _cartridgeBody.RemoveAllChildren();
-
-        if (state.Cartridges.Count == 0)
-        {
-            _cartridgeBody.AddChild(CrtConsoleKit.Wrapping(
-                Loc.GetString("cmu-robotics-cartridges-empty"),
-                CrtTerminalPalette.TextDim));
-            return;
-        }
-
-        foreach (var cartridge in state.Cartridges)
-        {
-            var id = cartridge.Prototype.Id;
-            var name = GetPrototypeName(cartridge.Prototype);
-            var section = _cartridgeKit.Section(name, out var column);
-
-            if (!string.IsNullOrEmpty(cartridge.Description) &&
-                Loc.TryGetString(cartridge.Description, out var description))
-            {
-                column.AddChild(CrtConsoleKit.Wrapping(
-                    description,
-                    CrtTerminalPalette.TextDim));
-            }
-
-            var affordable = state.SampleData >= cartridge.Cost;
-            column.AddChild(_cartridgeKit.Field(
-                Loc.GetString("cmu-robotics-cartridges-cost"),
-                Loc.GetString(
-                    "cmu-robotics-cartridges-cost-value",
-                    ("cost", cartridge.Cost)),
-                affordable ? CrtTerminalPalette.Accent : CrtTerminalPalette.Alert));
-
-            var buy = _cartridgeKit.Button(
-                Loc.GetString("cmu-robotics-cartridges-buy"),
-                CmuButtonStyles.Variant.Affirm);
-            buy.Disabled = !affordable;
-            buy.OnPressed += _ => OnBuyCartridge?.Invoke(id);
-            column.AddChild(buy);
-
-            _cartridgeBody.AddChild(section);
-        }
-    }
-
-    private void AddOrderFields(BoxContainer column, CMURoboticsOrderInfo order)
-    {
-        column.AddChild(_kit.Field(
-            Loc.GetString("cmu-robotics-console-type"),
-            TypeName(order.Type)));
-
-        column.AddChild(_kit.Field(
-            Loc.GetString("cmu-robotics-console-target"),
-            Loc.GetString(order.TargetNameLocId)));
-
-        column.AddChild(_kit.Field(
-            Loc.GetString("cmu-robotics-console-amount"),
-            order.Amount.ToString()));
-
-        if (order.RequiredModule is { } module)
-        {
-            column.AddChild(_kit.Field(
-                Loc.GetString("cmu-robotics-console-module"),
-                GetPrototypeName(module)));
-        }
-
-        if (order.SecondsRemaining > 0)
-        {
-            column.AddChild(_kit.Field(
-                Loc.GetString("cmu-robotics-console-time-left"),
-                TimeSpan.FromSeconds(order.SecondsRemaining).ToString(@"mm\:ss")));
-        }
-
-        column.AddChild(_kit.Field(
-            Loc.GetString("cmu-robotics-console-reward"),
-            CrtConsoleKit.Money(order.Reward),
-            CrtTerminalPalette.Accent));
     }
 
     private static string TypeName(CMURoboticsOrderType type)

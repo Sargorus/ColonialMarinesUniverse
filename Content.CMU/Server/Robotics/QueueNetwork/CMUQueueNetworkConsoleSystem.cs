@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Content.Server.CMU14.ColonyEconomy;
+using Content.Shared.CMU14.Chemistry.Research;
 using Content.Shared.CMU14.Robotics;
 using Content.Shared.CMU14.Robotics.QueueNetwork;
 using Robust.Server.GameObjects;
@@ -20,6 +21,8 @@ namespace Content.Server.CMU14.Robotics.QueueNetwork;
 public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
 {
     [Dependency] private CorporateConsoleSystem _corporateConsole = default!;
+    [Dependency] private CMURoboticsOrderPoolSystem _pools = default!;
+    [Dependency] private SharedResearchDataTerminalSystem _research = default!;
     [Dependency] private IRobustRandom _random = default!;
     [Dependency] private UserInterfaceSystem _ui = default!;
     [Dependency] private IGameTiming _timing = default!;
@@ -71,7 +74,7 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         CMURoboticsOrderConsoleComponent? terminal = null;
         if (TryComp<CMURoboticsOrderConsoleComponent>(ent.Owner, out terminal))
         {
-            var cooldown = CooldownSeconds(terminal);
+            var cooldown = CooldownSeconds(ent.Owner, terminal);
             if (cooldown > 0)
             {
                 comp.Status = Loc.GetString("cmu-queue-status-cooldown", ("seconds", cooldown));
@@ -98,7 +101,7 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         comp.Bonus = 0;
         comp.Elapsed = 0;
         if (terminal != null)
-            terminal.NextNetworkOrderAllowed = _timing.CurTime + terminal.OrderCooldown;
+            _pools.GetPool(ent.Owner).NextNetworkOrderAllowed = _timing.CurTime + terminal.OrderCooldown;
         comp.Status = Loc.GetString(
             "cmu-queue-status-started",
             ("network", LocOrId(network.Name, Loc.GetString("cmu-queue-network-unknown"))));
@@ -542,6 +545,12 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
             var bonus = CMUQueueNetworkMath.CalculateLeftoverBonus(comp.Budget);
             var payout = comp.Reward + bonus;
             _corporateConsole.AddToCorporateBudget(payout);
+            if (TryComp<CMURoboticsOrderConsoleComponent>(ent.Owner, out _))
+            {
+                var pool = _pools.GetPool(ent.Owner);
+                var points = CMURoboticsPoints.FromPayout(payout);
+                _research.UpdateRoboticsPoints(_research.GetRoboticsPoints(pool.Faction) + points, pool.Faction);
+            }
             comp.Bonus = bonus;
             comp.Completed = true;
             comp.Active = false;
@@ -563,12 +572,10 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         UpdateUi(ent);
     }
 
-    private int CooldownSeconds(CMURoboticsOrderConsoleComponent terminal)
+    private int CooldownSeconds(EntityUid owner, CMURoboticsOrderConsoleComponent terminal)
     {
-        return CMURoboticsOrderCooldown.RemainingSeconds(
-            terminal.OrderCooldown,
-            terminal.NextNetworkOrderAllowed,
-            _timing.CurTime);
+        var pool = _pools.GetPool(owner);
+        return _pools.NetworkCooldownSeconds(pool, terminal.OrderCooldown);
     }
 
     private bool TryGetActive(
@@ -824,7 +831,7 @@ public sealed partial class CMUQueueNetworkConsoleSystem : EntitySystem
         }
 
         var cooldown = TryComp<CMURoboticsOrderConsoleComponent>(ent.Owner, out var terminal)
-            ? CooldownSeconds(terminal)
+            ? CooldownSeconds(ent.Owner, terminal)
             : 0;
 
         return new CMUQueueNetworkConsoleState(
