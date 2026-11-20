@@ -204,6 +204,23 @@ public sealed partial class DestructibleSystem : SharedDestructibleSystem
         }
     }
 
+    // CMU14 method
+    /// <summary>
+    /// Replaces every destruction threshold on the entity. Used by prototypes
+    /// whose list-valued inheritance appends a parent threshold that must not
+    /// survive at runtime.
+    /// </summary>
+    public void ReplaceThresholds(
+        Entity<DestructibleComponent?> entity,
+        List<DamageThreshold> thresholds)
+    {
+        if (!Resolve(entity.Owner, ref entity.Comp, false))
+            entity.Comp = AddComp<DestructibleComponent>(entity.Owner);
+
+        entity.Comp.Thresholds.Clear();
+        entity.Comp.Thresholds.AddRange(thresholds);
+    }
+
     /// <summary>
     /// Adds an overkill threshold if one does not exist.
     /// </summary>
