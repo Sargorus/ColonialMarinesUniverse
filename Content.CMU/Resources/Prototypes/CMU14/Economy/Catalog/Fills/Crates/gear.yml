@@ -188,12 +188,20 @@
 - type: entity
   parent: RMCCrateConstruction
   id: CMUCrateRoboticsOrderConsole
-  name: robotics order console crate
-  description: A sealed crate containing one Weyland-Yutani robotics order console. Pry it open with a crowbar.
   components:
   - type: CrateOpenable
     spawn:
     - id: CMURoboticsOrderConsole
+
+- type: entity
+  parent: RMCCrateConstruction
+  id: CMUCrateProductionDiagnosticConsole
+  components:
+  - type: CrateOpenable
+    spawn:
+    - id: CMUProductionDiagnosticConsole
+    - id: Crowbar
+    - id: Wrench
 
 - type: entity
   parent: RMCCrateScience

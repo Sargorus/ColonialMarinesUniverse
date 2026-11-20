@@ -1,0 +1,29 @@
+- type: entity
+  parent: RMCCommunicationsConsoleBase
+  id: CMUProductionDiagnosticConsole
+  components:
+  - type: Transform
+    anchored: false
+    noRot: false
+  - type: Anchorable
+    flags: [Anchorable, Unanchorable]
+  - type: Rotatable
+  - type: RemoveComponents
+    components:
+    - type: WallMount
+  - type: Sprite
+    sprite: _RMC14/Structures/Machines/computer.rsi
+    state: terminal1_old
+  - type: InteractionOutline
+  - type: CMUQueueNetworkConsole
+  - type: ActivatableUI
+    key: enum.CMUQueueNetworkConsoleUiKey.Key
+  - type: ActivatableUIRequiresAccess
+  - type: AccessReader
+    access: [["AU14AccessCorporateWEYU"]]
+  - type: UserInterface
+    interfaces:
+      enum.CMUQueueNetworkConsoleUiKey.Key:
+        type: CMUQueueNetworkConsoleBoundUserInterface
+  - type: StaticPrice
+    price: 800
